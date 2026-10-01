@@ -222,11 +222,11 @@ function updateRevive(dt) {
 }
 function updateCamera(dt) {
   CAM.yaw += (CAM.yawT - CAM.yaw) * Math.min(1, dt * 8);
-  const C = players.length ? camCenter() : { x: CAM.x, z: CAM.z, y: 0 };
+  const MAIN = G.state === 'main', C = MAIN ? { x: MM.cam.x, z: MM.cam.z, y: 0 } : players.length ? camCenter() : { x: CAM.x, z: CAM.z, y: 0 };
   let need = 0;                                          // кооп: насколько отдалить, чтобы все были на экране
   if (players.length > 1) { const a = innerWidth / innerHeight, sp = Math.sin(CAM.pitch);
     for (const p of players) { const [ox, od] = scrOff(p.x - C.x, p.z - C.z); need = Math.max(need, (Math.abs(ox) + 2.6) / a, Math.abs(od) * sp + 2.4); } }
-  const zt = Math.max(CAM.zoomT, Math.min(CAM_MAX, need));
+  const zt = MAIN ? MM.zoom : Math.max(CAM.zoomT, Math.min(CAM_MAX, need));
   CAM.zoom += (zt - CAM.zoom) * Math.min(1, dt * 4);
   CAM.x += (C.x - CAM.x) * Math.min(1, dt * 6); CAM.z += (C.z - CAM.z) * Math.min(1, dt * 6); CAM.y = (CAM.y || 0) + (C.y * 0.5 - (CAM.y || 0)) * Math.min(1, dt * 6);
   const D = 40, cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
@@ -234,7 +234,8 @@ function updateCamera(dt) {
   const kd = Math.exp(-16 * dt); CAM.kx *= kd; CAM.kz *= kd;
   cam.position.set(CAM.x + Math.sin(CAM.yaw) * cp * D + sx, CAM.y + sp * D, CAM.z + Math.cos(CAM.yaw) * cp * D + sz);
   cam.lookAt(CAM.x + sx, CAM.y, CAM.z + sz);
-  const a = innerWidth / innerHeight, h = CAM.zoom; cam.left = -h * a; cam.right = h * a; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix();
+  const a = innerWidth / innerHeight, h = CAM.zoom; const sh = MAIN && a > 1.1 ? h * a * 0.34 : 0;   // главное меню: сцена смещена вправо, слева — кнопки
+  cam.left = -h * a - sh; cam.right = h * a - sh; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   sun.position.set(CAM.x - 14, 26, CAM.z - 10); sun.target.position.set(CAM.x, 0, CAM.z);
   if (muzzleT > 0) { muzzleT -= dt; if (muzzleT <= 0) muzzleLight.intensity = 0; }

@@ -6,6 +6,7 @@ addEventListener('keydown', e => {
   if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
   keys.add(e.code);
+  if (G.state === 'main') { mainKey(e.code); return; }
   if (G.state === 'menu') { menuKey(e.code); return; }
   if (G.state === 'levelup') { lvKey(e.code); return; }
   if (G.state === 'end') { if (e.code === 'Enter' || e.code === 'Space') restartRun(); if (e.code === 'Escape') toMenu(); return; }
@@ -79,7 +80,7 @@ function pollPad(dt) {
   }
   for (const k of [...PADS.keys()]) if (!seen.has(k)) PADS.delete(k);
   const any = i => [...PADS.values()].some(s => s.just[i]);
-  if (G.state === 'menu' || G.state === 'end' || G.state === 'levelup') {
+  if (G.state === 'main' || G.state === 'menu' || G.state === 'end' || G.state === 'levelup') {
     PAD.navT -= dt;
     let h = 0, v = 0;
     for (const s of PADS.values()) {
@@ -88,6 +89,7 @@ function pollPad(dt) {
     }
     if (h || v) PAD.navT = 0.25;
     if (G.state === 'levelup') { if (h || v) lvKey((h || v) > 0 ? 'ArrowRight' : 'ArrowLeft'); if (any(0)) lvKey('Enter'); }
+    else if (G.state === 'main') { if (v) mainKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mainKey('Enter'); if (any(1)) mainKey('Escape'); }
     else if (G.state === 'menu') { if (h) menuKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) menuKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) menuKey('Enter'); if (any(3)) menuKey('Tab'); if (any(1)) menuKey('Backspace'); }
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {

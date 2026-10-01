@@ -145,6 +145,7 @@ function edOpen() {
     $('edDone').onclick = () => { edSaveCur(); HEROES.sel[G.pick] = ED.cur.id; heroSave(); edClose(); };
     $('edBack').onclick = () => edClose();
   }
+  ED.from = G.state;
   const h = heroById(HEROES.sel[G.pick]);
   ED.cur = edClone(h || HERO_PRESETS[0]); if (!h) delete ED.cur.id;
   ED.dirty = true; ED.open = true; ED.spin = true;
@@ -168,5 +169,7 @@ function edSaveCur() {
   heroSave(); heroApplyAll(); edSync();
 }
 function edClose() {
-  ED.open = false; $('editor').style.display = 'none'; G.state = 'menu'; showScreen('menu'); menuMark(); heroApplyAll(); lookMark();
+  ED.open = false; $('editor').style.display = 'none'; heroApplyAll();
+  if (ED.from === 'main') { mmEnter(); return; }
+  G.state = 'menu'; showScreen('menu'); menuMark(); lookMark();
 }

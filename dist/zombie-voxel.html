@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Zombie Survivors — воксели v0.18</title>
+<title>MANY DEAD</title>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block}
@@ -101,6 +101,19 @@ body:not(.touch) #btns .t{display:none}
 .edSw input[type=color]{width:34px;height:26px;padding:0;border:1px solid #5a5242;border-radius:6px;background:none}
 .edBar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(1100px,100%)}
 @media (max-width:760px){.edWrap{flex-direction:column}.edView{flex:0 0 38vh}.edSide{flex:1 1 auto}}
+.mainScr #btns,.mainScr #fps,.mainScr #ver{display:none}
+#main{background:linear-gradient(90deg,rgba(4,3,3,.94) 0,rgba(4,3,3,.8) 28%,rgba(4,3,3,0) 54%);align-items:flex-start;justify-content:center;padding-left:max(22px,6vw)}
+@media (max-aspect-ratio:1/1){#main{background:linear-gradient(180deg,rgba(4,3,3,.9),rgba(4,3,3,.35))}}
+.mmCol{width:min(340px,86vw)}
+.mmTitle{margin:0;font-size:clamp(44px,7.5vw,86px);line-height:.95;font-weight:900;letter-spacing:3px;color:#e6dcc4;text-shadow:0 0 18px rgba(230,200,150,.25),0 4px 0 #000;animation:mmFlick 6s infinite}
+.mmTitle .r{color:#c2331f;text-shadow:0 0 22px rgba(220,50,30,.55),0 4px 0 #2a0803}
+.mmSub{color:#9c927c;margin:8px 0 26px;font-size:14px;letter-spacing:1px}
+@keyframes mmFlick{0%,100%{opacity:1}90%{opacity:1}91%{opacity:.35}92%{opacity:1}95%{opacity:.6}96%{opacity:1}}
+@keyframes mmIn{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
+#mmBtns button,#mmPanel button{display:block;width:100%;text-align:left;font:inherit;font-size:19px;letter-spacing:.5px;padding:12px 18px;margin:7px 0;border:0;border-left:4px solid #4a4032;background:rgba(20,16,12,.72);color:#d8d0bc;cursor:pointer;transition:transform .15s,border-color .15s,background .15s,color .15s;animation:mmIn .5s both}
+#mmBtns button.sel,#mmBtns button:hover:not(:disabled),#mmPanel button:hover{transform:translateX(10px);border-left-color:#e8a050;background:rgba(62,40,22,.92);color:#fff}
+#mmBtns button:disabled{opacity:.42;cursor:default}#mmBtns small{font-size:11px;color:#e8a050;letter-spacing:1px;text-transform:uppercase;margin-left:6px}
+#mmPanel{display:none;color:#d8d0bc}#mmPanel h3{margin:0 0 10px;font-size:22px;color:#e8a050}#mmPanel p{font-size:13.5px;color:#a89e88;line-height:1.5}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -109,8 +122,12 @@ body:not(.touch) #btns .t{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.18</div>
-<div id="menu" class="scr"><h1>ZOMBIE SURVIVORS</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
+<div id="loading">Загрузка…</div><div id="ver">v0.19</div>
+<div id="main" class="scr"><div class="mmCol">
+  <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Тюрьма. Ночь. Они идут.</div>
+  <div id="mmBtns"></div><div id="mmPanel"></div></div></div>
+<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
+  <div><button class="go alt" id="backMain">← Главное меню</button></div>
   <div id="lookRow"><span id="lookWho"></span> <button id="lookPrev">◀</button> <b id="lookName"></b> <button id="lookNext">▶</button> <button id="lookEdit">Редактор персонажа</button></div>
   <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go" id="goBtn">В бой</button></div>
   <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
@@ -1776,6 +1793,7 @@ addEventListener('keydown', e => {
   if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
   keys.add(e.code);
+  if (G.state === 'main') { mainKey(e.code); return; }
   if (G.state === 'menu') { menuKey(e.code); return; }
   if (G.state === 'levelup') { lvKey(e.code); return; }
   if (G.state === 'end') { if (e.code === 'Enter' || e.code === 'Space') restartRun(); if (e.code === 'Escape') toMenu(); return; }
@@ -1849,7 +1867,7 @@ function pollPad(dt) {
   }
   for (const k of [...PADS.keys()]) if (!seen.has(k)) PADS.delete(k);
   const any = i => [...PADS.values()].some(s => s.just[i]);
-  if (G.state === 'menu' || G.state === 'end' || G.state === 'levelup') {
+  if (G.state === 'main' || G.state === 'menu' || G.state === 'end' || G.state === 'levelup') {
     PAD.navT -= dt;
     let h = 0, v = 0;
     for (const s of PADS.values()) {
@@ -1858,6 +1876,7 @@ function pollPad(dt) {
     }
     if (h || v) PAD.navT = 0.25;
     if (G.state === 'levelup') { if (h || v) lvKey((h || v) > 0 ? 'ArrowRight' : 'ArrowLeft'); if (any(0)) lvKey('Enter'); }
+    else if (G.state === 'main') { if (v) mainKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mainKey('Enter'); if (any(1)) mainKey('Escape'); }
     else if (G.state === 'menu') { if (h) menuKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) menuKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) menuKey('Enter'); if (any(3)) menuKey('Tab'); if (any(1)) menuKey('Backspace'); }
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
@@ -3625,11 +3644,11 @@ function updateRevive(dt) {
 }
 function updateCamera(dt) {
   CAM.yaw += (CAM.yawT - CAM.yaw) * Math.min(1, dt * 8);
-  const C = players.length ? camCenter() : { x: CAM.x, z: CAM.z, y: 0 };
+  const MAIN = G.state === 'main', C = MAIN ? { x: MM.cam.x, z: MM.cam.z, y: 0 } : players.length ? camCenter() : { x: CAM.x, z: CAM.z, y: 0 };
   let need = 0;                                          // кооп: насколько отдалить, чтобы все были на экране
   if (players.length > 1) { const a = innerWidth / innerHeight, sp = Math.sin(CAM.pitch);
     for (const p of players) { const [ox, od] = scrOff(p.x - C.x, p.z - C.z); need = Math.max(need, (Math.abs(ox) + 2.6) / a, Math.abs(od) * sp + 2.4); } }
-  const zt = Math.max(CAM.zoomT, Math.min(CAM_MAX, need));
+  const zt = MAIN ? MM.zoom : Math.max(CAM.zoomT, Math.min(CAM_MAX, need));
   CAM.zoom += (zt - CAM.zoom) * Math.min(1, dt * 4);
   CAM.x += (C.x - CAM.x) * Math.min(1, dt * 6); CAM.z += (C.z - CAM.z) * Math.min(1, dt * 6); CAM.y = (CAM.y || 0) + (C.y * 0.5 - (CAM.y || 0)) * Math.min(1, dt * 6);
   const D = 40, cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
@@ -3637,7 +3656,8 @@ function updateCamera(dt) {
   const kd = Math.exp(-16 * dt); CAM.kx *= kd; CAM.kz *= kd;
   cam.position.set(CAM.x + Math.sin(CAM.yaw) * cp * D + sx, CAM.y + sp * D, CAM.z + Math.cos(CAM.yaw) * cp * D + sz);
   cam.lookAt(CAM.x + sx, CAM.y, CAM.z + sz);
-  const a = innerWidth / innerHeight, h = CAM.zoom; cam.left = -h * a; cam.right = h * a; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix();
+  const a = innerWidth / innerHeight, h = CAM.zoom; const sh = MAIN && a > 1.1 ? h * a * 0.34 : 0;   // главное меню: сцена смещена вправо, слева — кнопки
+  cam.left = -h * a - sh; cam.right = h * a - sh; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   sun.position.set(CAM.x - 14, 26, CAM.z - 10); sun.target.position.set(CAM.x, 0, CAM.z);
   if (muzzleT > 0) { muzzleT -= dt; if (muzzleT <= 0) muzzleLight.intensity = 0; }
@@ -3988,6 +4008,7 @@ function edOpen() {
     $('edDone').onclick = () => { edSaveCur(); HEROES.sel[G.pick] = ED.cur.id; heroSave(); edClose(); };
     $('edBack').onclick = () => edClose();
   }
+  ED.from = G.state;
   const h = heroById(HEROES.sel[G.pick]);
   ED.cur = edClone(h || HERO_PRESETS[0]); if (!h) delete ED.cur.id;
   ED.dirty = true; ED.open = true; ED.spin = true;
@@ -4011,7 +4032,82 @@ function edSaveCur() {
   heroSave(); heroApplyAll(); edSync();
 }
 function edClose() {
-  ED.open = false; $('editor').style.display = 'none'; G.state = 'menu'; showScreen('menu'); menuMark(); heroApplyAll(); lookMark();
+  ED.open = false; $('editor').style.display = 'none'; heroApplyAll();
+  if (ED.from === 'main') { mmEnter(); return; }
+  G.state = 'menu'; showScreen('menu'); menuMark(); lookMark();
+}
+</script>
+<script>'use strict';
+/* ---------- Главное меню: кнопки слева, справа — ночная дорога, по которой бредут зомби ---------- */
+const MM = { z: [], cam: { x: 48, z: 40 }, zoom: 6.8, sel: 0, panel: '', Z0: 8, Z1: 66 };
+// форма зомби, шанс, скорость (клеток/с)
+const MM_FORMS = [['walk', 0.6, 0.72], ['run', 0.1, 1.8], ['fat', 0.1, 0.5], ['armored', 0.1, 0.62], ['crawl', 0.1, 0.3]];
+const MM_BTNS = [['single', 'Одиночная игра'], ['coop', 'Кооп'], ['hero', 'Редактор персонажа'], ['map', 'Редактор карты', 'скоро'], ['settings', 'Настройки'], ['exit', 'Выйти']];
+
+function mmSpawnZ(initial) {
+  let r = Math.random(), form = 'walk', spd = 0.72;
+  for (const [f, p, s] of MM_FORMS) { if (r < p) { form = f; spd = s; break; } r -= p; }
+  return { zombie: true, form, vm: Math.floor(Math.random() * VOXMS.length), x: rnd(43.5, 52.5), y: 0, z: initial ? rnd(MM.Z0, MM.Z1) : MM.Z0 - rnd(0, 5),
+    spd: spd * rnd(0.85, 1.15), yaw: 0, base: rnd(-0.12, 0.12), phase: rnd(0, 6), moving: true, nod: 0 };
+}
+function mmUpdate(dt) {
+  if (!MM.z.length) for (let i = 0; i < 46; i++) MM.z.push(mmSpawnZ(true));
+  for (const c of MM.z) {
+    const moved = c.spd * dt; c.z += moved; c.phase += moved * (c.form === 'run' ? 5 : 6.5);
+    c.yaw = c.base + Math.sin(c.phase * 0.5) * 0.08; c.nod = Math.sin(c.phase * 0.7) * 0.15;
+    if (c.z > MM.Z1) Object.assign(c, mmSpawnZ(false));
+  }
+}
+function mmDraw() { for (const c of MM.z) drawVoxZombie(c); }
+
+function mmBuild() {
+  $('mmBtns').innerHTML = MM_BTNS.map(([a, n, tag], i) => `<button data-a="${a}" style="animation-delay:${0.15 + i * 0.07}s"${tag || (a === 'coop' && IS_TOUCH) ? ' disabled' : ''}>${n}${tag ? ` <small>${tag}</small>` : ''}</button>`).join('');
+  $('mmBtns').querySelectorAll('button').forEach((b, i) => {
+    b.onclick = e => { e.stopPropagation(); mmAct(b.dataset.a); };
+    b.onmouseenter = () => { if (!b.disabled) { MM.sel = i; mmMark(); } };
+  });
+  mmMark();
+}
+function mmMark() { $('mmBtns').querySelectorAll('button').forEach((b, i) => b.classList.toggle('sel', i === MM.sel)); }
+function mmEnter() {
+  G.state = 'main'; MM.panel = ''; G.nightT = 1; $('lvlUp').style.display = 'none'; $('editor').style.display = 'none';
+  showScreen('main'); mmPanel('');
+}
+function mmLeave() { G.nightT = 0; }
+function mmPanel(name) {
+  MM.panel = name; const el = $('mmPanel'); $('mmBtns').style.display = name ? 'none' : 'block'; el.style.display = name ? 'block' : 'none';
+  if (name === 'settings') {
+    el.innerHTML = `<h3>Настройки</h3><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
+  } else if (name === 'exit') {
+    el.innerHTML = `<h3>Спасибо за игру!</h3><p>Браузер не даёт игре закрыть вкладку сам — закройте её, когда захотите.</p><button data-s="back">В меню</button>`;
+  }
+  el.querySelectorAll('button').forEach(b => b.onclick = e => { e.stopPropagation(); mmSetting(b.dataset.s); });
+}
+function mmSetting(s) {
+  SFX.click();
+  if (s === 'sound') { setSound(!Sound.on); $('optSound').checked = Sound.on; mmPanel('settings'); }
+  else if (s === 'full') goFullscreen();
+  else if (s === 'reset') { if (confirm('Удалить всех сохранённых героев и загруженные модели?')) { for (const k of ['heroes', 'heroSel', 'customParts']) { try { localStorage.removeItem('zsv_' + k); } catch (e) {} } location.reload(); } }
+  else if (s === 'back') mmPanel('');
+}
+function mmAct(a) {
+  SFX.click();
+  if (a === 'single') { G.nPlayers = 1; mmClass(); }
+  else if (a === 'coop') { if (IS_TOUCH) return; G.nPlayers = Math.max(2, Math.min(G.nPlayers, maxPlayers())); mmClass(); }
+  else if (a === 'hero') { G.pick = 0; mmLeave(); edOpen(); }
+  else if (a === 'settings') mmPanel('settings');
+  else if (a === 'exit') mmPanel('exit');
+}
+function mmClass() { mmLeave(); G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); G.state = 'menu'; showScreen('menu'); menuMark(); }
+function mainKey(code) {
+  if (MM.panel) { if (code === 'Escape' || code === 'Backspace') mmPanel(''); return; }
+  const on = MM_BTNS.map((b, i) => (b[2] || (b[0] === 'coop' && IS_TOUCH)) ? -1 : i).filter(i => i >= 0);
+  let k = on.indexOf(MM.sel); if (k < 0) k = 0;
+  if (code === 'ArrowDown' || code === 'KeyS') k = (k + 1) % on.length;
+  else if (code === 'ArrowUp' || code === 'KeyW') k = (k + on.length - 1) % on.length;
+  else if (code === 'Enter' || code === 'Space' || code === 'NumpadEnter') { mmAct(MM_BTNS[MM.sel][0]); return; }
+  else return;
+  MM.sel = on[k]; mmMark(); SFX.click();
 }
 </script>
 <script>'use strict';
@@ -4031,6 +4127,7 @@ function menuBuild() {
   });
   $('goBtn').onclick = e => { e.stopPropagation(); menuConfirm(); };
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('backMain').onclick = e => { e.stopPropagation(); mmEnter(); };
   $('lookPrev').onclick = e => { e.stopPropagation(); lookCycle(-1); }; $('lookNext').onclick = e => { e.stopPropagation(); lookCycle(1); };
   $('lookEdit').onclick = e => { e.stopPropagation(); edOpen(); };
   heroApplyAll();
@@ -4069,12 +4166,12 @@ function menuKey(code) {
   else if (code === 'ArrowUp' || code === 'KeyW') menuSel = Math.max(0, menuSel - cols);
   else if (/^Digit[1-7]$/.test(code) && +code.slice(5) <= MAIN_IDS.length) menuSel = +code.slice(5) - 1;
   else if (code === 'Tab') { G.nPlayers = G.nPlayers >= maxPlayers() ? 1 : G.nPlayers + 1; G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); }
-  else if (code === 'Backspace' || code === 'Escape') { if (G.pick > 0) { G.pick--; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); } else return; }
+  else if (code === 'Backspace' || code === 'Escape') { if (G.pick > 0) { G.pick--; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); } else { mmEnter(); return; } }
   else if (code === 'Enter' || code === 'Space' || code === 'NumpadEnter') { menuConfirm(); return; }
   else return;
   menuMark(); SFX.click();
 }
-function showScreen(id) { for (const s of ['menu', 'over', 'pause']) $(s).style.display = s === id ? 'flex' : 'none';
+function showScreen(id) { document.body.classList.toggle('mainScr', id === 'main'); for (const s of ['main', 'menu', 'over', 'pause']) $(s).style.display = s === id ? 'flex' : 'none';
   const play = id === null || id === 'pause'; $('huds').style.display = $('top').style.display = play ? 'block' : 'none';
   $('help').style.display = play && !IS_TOUCH && players.length < 2 ? 'block' : 'none'; }
 // HUD: у каждого игрока свой блок в своём углу (И1 слева сверху, И2 справа сверху, И3/И4 снизу)
@@ -4197,6 +4294,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 function tick(dt, T) {
+  if (G.state === 'main') mmUpdate(dt);
   const run = G.state === 'play' && !G.paused, live = (G.state === 'play' || G.state === 'end') && !G.paused;
   if (run) {
     G.t += dt;
@@ -4225,8 +4323,9 @@ function tick(dt, T) {
 function render(T) {
   updateFade();
   chN = 0; voxFrameBegin();
-  for (const p of players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
+  for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
   for (const z of zombies) if (isVoxZ(z)) drawVoxZombie(z); else drawChar(z, T);
+  if (G.state === 'main') mmDraw();
   voxFrameEnd(); drawMarkers(T);
   charMesh.count = chN; charMesh.instanceMatrix.needsUpdate = true; charMesh.instanceColor.needsUpdate = true;
   renderer.render(scene, cam);
@@ -4234,8 +4333,8 @@ function render(T) {
 }
 // старт: сначала модели Meshy, потом карта (коллизии моделей нужны навигации)
 loadModels().then(() => {
-  buildMap(); SPAWNS = mapSpawns(); buildNav(); resize(); debugInit(); menuBuild();
-  toMenu();
+  buildMap(); SPAWNS = mapSpawns(); buildNav(); resize(); debugInit(); menuBuild(); mmBuild();
+  toMenu(); mmEnter();
   $('loading') && $('loading').remove();
   requestAnimationFrame(frame);
 });

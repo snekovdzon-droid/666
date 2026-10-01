@@ -15,6 +15,7 @@ function menuBuild() {
   });
   $('goBtn').onclick = e => { e.stopPropagation(); menuConfirm(); };
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('backMain').onclick = e => { e.stopPropagation(); mmEnter(); };
   $('lookPrev').onclick = e => { e.stopPropagation(); lookCycle(-1); }; $('lookNext').onclick = e => { e.stopPropagation(); lookCycle(1); };
   $('lookEdit').onclick = e => { e.stopPropagation(); edOpen(); };
   heroApplyAll();
@@ -53,12 +54,12 @@ function menuKey(code) {
   else if (code === 'ArrowUp' || code === 'KeyW') menuSel = Math.max(0, menuSel - cols);
   else if (/^Digit[1-7]$/.test(code) && +code.slice(5) <= MAIN_IDS.length) menuSel = +code.slice(5) - 1;
   else if (code === 'Tab') { G.nPlayers = G.nPlayers >= maxPlayers() ? 1 : G.nPlayers + 1; G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); }
-  else if (code === 'Backspace' || code === 'Escape') { if (G.pick > 0) { G.pick--; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); } else return; }
+  else if (code === 'Backspace' || code === 'Escape') { if (G.pick > 0) { G.pick--; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); } else { mmEnter(); return; } }
   else if (code === 'Enter' || code === 'Space' || code === 'NumpadEnter') { menuConfirm(); return; }
   else return;
   menuMark(); SFX.click();
 }
-function showScreen(id) { for (const s of ['menu', 'over', 'pause']) $(s).style.display = s === id ? 'flex' : 'none';
+function showScreen(id) { document.body.classList.toggle('mainScr', id === 'main'); for (const s of ['main', 'menu', 'over', 'pause']) $(s).style.display = s === id ? 'flex' : 'none';
   const play = id === null || id === 'pause'; $('huds').style.display = $('top').style.display = play ? 'block' : 'none';
   $('help').style.display = play && !IS_TOUCH && players.length < 2 ? 'block' : 'none'; }
 // HUD: у каждого игрока свой блок в своём углу (И1 слева сверху, И2 справа сверху, И3/И4 снизу)
@@ -181,6 +182,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 function tick(dt, T) {
+  if (G.state === 'main') mmUpdate(dt);
   const run = G.state === 'play' && !G.paused, live = (G.state === 'play' || G.state === 'end') && !G.paused;
   if (run) {
     G.t += dt;
@@ -209,8 +211,9 @@ function tick(dt, T) {
 function render(T) {
   updateFade();
   chN = 0; voxFrameBegin();
-  for (const p of players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
+  for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
   for (const z of zombies) if (isVoxZ(z)) drawVoxZombie(z); else drawChar(z, T);
+  if (G.state === 'main') mmDraw();
   voxFrameEnd(); drawMarkers(T);
   charMesh.count = chN; charMesh.instanceMatrix.needsUpdate = true; charMesh.instanceColor.needsUpdate = true;
   renderer.render(scene, cam);
@@ -218,8 +221,8 @@ function render(T) {
 }
 // старт: сначала модели Meshy, потом карта (коллизии моделей нужны навигации)
 loadModels().then(() => {
-  buildMap(); SPAWNS = mapSpawns(); buildNav(); resize(); debugInit(); menuBuild();
-  toMenu();
+  buildMap(); SPAWNS = mapSpawns(); buildNav(); resize(); debugInit(); menuBuild(); mmBuild();
+  toMenu(); mmEnter();
   $('loading') && $('loading').remove();
   requestAnimationFrame(frame);
 });

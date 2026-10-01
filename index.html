@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Zombie Survivors — воксели v0.18</title>
+<title>MANY DEAD</title>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
 canvas{display:block}
@@ -101,6 +101,19 @@ body:not(.touch) #btns .t{display:none}
 .edSw input[type=color]{width:34px;height:26px;padding:0;border:1px solid #5a5242;border-radius:6px;background:none}
 .edBar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(1100px,100%)}
 @media (max-width:760px){.edWrap{flex-direction:column}.edView{flex:0 0 38vh}.edSide{flex:1 1 auto}}
+.mainScr #btns,.mainScr #fps,.mainScr #ver{display:none}
+#main{background:linear-gradient(90deg,rgba(4,3,3,.94) 0,rgba(4,3,3,.8) 28%,rgba(4,3,3,0) 54%);align-items:flex-start;justify-content:center;padding-left:max(22px,6vw)}
+@media (max-aspect-ratio:1/1){#main{background:linear-gradient(180deg,rgba(4,3,3,.9),rgba(4,3,3,.35))}}
+.mmCol{width:min(340px,86vw)}
+.mmTitle{margin:0;font-size:clamp(44px,7.5vw,86px);line-height:.95;font-weight:900;letter-spacing:3px;color:#e6dcc4;text-shadow:0 0 18px rgba(230,200,150,.25),0 4px 0 #000;animation:mmFlick 6s infinite}
+.mmTitle .r{color:#c2331f;text-shadow:0 0 22px rgba(220,50,30,.55),0 4px 0 #2a0803}
+.mmSub{color:#9c927c;margin:8px 0 26px;font-size:14px;letter-spacing:1px}
+@keyframes mmFlick{0%,100%{opacity:1}90%{opacity:1}91%{opacity:.35}92%{opacity:1}95%{opacity:.6}96%{opacity:1}}
+@keyframes mmIn{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
+#mmBtns button,#mmPanel button{display:block;width:100%;text-align:left;font:inherit;font-size:19px;letter-spacing:.5px;padding:12px 18px;margin:7px 0;border:0;border-left:4px solid #4a4032;background:rgba(20,16,12,.72);color:#d8d0bc;cursor:pointer;transition:transform .15s,border-color .15s,background .15s,color .15s;animation:mmIn .5s both}
+#mmBtns button.sel,#mmBtns button:hover:not(:disabled),#mmPanel button:hover{transform:translateX(10px);border-left-color:#e8a050;background:rgba(62,40,22,.92);color:#fff}
+#mmBtns button:disabled{opacity:.42;cursor:default}#mmBtns small{font-size:11px;color:#e8a050;letter-spacing:1px;text-transform:uppercase;margin-left:6px}
+#mmPanel{display:none;color:#d8d0bc}#mmPanel h3{margin:0 0 10px;font-size:22px;color:#e8a050}#mmPanel p{font-size:13.5px;color:#a89e88;line-height:1.5}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -109,8 +122,12 @@ body:not(.touch) #btns .t{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.18</div>
-<div id="menu" class="scr"><h1>ZOMBIE SURVIVORS</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
+<div id="loading">Загрузка…</div><div id="ver">v0.19</div>
+<div id="main" class="scr"><div class="mmCol">
+  <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Тюрьма. Ночь. Они идут.</div>
+  <div id="mmBtns"></div><div id="mmPanel"></div></div></div>
+<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
+  <div><button class="go alt" id="backMain">← Главное меню</button></div>
   <div id="lookRow"><span id="lookWho"></span> <button id="lookPrev">◀</button> <b id="lookName"></b> <button id="lookNext">▶</button> <button id="lookEdit">Редактор персонажа</button></div>
   <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go" id="goBtn">В бой</button></div>
   <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
@@ -145,5 +162,6 @@ body:not(.touch) #btns .t{display:none}
 <script src="src/10_update.js"></script>
 <script src="src/11_audio_debug.js"></script>
 <script src="src/11b_hero_editor.js"></script>
+<script src="src/11c_main_menu.js"></script>
 <script src="src/12_ui_loop.js"></script>
 </body></html>

@@ -1,4 +1,4 @@
-# Zombie Survivors (voxel)
+# MANY DEAD (voxel)
 
 Версия: v0.18. Браузерный выживач на three.js.
 
