@@ -77,8 +77,8 @@ function touchItems(p, sl) {
 }
 function hudBuild() {
   tItemsKey = ''; if ($('tItems')) $('tItems').innerHTML = '';
-  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate"><div class="ph"><span class="pn">${players.length > 1 ? 'ИГРОК ' + (i + 1) : 'ДОСЬЕ'}</span></div><div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div></div>`).join('');
-  hudLast = {};
+  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate">${players.length > 1 ? `<div class="ph"><span class="pn">ИГРОК ${i + 1}</span></div>` : ''}<div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div></div>`).join('');
+  hudLast = {}; hudApplyLayout();
 }
 let hudLast = {};
 function hudSet(el, key, v, prop = 'textContent') { if (hudLast[key] !== v) { hudLast[key] = v; if (prop === 'width') el.firstElementChild.style.width = v; else el[prop] = v; } }

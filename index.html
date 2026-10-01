@@ -72,7 +72,7 @@ body:not(.touch) #btns .t{display:none}
 #mmPanel{display:none;color:#d8d0bc}#mmPanel h3{margin:0 0 10px;font-size:22px;color:#e8a050}#mmPanel p{font-size:13.5px;color:#a89e88;line-height:1.5}
 /* ---------- интерфейс «досье» ---------- */
 .hud{position:fixed;color:#f2ead6;pointer-events:none;width:226px}
-.hud.c0{left:12px;top:10px}.hud.c1{right:12px;top:30px}.hud.c2{left:12px;bottom:12px}.hud.c3{right:12px;bottom:66px}
+.hud.c0{left:12px;top:10px}.hud.c1{right:12px;top:162px}.hud.c2{left:12px;bottom:12px}.hud.c3{right:12px;bottom:66px}
 .plate{background:linear-gradient(90deg,rgba(14,11,8,.86),rgba(14,11,8,.7));border-left:4px solid var(--pc);padding:7px 10px 9px;box-shadow:0 2px 10px rgba(0,0,0,.45)}
 .hud.c1 .plate,.hud.c3 .plate{border-left:0;border-right:4px solid var(--pc);background:linear-gradient(270deg,rgba(14,11,8,.86),rgba(14,11,8,.7))}
 .hud.c1 .ph,.hud.c3 .ph{flex-direction:row-reverse}.hud.c1 .hp,.hud.c3 .hp,.hud.c1 .items,.hud.c3 .items,.hud.c1 .devs,.hud.c3 .devs,.hud.c1 .ammoRow,.hud.c3 .ammoRow{justify-content:flex-end}.hud.c1 .cls,.hud.c3 .cls,.hud.c1 .gun,.hud.c3 .gun,.hud.c1 .msg,.hud.c3 .msg,.hud.c1 .down,.hud.c3 .down{text-align:right}
@@ -98,11 +98,11 @@ body:not(.touch) #btns .t{display:none}
 .msg{font-size:12.5px;margin-top:4px;font-weight:600;text-shadow:0 1px 2px #000}.msg:empty,.down:empty{display:none}
 .down{color:#ffd76a;font-weight:700;font-size:13px;margin-top:4px}
 .pix{display:block;image-rendering:pixelated}
-#top{position:fixed;left:50%;top:8px;transform:translateX(-50%);width:min(430px,60vw);text-align:center;color:#f2ead6;pointer-events:none;display:none}
-.tbox{display:flex;align-items:center;justify-content:center;gap:16px;background:linear-gradient(90deg,rgba(14,11,8,0),rgba(14,11,8,.85) 18%,rgba(14,11,8,.85) 82%,rgba(14,11,8,0));padding:5px 18px 6px;border-top:2px solid #e8a050}
-#timer{font-size:24px;font-weight:700;letter-spacing:2px;font-variant-numeric:tabular-nums}.tl,.tk{font-size:12px;letter-spacing:1.5px;color:#a89e88}.tl b,.tk b{font-size:16px;color:#ecd060;margin-left:3px}.tk b{color:#e0603a}
-#xpbar{height:6px;width:100%;background:rgba(0,0,0,.65);border:1px solid #3a3228;overflow:hidden}#xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c87a2a,#ecd060);transition:width .15s}
-#radar{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:none;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+#top{position:fixed;left:50%;top:6px;transform:translateX(-50%);width:min(290px,60vw);text-align:center;color:#f2ead6;pointer-events:none;display:none}
+.tbox{display:flex;align-items:center;justify-content:center;gap:12px;background:linear-gradient(90deg,rgba(14,11,8,0),rgba(14,11,8,.85) 18%,rgba(14,11,8,.85) 82%,rgba(14,11,8,0));padding:3px 14px 4px;border-top:2px solid #e8a050}
+#timer{font-size:17px;font-weight:700;letter-spacing:1.5px;font-variant-numeric:tabular-nums}.tl,.tk{font-size:10px;letter-spacing:1px;color:#a89e88}.tl b,.tk b{font-size:13px;color:#ecd060;margin-left:3px}.tk b{color:#e0603a}
+#xpbar{height:4px;width:100%;background:rgba(0,0,0,.65);border:1px solid #3a3228;overflow:hidden}#xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c87a2a,#ecd060);transition:width .15s}
+#radarBox{position:fixed;right:12px;top:30px;display:none;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}#radar{display:block}
 #hints{position:fixed;inset:0;pointer-events:none;z-index:3}
 .ghint{position:absolute;left:0;top:0;align-items:center;gap:6px;padding:3px 9px 3px 5px;background:rgba(14,11,8,.88);border:1px solid #6a5a3a;font-size:12px;white-space:nowrap;color:#f2ead6;margin-top:-6px}
 .ghint::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-top-color:#6a5a3a;border-bottom:0}
@@ -110,10 +110,10 @@ body:not(.touch) #btns .t{display:none}
 #bossArrow{position:fixed;display:none;align-items:center;gap:5px;transform:translate(-50%,-50%);pointer-events:none;z-index:3;color:#ff6a5a;font-weight:700;font-size:12px;text-shadow:0 1px 3px #000;flex-direction:column}
 #bossArrow i{display:block;width:0;height:0;border-left:16px solid #ff2a2a;border-top:10px solid transparent;border-bottom:10px solid transparent;filter:drop-shadow(0 0 6px rgba(255,40,30,.8));animation:bossPulse .8s infinite alternate}
 @keyframes bossPulse{from{opacity:.55}to{opacity:1}}
-#bossBar{position:fixed;left:50%;top:70px;transform:translateX(-50%);width:min(520px,62vw);text-align:center;color:#ffd0c0;text-shadow:0 1px 2px #000;display:none;pointer-events:none;background:rgba(14,11,8,.82);border-top:2px solid #c2331f;padding:4px 14px 7px}
+#bossBar{position:fixed;left:50%;top:48px;transform:translateX(-50%);width:min(520px,62vw);text-align:center;color:#ffd0c0;text-shadow:0 1px 2px #000;display:none;pointer-events:none;background:rgba(14,11,8,.82);border-top:2px solid #c2331f;padding:4px 14px 7px}
 #bossBar b{font-size:13px;letter-spacing:3px;text-transform:uppercase}#bossBar b::before{content:'☠ ';color:#ff4a3a}#bossBar div{height:11px;background:rgba(0,0,0,.7);border:1px solid #5a2a22;overflow:hidden;margin-top:4px}
 #bossBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a1c14,#e0452a)}
-@media (max-height:520px){.hud{width:176px}.plate{padding:5px 7px 6px}.hp svg{width:15px;height:13px}.cls{font-size:13px}.slot{width:34px;height:38px}#radar{width:120px!important;height:120px!important}#timer{font-size:19px}}
+@media (max-height:520px){.hud{width:176px}.plate{padding:5px 7px 6px}.hp svg{width:15px;height:13px}.cls{font-size:13px}.slot{width:34px;height:38px}#radar{width:96px!important;height:96px!important}#timer{font-size:15px}}
 /* ---------- единый стиль окон: бейдж, плашка с акцентом слева, кнопки как в главном меню ---------- */
 .box{background:linear-gradient(180deg,rgba(22,17,12,.95),rgba(12,9,7,.95));border-left:4px solid #e8a050;box-shadow:0 8px 30px rgba(0,0,0,.6)}
 .kick{font-size:11px;letter-spacing:3px;color:#8a806c;text-transform:uppercase}
@@ -158,12 +158,25 @@ body:not(.touch) #btns .t{display:none}
 #pausePerks{font-size:12.5px;line-height:1.6;color:#c8bea8}
 @media (max-height:520px){.rs{padding:10px 16px}.rs-stat b{font-size:19px}.pc-desc{font-size:12px}.pcard{min-height:170px}#lvlUp{gap:8px}.pbox{padding:10px 16px}}
 @media (max-width:640px){.rs-stats{grid-template-columns:repeat(2,1fr)}.rs-row{grid-template-columns:100px 1fr 36px}}
+/* ---------- настройка HUD ---------- */
+body.hudEdit #huds,body.hudEdit #top,body.hudEdit #radarBox,body.hudEdit #bossBar,body.hudEdit #help{display:block!important}
+body.hudEdit #btns,body.hudEdit #tItems{display:flex!important}
+body.hudEdit .hudItem{pointer-events:auto!important;cursor:move;outline:2px dashed rgba(232,160,80,.8);outline-offset:2px;touch-action:none;user-select:none}
+body.hudEdit .hudItem.hudSel{outline:2px solid #fff;background-color:rgba(232,160,80,.12)}
+body.hudEdit .hudItem::before{content:attr(data-hl);position:absolute;top:-17px;left:0;font:700 10px system-ui,sans-serif;letter-spacing:1px;background:#e8a050;color:#1b120b;padding:1px 6px;white-space:nowrap;pointer-events:none;z-index:9}
+body.hudEdit .hud.demo{display:block}
+body.hudEdit #bossBar{width:min(520px,62vw)}
+#hudPanel{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:none;z-index:12;width:min(380px,94vw);background:rgba(14,11,8,.95);border-left:4px solid #e8a050;padding:10px 14px 8px;box-shadow:0 8px 30px rgba(0,0,0,.7);color:#d8d0bc}
+.hp-t{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#e8a050;font-weight:700}.hp-s{font-size:13px;margin:4px 0 7px;color:#f2ead6}.hp-h{font-size:11px;color:#8a806c;margin-top:6px}
+.hp-row{display:flex;gap:6px;align-items:center;margin:4px 0}.hp-row b{min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
+#hudPanel button{font:inherit;font-size:13px;padding:6px 12px;background:rgba(30,24,18,.95);border:1px solid #5a5242;color:#f2ead6;cursor:pointer;border-radius:0}#hudPanel button:hover{border-color:#e8a050}#hudPanel #hpDone{background:#7a4a1e;border-color:#e8a050}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
 <div id="top"><div class="tbox"><span class="tl">УР. <b id="lvl">1</b></span><span id="timer"></span><span class="tk">☠ <b id="kills">0</b></span></div><div id="xpbar"><i></i></div></div>
 <div id="lvlMsg"></div>
-<canvas id="radar"></canvas><div id="hints"></div><div id="bossArrow"><i></i><b></b></div>
+<div id="radarBox"><canvas id="radar"></canvas></div><div id="hints"></div><div id="hudPanel"><div class="hp-t">Настройка HUD</div><div class="hp-s" id="hpSel">Выберите элемент и перетащите</div><div class="hp-row"><button id="hpMinus">−</button><b id="hpScale">100%</b><button id="hpPlus">+</button><button id="hpOne">Сбросить элемент</button></div><div class="hp-row"><button id="hpAll">Сбросить всё</button><button id="hpDone">Готово</button></div><div class="hp-h">Тащите элементы мышью или пальцем. Колёсико мыши — размер.</div></div>
+<div id="bossArrow"><i></i><b></b></div>
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, X перезарядка, L3 бег, LB/RB камера</div>
@@ -212,5 +225,6 @@ body:not(.touch) #btns .t{display:none}
 <script src="src/11d_mobs.js"></script>
 <script src="src/11e_hud.js"></script>
 <script src="src/11f_screens.js"></script>
+<script src="src/11g_hud_layout.js"></script>
 <script src="src/12_ui_loop.js"></script>
 </body></html>

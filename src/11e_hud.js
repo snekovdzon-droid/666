@@ -50,7 +50,7 @@ const pips = (n, max) => `<span class="pips">${'<i class="on"></i>'.repeat(Math.
 const devState = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
 
 /* --- радар: вид сверху, повёрнут как камера --- */
-const RADAR = { R: 26, S: 168, n: 0 };
+const RADAR = { R: 26, S: 118, n: 0 };
 const RADAR_COL = { walker: ['#b8382a', 1.5], runner: ['#e0603a', 1.6], armored: ['#8aa0b0', 2.3], fat: ['#d8802a', 2.7], hound: ['#c09a6a', 1.5], screamer: ['#ff6ad0', 3], spitter: ['#8ae03a', 3], brute: ['#ff8a1a', 3.6], riot: ['#5aa0ff', 3], warden: ['#ff2a2a', 4.5] };
 function radarDraw(T) {
   const cv = $('radar'); if (!cv) return;
@@ -70,7 +70,7 @@ function radarDraw(T) {
   for (const z of zombies) { if (z.dead) continue; const rc = RADAR_COL[z.type] || RADAR_COL.walker; dot(z.x, z.z, rc[1], rc[0]); }
   const B = G.boss;
   if (B && !B.dead) { const [px, py] = pt(B.x, B.z), pu = 5.5 + Math.sin(T * 6) * 1.5; g.strokeStyle = 'rgba(255,50,40,0.9)'; g.lineWidth = 1.5; g.beginPath(); g.arc(px, py, pu, 0, TAU); g.stroke(); }
-  for (const p of players) { const [px, py] = pt(p.x, p.z); if (p.down && Math.floor(T * 3) % 2) continue; g.fillStyle = PLAYER_CSS[p.idx]; g.strokeStyle = '#000'; g.lineWidth = 1.5; g.beginPath(); g.arc(px, py, 3.6, 0, TAU); g.stroke(); g.fill(); }
+  for (const p of players) { const [px, py] = pt(p.x, p.z); if (p.down && Math.floor(T * 3) % 2) continue; g.fillStyle = PLAYER_CSS[p.idx]; g.strokeStyle = '#000'; g.lineWidth = 1.5; g.beginPath(); g.arc(px, py, 3.2, 0, TAU); g.stroke(); g.fill(); }
   g.restore();
   g.strokeStyle = '#4a4032'; g.lineWidth = 3; g.beginPath(); g.arc(c, c, rad, 0, TAU); g.stroke();
   g.strokeStyle = '#e8a050'; g.lineWidth = 1; g.beginPath(); g.arc(c, c, rad + 1.5, 0, TAU); g.stroke();
@@ -126,7 +126,7 @@ function bossArrowUpdate() {
 // каждый кадр из render(): всё, что рисуется поверх игры
 function hudExtra(T) {
   const play = G.state === 'play' || G.state === 'levelup';
-  const rd = $('radar'); if (rd) rd.style.display = play ? 'block' : 'none';
-  if (play && (RADAR.n++ & 1) === 0) radarDraw(T);
+  const on = play || HUDL.on, rd = $('radarBox'); if (rd) rd.style.display = on ? 'block' : 'none';
+  if (on && (RADAR.n++ & 1) === 0) radarDraw(T);
   hintsUpdate(); bossArrowUpdate();
 }

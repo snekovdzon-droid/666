@@ -38,7 +38,7 @@ function mmLeave() { G.nightT = 0; }
 function mmPanel(name) {
   MM.panel = name; const el = $('mmPanel'); $('mmBtns').style.display = name ? 'none' : 'block'; el.style.display = name ? 'block' : 'none';
   if (name === 'settings') {
-    el.innerHTML = `<h3>Настройки</h3><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
+    el.innerHTML = `<h3>Настройки</h3><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
   } else if (name === 'exit') {
     el.innerHTML = `<h3>Спасибо за игру!</h3><p>Браузер не даёт игре закрыть вкладку сам — закройте её, когда захотите.</p><button data-s="back">В меню</button>`;
   }
@@ -48,6 +48,7 @@ function mmSetting(s) {
   SFX.click();
   if (s === 'sound') { setSound(!Sound.on); $('optSound').checked = Sound.on; mmPanel('settings'); }
   else if (s === 'full') goFullscreen();
+  else if (s === 'hud') heOpen();
   else if (s === 'reset') { if (confirm('Удалить всех сохранённых героев и загруженные модели?')) { for (const k of ['heroes', 'heroSel', 'customParts']) { try { localStorage.removeItem('zsv_' + k); } catch (e) {} } location.reload(); } }
   else if (s === 'back') mmPanel('');
 }
@@ -61,6 +62,7 @@ function mmAct(a) {
 }
 function mmClass() { mmLeave(); G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); G.state = 'menu'; showScreen('menu'); menuMark(); }
 function mainKey(code) {
+  if (HUDL.on) { if (code === 'Escape') heClose(); return; }
   if (MM.panel) { if (code === 'Escape' || code === 'Backspace') mmPanel(''); return; }
   const on = MM_BTNS.map((b, i) => (b[2] || (b[0] === 'coop' && IS_TOUCH)) ? -1 : i).filter(i => i >= 0);
   let k = on.indexOf(MM.sel); if (k < 0) k = 0;
