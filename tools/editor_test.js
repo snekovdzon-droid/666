@@ -15,6 +15,12 @@ const { chromium } = require('playwright'); const path = require('path');
     await p.evaluate(() => { ED.spin = false; ED.yaw = 0.35; }); await p.waitForTimeout(300);
     await p.locator('.edView').screenshot({ path: `${dir}/e_hero${i}.png` });
   }
+  // свой .vox: берём файл afro как «свою причёску»
+  const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click('button[data-load="hairStyle"]')]);
+  await fc.setFiles('assets/parts/hair/afro.vox'); await p.waitForTimeout(600);
+  console.log('своя причёска выбрана:', await p.evaluate(() => ED.cur.hairStyle), '| кнопок причёски:', await p.evaluate(() => document.querySelectorAll('[data-row="hairStyle"] [data-v]').length));
+  await p.evaluate(() => { ED.spin = false; ED.yaw = 0.35; }); await p.waitForTimeout(300);
+  await p.locator('.edView').screenshot({ path: dir + '/e_custom.png' });
   await p.click('#edDone'); await p.waitForTimeout(500);
   await p.screenshot({ path: dir + '/e2_menu_after.png' });
   await p.click('#goBtn'); await p.waitForTimeout(2500);

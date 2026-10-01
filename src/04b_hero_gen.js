@@ -1,17 +1,27 @@
 'use strict';
-/* ---------- Генератор воксельного героя для редактора персонажа ----------
-   Герой собирается из коробок на сетке 15×11×64 (как базовый герой, только на 2 слоя глубже: волосы, борода, шляпа).
-   Внутри: x — вправо, y — вглубь (лицо смотрит на y = 0), z — вверх. В коде ниже y считается «логически» от −1 до 9,
-   перед записью в модель сдвигается на +1.
-   Части тела режет buildVoxModel по координатам (голова z ≥ 50, руки по краям, ноги ниже z = 32) —
-   поэтому новые причёски, бороды и одежда сразу двигаются вместе с телом. */
+/* ---------- Сборка воксельного героя из частей для редактора персонажа ----------
+   Каждая часть (тело, причёска, борода, верх, низ, обувь, шляпа, очки, рюкзак) — отдельный файл .vox в assets/parts/
+   на одной сетке 15×11×64 (лицо смотрит на y = 0). Редактор накладывает части друг на друга в таком порядке:
+   тело → низ → обувь → верх → рюкзак → причёска → борода → головной убор → очки; позже наложенное перекрывает раннее.
+   Цвет-«метка» (см. ROLES) игра заменяет на выбранный в редакторе цвет, любой другой цвет остаётся как нарисован.
+   Файлы собирает в assets/parts.js скрипт tools/build_parts.py (PART_FILES — base64 файлов, PART_LIST — порядок и названия). */
 const HERO_SIZE = [15, 11, 64];
-const HAIR_STYLES = [['bald', 'Лысый'], ['buzz', 'Бокс'], ['short', 'Короткая'], ['spiky', 'Ёжик'], ['long', 'Длинные'], ['bob', 'Каре'], ['tail', 'Хвост'], ['bun', 'Пучок'], ['mohawk', 'Ирокез'], ['afro', 'Афро']];
-const BEARDS = [['none', 'Нет'], ['stubble', 'Щетина'], ['mustache', 'Усы'], ['goatee', 'Эспаньолка'], ['short', 'Короткая'], ['full', 'Полная'], ['long', 'Длинная'], ['chops', 'Бакенбарды']];
-const TOPS = [['jacket', 'Куртка'], ['tee', 'Футболка'], ['long', 'Лонгслив'], ['hoodie', 'Худи'], ['tank', 'Майка']];
-const HATS = [['none', 'Нет'], ['cap', 'Кепка'], ['beanie', 'Шапка'], ['bandana', 'Повязка'], ['cowboy', 'Ковбойская']];
-const GLASSES = [['none', 'Нет'], ['dark', 'Тёмные'], ['round', 'Круглые']];
-const LEGS = [['long', 'Брюки'], ['shorts', 'Шорты']];
+const HERO_ROLES = ['skin', 'hair', 'brow', 'eye', 'mouth', 'stubble', 'beard', 'top', 'topDark', 'trim', 'strap', 'pack', 'pants', 'belt', 'buckle', 'shoe', 'sole', 'hat', 'hatBand', 'glass'];
+const ROLE_RGB = [[205, 160, 125], [100, 70, 40], [90, 62, 36], [28, 24, 22], [200, 110, 105], [160, 128, 104], [120, 84, 48], [56, 86, 112], [44, 68, 90], [135, 131, 118],
+  [80, 60, 38], [107, 84, 53], [78, 82, 60], [50, 38, 26], [170, 150, 90], [58, 44, 34], [34, 28, 24], [122, 58, 52], [86, 40, 36], [22, 22, 26]];
+const ROLE_BY_RGB = new Map(ROLE_RGB.map((c, i) => [(c[0] << 16) | (c[1] << 8) | c[2], i]));
+
+// Категории частей: поле героя, папка в assets/parts, подпись, есть ли отдельные файлы для мужского и женского (_m / _f), вариант «без этого»
+const HERO_CATS = [
+  { k: 'hairStyle', dir: 'hair', label: 'Причёска', none: ['bald', 'Лысый'] },
+  { k: 'beard', dir: 'beard', label: 'Борода и усы', none: ['none', 'Нет'] },
+  { k: 'topStyle', dir: 'tops', label: 'Верх', gender: true },
+  { k: 'legs', dir: 'legs', label: 'Низ' },
+  { k: 'shoesStyle', dir: 'shoes', label: 'Обувь' },
+  { k: 'hat', dir: 'hats', label: 'Головной убор', none: ['none', 'Нет'] },
+  { k: 'glasses', dir: 'glasses', label: 'Очки', none: ['none', 'Нет'] },
+  { k: 'pack', dir: 'pack', label: 'Рюкзак', gender: true, none: ['none', 'Нет'] },
+];
 const GENDERS = [['m', 'Мужской'], ['f', 'Женский']];
 const HERO_SWATCH = {
   skin: ['#f6d5b8', '#eec39e', '#d9a77c', '#cd9d77', '#b57d56', '#8d5a3a', '#6b4129', '#4a2c1c'],
@@ -20,125 +30,86 @@ const HERO_SWATCH = {
   pants: ['#4e523c', '#2a2e3a', '#3a4a6a', '#5a4a38', '#2c3a2e', '#6a6e72', '#1c1c1e', '#8a7a58'],
   shoes: ['#3a2c22', '#1c1c1e', '#5a3a22', '#d8d2c4', '#6a1a1a'],
 };
-// Новый герой — копия «Классики» (она похожа на базового героя игры)
+// Новый герой — «Классика» (похожа на базового героя игры)
 const HERO_DEFAULT = {
   name: 'Новый герой', gender: 'm', skin: '#cd9d77', hair: '#432c1c', hairStyle: 'short', beard: 'none', beardCol: '',
-  top: '#385670', topStyle: 'jacket', trim: '#878376', pants: '#4e523c', legs: 'long', boots: false, shoes: '#3a2c22',
-  hat: 'none', hatCol: '#7a3a34', glasses: 'none', pack: true, packCol: '#6b5435',
+  top: '#385670', topStyle: 'jacket', trim: '#878376', pants: '#4e523c', legs: 'long', shoesStyle: 'shoes', shoes: '#3a2c22',
+  hat: 'none', hatCol: '#7a3a34', glasses: 'none', pack: 'pack', packCol: '#6b5435',
 };
 const HERO_PRESETS = [
   { name: 'Классика' },
-  { name: 'Рыжая', gender: 'f', skin: '#eec39e', hair: '#b0452a', hairStyle: 'long', top: '#d8d2c4', topStyle: 'tee', pants: '#3a4a6a', legs: 'long', boots: true, shoes: '#5a3a22', pack: false },
-  { name: 'Бородач', skin: '#d9a77c', hair: '#6b4528', hairStyle: 'short', beard: 'full', top: '#4e7a44', topStyle: 'hoodie', hat: 'beanie', hatCol: '#2e3648', pants: '#2a2e3a', boots: true, shoes: '#1c1c1e' },
-  { name: 'Байкерша', gender: 'f', skin: '#b57d56', hair: '#1a1412', hairStyle: 'bob', top: '#7a3a34', topStyle: 'jacket', trim: '#1c1c1e', glasses: 'dark', pants: '#1c1c1e', boots: true, shoes: '#1c1c1e', pack: false },
-  { name: 'Ковбой', skin: '#d9a77c', hair: '#9a6a38', hairStyle: 'short', beard: 'mustache', top: '#b08c34', topStyle: 'long', hat: 'cowboy', hatCol: '#5a3a22', pants: '#3a4a6a', boots: true, shoes: '#5a3a22', pack: false },
-  { name: 'Панк', skin: '#f6d5b8', hair: '#d84a8a', hairStyle: 'mohawk', top: '#1c1c1e', topStyle: 'tank', pants: '#5a5e62', legs: 'shorts', boots: true, shoes: '#1c1c1e', glasses: 'round', pack: false },
+  { name: 'Рыжая', gender: 'f', skin: '#eec39e', hair: '#b0452a', hairStyle: 'long', top: '#d8d2c4', topStyle: 'tee', pants: '#3a4a6a', shoesStyle: 'boots', shoes: '#5a3a22', pack: 'none' },
+  { name: 'Бородач', skin: '#d9a77c', hair: '#6b4528', hairStyle: 'short', beard: 'full', top: '#4e7a44', topStyle: 'hoodie', hat: 'beanie', hatCol: '#2e3648', pants: '#2a2e3a', shoesStyle: 'boots', shoes: '#1c1c1e' },
+  { name: 'Байкерша', gender: 'f', skin: '#b57d56', hair: '#1a1412', hairStyle: 'bob', top: '#7a3a34', topStyle: 'jacket', trim: '#1c1c1e', glasses: 'dark', pants: '#1c1c1e', shoesStyle: 'boots', shoes: '#1c1c1e', pack: 'none' },
+  { name: 'Ковбой', skin: '#d9a77c', hair: '#9a6a38', hairStyle: 'short', beard: 'mustache', top: '#b08c34', topStyle: 'long', hat: 'cowboy', hatCol: '#5a3a22', pants: '#3a4a6a', shoesStyle: 'boots', shoes: '#5a3a22', pack: 'none' },
+  { name: 'Панк', skin: '#f6d5b8', hair: '#d84a8a', hairStyle: 'mohawk', top: '#1c1c1e', topStyle: 'tank', pants: '#5a5e62', legs: 'shorts', shoesStyle: 'boots', shoes: '#1c1c1e', glasses: 'round', pack: 'none' },
 ].map(p => Object.assign({}, HERO_DEFAULT, p));
+// герои, сохранённые прежней версией редактора (boots / pack как да-нет), приводим к нынешним полям
+function heroNorm(h) {
+  const a = Object.assign({}, HERO_DEFAULT, h);
+  if (typeof a.pack === 'boolean') a.pack = a.pack ? 'pack' : 'none';
+  if ('boots' in a) { if (!h.shoesStyle) a.shoesStyle = a.boots ? 'boots' : 'shoes'; delete a.boots; }
+  return a;
+}
 
 const hexRGB = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mixRGB = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const mulRGB = (a, k) => a.map(v => clamp(Math.round(v * k), 0, 255));
-
-const HERO_ROLES = ['skin', 'hair', 'brow', 'eye', 'mouth', 'stubble', 'beard', 'top', 'topDark', 'trim', 'strap', 'pack', 'pants', 'belt', 'buckle', 'shoe', 'sole', 'hat', 'hatBand', 'glass'];
 const HERO_SHADE = [0.95, 1, 1.05, 0.98];     // лёгкая «рябь» цвета по вокселям — как в нарисованных моделях
 
+/* ---------- части: встроенные (PART_FILES) и свои, загруженные в редакторе (хранятся в браузере) ---------- */
+const CUSTOM_PARTS = lsGet('customParts', {});     // { 'hair/curly': { name, b64 } }
+const PART_CACHE = {};
+const partB64 = key => PART_FILES[key] || (CUSTOM_PARTS[key] && CUSTOM_PARTS[key].b64) || null;
+// воксели части: [x, y, z, номер роли или −1, [r,g,b] для обычного цвета]
+function partVox(key) {
+  if (PART_CACHE[key]) return PART_CACHE[key];
+  let out = [];
+  try {
+    const M = parseVox(partB64(key));
+    out = M.vox.map(([x, y, z, c]) => { const p = M.pal[c - 1], role = ROLE_BY_RGB.get((p[0] << 16) | (p[1] << 8) | p[2]); return [x, y, z, role === undefined ? -1 : role, p]; });
+  } catch (e) { console.warn('Не прочитана часть героя', key, e); }
+  return PART_CACHE[key] = out;
+}
+// какой файл взять для категории: у одежды сначала _m / _f по полу героя
+function partKey(cat, id, gender) {
+  if (!id || (cat.none && id === cat.none[0])) return null;
+  const tries = cat.gender ? [`${cat.dir}/${id}_${gender}`, `${cat.dir}/${id}_m`, `${cat.dir}/${id}`] : [`${cat.dir}/${id}`];
+  return tries.find(partB64) || null;
+}
+// варианты для кнопок редактора: [[id, название], …]
+function heroOptions(cat) {
+  const list = [...(cat.none ? [cat.none] : []), ...(PART_LIST[cat.dir] || [])];
+  for (const key in CUSTOM_PARTS) {
+    if (!key.startsWith(cat.dir + '/')) continue;
+    const id = key.slice(cat.dir.length + 1).replace(/_[mf]$/, '');
+    if (!list.some(o => o[0] === id)) list.push([id, '★ ' + CUSTOM_PARTS[key].name]);
+  }
+  return list;
+}
+// загрузить свой .vox в категорию (в имени файла _f / _m — для женского / мужского тела)
+function heroAddCustom(cat, fileName, buf) {
+  let b64 = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 8192) b64 += String.fromCharCode.apply(null, u.subarray(i, i + 8192));
+  b64 = btoa(b64); parseVox(b64);                                   // проверка: если файл не .vox — бросит ошибку
+  const base = fileName.replace(/\.vox$/i, '').replace(/[^\wа-яё-]+/gi, '_'), g = base.match(/_([mf])$/), stem = base.replace(/_[mf]$/, ''), id = 'c_' + stem;
+  const key = cat.gender ? `${cat.dir}/${id}_${g ? g[1] : 'm'}` : `${cat.dir}/${id}`;
+  CUSTOM_PARTS[key] = { name: stem, b64 }; delete PART_CACHE[key]; lsSet('customParts', CUSTOM_PARTS);
+  return id;
+}
+function heroRemoveCustom(cat, id) {
+  for (const key of [`${cat.dir}/${id}`, `${cat.dir}/${id}_m`, `${cat.dir}/${id}_f`]) { delete CUSTOM_PARTS[key]; delete PART_CACHE[key]; }
+  lsSet('customParts', CUSTOM_PARTS);
+}
+
 // Собрать данные модели (как после parseVox): { size, vox: [[x,y,z,цвет]], pal }
-function genHeroVox(a) {
-  a = Object.assign({}, HERO_DEFAULT, a);
-  const F = a.gender === 'f', V = new Map();
-  const put = (x, y, z, r) => { if (x < 0 || x > 14 || y < -1 || y > 9 || z < 0 || z > 63) return; V.set(x + ',' + y + ',' + z, r); };
-  const box = (x1, x2, y1, y2, z1, z2, r) => { for (let x = x1; x <= x2; x++) for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) put(x, y, z, r); };
-  const cut = (x1, x2, y1, y2, z1, z2) => { for (let x = x1; x <= x2; x++) for (let y = y1; y <= y2; y++) for (let z = z1; z <= z2; z++) V.delete(x + ',' + y + ',' + z); };
-
-  /* --- ноги и обувь --- */
-  for (const [x1, x2] of [[3, 5], [9, 11]]) {
-    box(x1, x2, 1, 5, 0, 1, 'sole'); box(x1, x2, 2, 5, 2, 4, 'shoe');
-    if (a.legs === 'shorts') { box(x1, x2, 3, 5, 5, 17, 'skin'); box(x1, x2, 3, 5, 18, 25, 'pants'); }
-    else box(x1, x2, 3, 5, 5, 25, 'pants');
-    if (a.boots) box(x1, x2, 3, 5, 5, 9, 'shoe');
-  }
-  box(3, 11, 3, 7, 26, 30, 'pants');                         // таз
-  box(3, 11, 3, 7, 31, 32, 'belt'); put(7, 3, 31, 'buckle'); put(7, 3, 32, 'buckle');
-
-  /* --- торс, руки, одежда --- */
-  const tx = F ? [4, 10] : [3, 11], arms = F ? [[1, 2], [12, 13]] : [[0, 1], [13, 14]];
-  const sleeve = { jacket: 34, long: 34, hoodie: 34, tee: 40, tank: 99 }[a.topStyle] || 34;
-  box(tx[0], tx[1], 3, 7, 33, 44, 'top');
-  for (const [x1, x2] of arms) { box(x1, x2, 4, 6, 24, 44, 'skin'); if (sleeve <= 44) box(x1, x2, 4, 6, sleeve, 44, 'top'); }
-  if (a.topStyle === 'tank') {                                // плечи открыты
-    box(arms[0][0], tx[0] - 1, 3, 7, 45, 47, 'skin'); box(tx[1] + 1, arms[1][1], 3, 7, 45, 47, 'skin'); box(tx[0], tx[1], 3, 7, 45, 47, 'top');
-  } else box(arms[0][0], arms[1][1], 3, 7, 45, 47, 'top');
-  if (a.topStyle === 'jacket') box(6, 8, 3, 3, 35, 44, 'trim');                           // нагрудная панель
-  if (a.topStyle === 'hoodie') {
-    box(4, 10, 7, 8, 46, 50, 'top');                                                       // капюшон за шеей
-    box(5, 9, 2, 2, 34, 37, 'topDark');                                                    // карман-«кенгуру»
-    put(6, 3, 42, 'trim'); put(6, 3, 43, 'trim'); put(8, 3, 42, 'trim'); put(8, 3, 43, 'trim'); // шнурки
-  }
-  if (F) { box(5, 6, 2, 2, 40, 42, 'top'); box(8, 9, 2, 2, 40, 42, 'top'); }              // грудь
-  if (a.pack) {
-    box(4, 10, 8, 8, 34, 44, 'pack');                                                      // рюкзак на спине
-    if (a.topStyle !== 'tank') for (const x of [tx[0] + 1, tx[1] - 1]) box(x, x, 3, 7, 39, 46, 'strap');   // лямки
-  }
-  box(6, 8, 4, 6, 48, 50, 'skin');                           // шея
-
-  /* --- голова и лицо --- */
-  box(4, 10, 2, 7, 51, 61, 'skin'); box(5, 9, 2, 7, 62, 62, 'skin');
-  put(5, 2, 57, 'eye'); put(9, 2, 57, 'eye');
-  for (const x of [5, 6, 8, 9]) put(x, 2, 59, 'brow');
-  for (const x of [6, 7, 8]) put(x, 2, 53, 'mouth');
-
-  /* --- причёска --- */
-  const H = (x1, x2, y1, y2, z1, z2) => box(x1, x2, y1, y2, z1, z2, 'hair');
-  const cap = () => { H(4, 10, 3, 7, 60, 60); H(4, 10, 2, 7, 61, 61); H(5, 9, 2, 7, 62, 62); };
-  const sidesBack = () => { H(4, 4, 3, 6, 56, 59); H(10, 10, 3, 6, 56, 59); H(4, 10, 7, 7, 52, 60); };
-  switch (a.hairStyle) {
-    case 'buzz': H(4, 10, 3, 7, 60, 60); H(5, 9, 3, 6, 61, 61); H(4, 4, 4, 6, 58, 59); H(10, 10, 4, 6, 58, 59); H(4, 10, 7, 7, 57, 60); break;
-    case 'short': cap(); sidesBack(); break;
-    case 'spiky': H(4, 10, 3, 7, 60, 60); H(4, 10, 2, 7, 61, 61); H(5, 9, 3, 7, 62, 62); sidesBack();
-      for (const [x, y] of [[5, 4], [7, 3], [7, 5], [9, 4], [6, 6], [8, 6]]) H(x, x, y, y, 63, 63); break;
-    case 'long': cap(); sidesBack(); H(3, 3, 3, 7, 48, 60); H(11, 11, 3, 7, 48, 60); H(4, 4, 4, 7, 48, 55); H(10, 10, 4, 7, 48, 55); H(4, 10, 7, 7, 46, 51); H(4, 10, 8, 8, 46, 60); break;
-    case 'bob': cap(); sidesBack(); H(4, 10, 2, 2, 58, 60); H(3, 3, 3, 7, 50, 59); H(11, 11, 3, 7, 50, 59); H(4, 10, 7, 7, 50, 51); H(4, 10, 8, 8, 50, 60); break;
-    case 'tail': cap(); sidesBack(); H(7, 7, 8, 8, 55, 60); H(7, 7, 9, 9, 49, 56); break;
-    case 'bun': cap(); sidesBack(); H(6, 8, 5, 7, 62, 63); break;
-    case 'mohawk': H(7, 7, 2, 7, 60, 63); H(6, 8, 3, 6, 61, 62); H(7, 7, 7, 8, 55, 60); break;
-    case 'afro': H(3, 11, 1, 8, 59, 63); H(2, 12, 2, 7, 56, 62); H(3, 11, 7, 8, 52, 58); break;
-  }
-  if (a.hairStyle === 'tail') put(7, 8, 55, 'trim');
-
-  /* --- борода --- */
-  const B = (x1, x2, y1, y2, z1, z2, r = 'beard') => box(x1, x2, y1, y2, z1, z2, r);
-  switch (a.beard) {
-    case 'stubble': B(4, 10, 2, 2, 51, 54, 'stubble'); B(4, 4, 3, 5, 51, 54, 'stubble'); B(10, 10, 3, 5, 51, 54, 'stubble'); break;
-    case 'mustache': B(5, 9, 2, 2, 54, 54); B(6, 8, 1, 1, 54, 54); break;
-    case 'goatee': B(5, 9, 2, 2, 54, 54); B(6, 8, 1, 1, 54, 54); B(6, 8, 2, 2, 51, 52); B(6, 8, 1, 1, 50, 52); break;
-    case 'short': B(4, 10, 2, 2, 51, 55); B(4, 4, 3, 6, 51, 55); B(10, 10, 3, 6, 51, 55); B(5, 9, 1, 1, 51, 52); break;
-    case 'full': B(4, 10, 2, 2, 51, 56); B(4, 4, 3, 6, 51, 57); B(10, 10, 3, 6, 51, 57); B(5, 9, 1, 1, 50, 55); B(3, 3, 3, 5, 51, 54); B(11, 11, 3, 5, 51, 54); break;
-    case 'long': B(4, 10, 2, 2, 49, 56); B(4, 4, 3, 6, 51, 57); B(10, 10, 3, 6, 51, 57); B(5, 9, 1, 1, 48, 55); B(6, 8, 0, 0, 45, 49); B(5, 9, 2, 2, 46, 48); break;
-    case 'chops': B(4, 4, 2, 4, 53, 58); B(10, 10, 2, 4, 53, 58); break;
-  }
-  for (const x of [6, 7, 8]) put(x, 2, 53, 'mouth');
-  if (a.beard === 'full' || a.beard === 'long') for (const x of [6, 7, 8]) { V.delete(x + ',1,53'); }
-
-  /* --- головной убор --- */
-  const T = (x1, x2, y1, y2, z1, z2) => box(x1, x2, y1, y2, z1, z2, 'hat');
-  switch (a.hat) {
-    case 'cap': T(4, 10, 2, 7, 60, 61); T(5, 9, 3, 7, 62, 62); T(4, 10, 3, 7, 59, 59); T(4, 10, 0, 1, 60, 60); break;
-    case 'beanie': cut(3, 11, 1, 8, 58, 63); T(3, 11, 1, 8, 58, 60); T(4, 10, 2, 7, 61, 62); T(6, 8, 3, 6, 63, 63); box(3, 11, 1, 8, 58, 58, 'hatBand'); break;
-    case 'bandana': T(3, 11, 1, 8, 60, 61); T(6, 8, 9, 9, 59, 61); T(5, 9, 8, 8, 58, 59); break;
-    case 'cowboy': cut(1, 13, -1, 9, 60, 63); T(1, 13, -1, 9, 60, 60); for (const [x, y] of [[1, -1], [13, -1], [1, 9], [13, 9]]) V.delete(x + ',' + y + ',60');
-      T(4, 10, 2, 7, 61, 62); T(5, 9, 3, 6, 63, 63); box(4, 10, 2, 7, 61, 61, 'hatBand'); break;
-  }
-
-  /* --- очки --- */
-  if (a.glasses !== 'none') {
-    for (const [x1, x2] of [[4, 6], [8, 10]]) {
-      if (a.glasses === 'dark') box(x1, x2, 1, 1, 56, 58, 'glass');
-      else { box(x1, x2, 1, 1, 56, 58, 'glass'); V.delete(((x1 + x2) / 2) + ',1,57'); }
-    }
-    put(7, 1, 58, 'glass'); box(4, 4, 2, 4, 58, 58, 'glass'); box(10, 10, 2, 4, 58, 58, 'glass');
-  }
-
-  /* --- палитра: каждая роль × 4 оттенка --- */
+function genHeroVox(h) {
+  const a = heroNorm(h), F = a.gender === 'f', V = new Map();
+  const lay = key => { if (key) for (const v of partVox(key)) V.set(v[0] + ',' + v[1] + ',' + v[2], v); };
+  const cat = k => HERO_CATS.find(c => c.k === k);
+  lay(`body/${F ? 'female' : 'male'}`);
+  lay(partKey({ dir: 'legs' }, a.legs)); lay(partKey({ dir: 'shoes' }, a.shoesStyle));
+  for (const k of ['topStyle', 'pack', 'hairStyle', 'beard', 'hat', 'glasses']) lay(partKey(cat(k), a[k], a.gender));
+  /* палитра: каждая роль × 4 оттенка (индексы 1…80), дальше — обычные цвета из файлов */
   const sk = hexRGB(a.skin), hr = hexRGB(a.hair), bd = hexRGB(a.beardCol || a.hair), tp = hexRGB(a.top), pn = hexRGB(a.pants), sh = hexRGB(a.shoes), ht = hexRGB(a.hatCol), pk = hexRGB(a.packCol);
   const base = {
     skin: sk, hair: hr, brow: mulRGB(hr, 0.85), eye: [28, 24, 22], mouth: F ? mixRGB(sk, [196, 72, 84], 0.55) : mixRGB(sk, [150, 70, 60], 0.5),
@@ -146,20 +117,23 @@ function genHeroVox(a) {
     pants: pn, belt: mixRGB(mulRGB(pn, 0.55), [63, 48, 32], 0.4), buckle: [170, 150, 90], shoe: sh, sole: mulRGB(sh, 0.55),
     hat: ht, hatBand: mulRGB(ht, 0.7), glass: a.glasses === 'round' ? [48, 44, 40] : [22, 22, 26],
   };
-  const pal = Array.from({ length: 256 }, () => [180, 180, 180]);
+  const pal = Array.from({ length: 256 }, () => [180, 180, 180]), lit = new Map(); let nLit = HERO_ROLES.length * 4;
   HERO_ROLES.forEach((r, i) => HERO_SHADE.forEach((k, s) => { pal[i * 4 + s] = mulRGB(base[r], k); }));
+  const litIndex = c => {
+    const key = c.join(','); let i = lit.get(key); if (i !== undefined) return i;
+    if (nLit < 255) { pal[nLit] = c; i = ++nLit; }
+    else { let best = 1e9; for (const [k2, j] of lit) { const d = k2.split(',').reduce((s, v, t) => s + (v - c[t]) ** 2, 0); if (d < best) { best = d; i = j; } } }
+    lit.set(key, i); return i;
+  };
   const vox = [];
-  for (const [key, r] of V) {
-    const [x, y, z] = key.split(',').map(Number);
-    vox.push([x, y + 1, z, HERO_ROLES.indexOf(r) * 4 + ((x * 7 + y * 13 + z * 5) & 3) + 1]);
-  }
+  for (const v of V.values()) vox.push([v[0], v[1], v[2], v[3] >= 0 ? v[3] * 4 + ((v[0] * 7 + v[1] * 13 + v[2] * 5) & 3) + 1 : litIndex(v[4])]);
   const size = HERO_SIZE.slice(); size.armL = F ? 3 : 2.1; size.armR = F ? 11 : 12.9;     // где проходит граница рук
   return { size, vox, pal };
 }
 
 // Герой как файл MagicaVoxel (.vox) — можно открыть, дорисовать и вернуть в игру
 function heroToVoxFile(data) {
-  const n = data.vox.length, parts = [];
+  const n = data.vox.length;
   const u32 = v => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
   const tag = s => [...s].map(c => c.charCodeAt(0));
   const chunk = (id, content, children = []) => [...tag(id), ...u32(content.length), ...u32(children.length), ...content, ...children];
@@ -173,7 +147,7 @@ function heroToVoxFile(data) {
 const HEROES = { list: [], sel: lsGet('heroSel', ['', '', '', '']) };
 {
   const saved = lsGet('heroes', null);
-  HEROES.list = (saved && saved.length ? saved : HERO_PRESETS.map((p, i) => Object.assign({ id: 'p' + i }, p)));
+  HEROES.list = (saved && saved.length ? saved : HERO_PRESETS.map((p, i) => Object.assign({ id: 'p' + i }, p))).map(heroNorm);
   if (!saved) lsSet('heroes', HEROES.list);
 }
 const heroById = id => HEROES.list.find(h => h.id === id) || null;
