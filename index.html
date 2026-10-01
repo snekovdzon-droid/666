@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Zombie Survivors — воксели v0.18</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block}
+#huds{display:none}
+.hud{position:fixed;color:#f2ead6;text-shadow:0 1px 2px #000;pointer-events:none;min-width:150px}
+.hud.c0{left:12px;top:10px}.hud.c1{right:12px;top:26px;text-align:right}.hud.c2{left:12px;bottom:12px}.hud.c3{right:12px;bottom:66px;text-align:right}
+.hud.c1 .bar,.hud.c3 .bar{margin-left:auto}.hud.c1 .ammo,.hud.c3 .ammo{justify-content:flex-end;margin-left:auto}
+.hud .pn{font-size:13px;font-weight:700;margin-bottom:2px}
+.hud .hp{font-size:24px;color:#e04a3a;letter-spacing:2px;line-height:1}
+.hud .items{margin-top:5px;font-size:12px;display:flex;flex-wrap:wrap;gap:4px}.hud.c1 .items,.hud.c3 .items{justify-content:flex-end}
+.hud .items .sl{background:rgba(20,16,12,.7);border:1px solid #4a4032;border-radius:4px;padding:1px 5px}.hud .items .sl.on{border-color:#7cc0ff;color:#cfe8ff;background:rgba(30,50,70,.8)}
+.hud .items .sl b{color:#e8a050;margin-right:4px}.hud .items .sl i{font-style:normal;color:#8a9aa8;margin-left:4px;font-size:10.5px}.hud .items .cap{color:#8a806c;padding:1px 2px}
+.hud .msg{font-size:13px;margin-top:3px;min-height:0;font-weight:600}
+#tItems{position:fixed;right:10px;bottom:62px;display:flex;gap:6px;z-index:5}#tItems button{min-width:58px;min-height:48px;border-radius:10px;border:2px solid #4a4032;background:rgba(34,28,22,.85);color:#f2ead6;font:600 12px/1.2 inherit}#tItems button.on{border-color:#7cc0ff;background:rgba(30,50,70,.9)}
+.hud .down{color:#ffd76a;font-weight:700;font-size:14px;margin-top:4px}
+.bar{height:6px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden;margin-top:5px;width:150px}
+.bar i{display:block;height:100%;width:0;background:#e8d27a;border-radius:3px}
+.stam i{background:#8fd46a}.stam.lock i{background:#c86a3a}
+.gun{font-size:14px;margin-top:6px}
+.ammo{display:flex;flex-wrap:wrap;gap:2px;max-width:170px;margin-top:4px}
+.ammo b{width:5px;height:11px;background:#e8c060;border-radius:1px;box-shadow:0 1px 1px #000}.ammo b.e{background:rgba(255,255,255,.18)}
+.ammo.many b{width:3px;height:9px}
+.rel{display:none}.rel i{background:#e8e0cc}
+#top{position:fixed;left:50%;top:8px;transform:translateX(-50%);width:min(520px,62vw);text-align:center;color:#f2ead6;text-shadow:0 1px 2px #000;pointer-events:none;display:none}
+#xpbar{height:9px;width:100%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);border-radius:5px;overflow:hidden}
+#xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3aa0e8,#7cf08a);transition:width .15s}
+#topInfo{font-size:14px;margin-top:3px}#timer{font-size:20px;font-weight:600;letter-spacing:1px}
+#lvlMsg{position:fixed;left:50%;top:22%;transform:translateX(-50%);color:#ffe28a;font-size:30px;font-weight:700;text-shadow:0 2px 6px #000;pointer-events:none;opacity:0;transition:opacity .3s}
+#hurt{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(170,20,10,.75) 100%);opacity:0}
+#fps{position:fixed;right:10px;top:8px;color:#bfb7a2;font-size:12px;text-shadow:0 1px 2px #000}
+body.touch #help{display:none}
+#help{position:fixed;left:12px;bottom:10px;color:#d8d0bc;font-size:12.5px;background:rgba(0,0,0,.45);padding:6px 10px;border-radius:6px;line-height:1.5;display:none}
+#btns{position:fixed;right:10px;bottom:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:60vw}
+#btns button{font-size:15px;padding:10px 12px;border-radius:8px;border:1px solid #6a6252;background:rgba(30,26,22,.8);color:#f2ead6}
+body:not(.touch) #btns .t{display:none}
+#dbg{position:fixed;right:10px;top:28px;display:none;background:rgba(10,8,6,.86);color:#e8e0cc;font-size:12.5px;padding:8px 10px;border-radius:8px;max-width:440px;line-height:1.7;z-index:5}
+#dbg label{margin-right:10px}#dbg button{font-size:12px;padding:3px 8px;margin:2px;border-radius:5px;border:1px solid #6a6252;background:#2a241e;color:#f2ead6}
+#dbgStats{color:#ffd76a}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#141210;color:#d8d0bc;font-size:18px;z-index:9}
+#ver{position:fixed;right:10px;bottom:62px;color:#8a8270;font-size:11px}
+.scr{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;color:#f2ead6;padding:16px;box-sizing:border-box;z-index:4}
+#menu{background:linear-gradient(180deg,rgba(14,10,8,.35),rgba(14,10,8,.85));overflow:auto;justify-content:flex-start;padding-top:max(16px,6vh)}
+#menu h1{margin:0;font-size:clamp(28px,5vw,46px);color:#e8a050;letter-spacing:1px;text-shadow:0 3px 0 #3a1a0a}
+#menu .sub{color:#c8bea8;margin:4px 0 16px;font-size:14px;text-align:center}
+#cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;width:min(920px,100%)}
+.card{background:rgba(34,28,22,.92);border:2px solid #4a4032;border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left;color:#f2ead6;font:inherit}
+.card:hover,.card.sel{border-color:#e8a050;background:rgba(58,40,24,.95)}
+.card b{font-size:17px;color:#ffd08a}.card p{margin:5px 0 8px;font-size:12.5px;color:#cfc4ac;min-height:48px}
+.card .st{font-size:12px;color:#a89e88;line-height:1.5}.card .st span{color:#f2ead6}
+.card .k{float:right;color:#8a806c;font-size:12px}
+.card .gn{display:block;font-size:13px;color:#cfc4ac}.card .cl{font-size:12px;line-height:1.4;margin:0 0 6px}.card .pl{color:#9fd08a}.card .mi{color:#e09080}
+.card .who{margin-top:4px;min-height:0}.card .who i{font-style:normal;font-size:11px;font-weight:700;color:#1b120b;padding:1px 5px;border-radius:4px;margin-right:4px}
+#menu .go.alt{background:#4a4032;color:#f2ead6}
+#menu .go{margin-top:14px;font-size:18px;padding:11px 28px;border-radius:8px;border:0;background:#d9793a;color:#1b120b;font-weight:600;cursor:pointer}
+#menu .hint{margin-top:10px;font-size:12.5px;color:#a89e88;text-align:center;line-height:1.6}
+#menu .opts{margin-top:8px;font-size:13px;color:#c8bea8}
+#over{background:rgba(10,6,6,.72)}
+#over h1{margin:0 0 8px;font-size:40px;color:#e04a3a;text-align:center}#over.win h1{color:#8fd46a}
+#overTxt{font-size:16px;line-height:1.7;text-align:center}
+#over button,#pause button{margin:14px 6px 0;font-size:17px;padding:10px 20px;border-radius:8px;border:0;background:#d9793a;color:#1b120b;cursor:pointer}
+#over button.alt,#pause button.alt{background:#4a4032;color:#f2ead6}
+@media (max-height:520px){#menu h1{font-size:26px}#menu .sub{margin:2px 0 8px}.card p{display:none}.card{padding:6px 10px}#menu .go{margin-top:8px;padding:8px 22px}#menu .hint{display:none}}
+#lvlUp{background:rgba(10,8,6,.55)}#lvl h2{margin:0 0 14px;font-size:30px;color:#ffe28a;text-shadow:0 2px 6px #000}
+#lvlCards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.pcard{width:clamp(150px,27vw,230px);min-height:140px;padding:12px;box-sizing:border-box;cursor:pointer;border:2px solid;border-radius:10px;color:#f2ead6;font:inherit;text-align:left;display:flex;flex-direction:column;gap:6px;transition:transform .08s}
+.pcard .tag{font-size:11px;font-weight:700;letter-spacing:1px}.pcard b{font-size:17px}.pcard span:not(.tag){font-size:13px;color:#d8cfb8}.pcard i{font-style:normal;font-size:11.5px;color:#a89e88;margin-top:auto}
+.pcard.sel,.pcard:hover{transform:translateY(-4px);box-shadow:0 0 0 2px #fff4}
+.pcard.gen{border-color:#5fae68;background:#1d2a1f}.pcard.gen .tag,#lvlBuild .gen,#pausePerks .gen{color:#7ee08a}
+.pcard.wpn{border-color:#d9793a;background:#2f2219}.pcard.wpn .tag,#lvlBuild .wpn,#pausePerks .wpn{color:#ffa060}
+.pcard.item{border-color:#4f8fd0;background:#1a2431}.pcard.item .tag{color:#7cc0ff}
+.pcard.dev{border-color:#3ab8a8;background:#17292a}.pcard.dev .tag{color:#6ee8d8}
+.hud .devs{font-size:12px;color:#8ee0d4;margin-top:3px}
+.pcard.att{border-color:#c8b040;background:#2a2716}.pcard.att .tag{color:#ffe070}
+.pcard.fork{border-color:#c8a0ff;background:#261d33}.pcard.fork .tag{color:#d8b8ff}
+#lvlBuild .evo,#pausePerks .evo{color:#ffd76a}
+.pcard.evo{border-color:#e8b93a;background:#3a311a;box-shadow:0 0 16px rgba(255,200,80,.45)}.pcard.evo .tag,.pcard.evo b{color:#ffd76a}
+#lvlBuild,#pausePerks{margin-top:14px;font-size:13px;max-width:720px;text-align:center;line-height:1.6;color:#c8bea8}
+#lvlUp .hint{margin-top:10px;font-size:12px;color:#8a806c}
+#pause{background:rgba(10,8,6,.6)}#pause h1{margin:0;font-size:34px}
+</style></head><body>
+<div id="hurt"></div>
+<div id="huds"></div>
+<div id="top"><div id="xpbar"><i></i></div><div id="topInfo"><span id="timer"></span> · ур. <b id="lvl">1</b> · убито <b id="kills">0</b></div></div>
+<div id="lvlMsg"></div>
+<div id="fps"></div>
+<div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, X перезарядка, L3 бег, LB/RB камера</div>
+<div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
+<div id="loading">Загрузка…</div><div id="ver">v0.18</div>
+<div id="menu" class="scr"><h1>ZOMBIE SURVIVORS</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
+  <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go" id="goBtn">В бой</button></div>
+  <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
+  <label class="opts"><input type="checkbox" id="optSound"> звук</label></div>
+<div id="over" class="scr"><h1 id="overTitle">Тебя съели</h1><div id="overTxt"></div><div><button id="againBtn">Ещё раз</button><button class="alt" id="menuBtn">Сменить ствол</button></div></div>
+<div id="lvlUp" class="scr"><h2 id="lvlTitle"></h2><div id="lvlCards"></div><div id="lvlBuild"></div><div class="hint">1–4 или клик · стрелки / крестовина + Enter / A</div></div>
+<div id="pause" class="scr"><h1>Пауза</h1><div id="pausePerks"></div><div><button id="resumeBtn">Продолжить</button><button class="alt" id="quitBtn">В меню</button></div></div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/gltf-meshopt.js"></script>
+<script src="assets/models.js"></script>
+<script>if(matchMedia("(pointer:coarse)").matches)document.body.classList.add("touch")</script>
+<script src="src/game.js"></script>
+</body></html>
