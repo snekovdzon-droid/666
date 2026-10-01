@@ -15,6 +15,9 @@ function menuBuild() {
   });
   $('goBtn').onclick = e => { e.stopPropagation(); menuConfirm(); };
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('lookPrev').onclick = e => { e.stopPropagation(); lookCycle(-1); }; $('lookNext').onclick = e => { e.stopPropagation(); lookCycle(1); };
+  $('lookEdit').onclick = e => { e.stopPropagation(); edOpen(); };
+  heroApplyAll();
   $('optSound').checked = Sound.on; $('optSound').onchange = e => setSound(e.target.checked);
   $('againBtn').onclick = e => { e.stopPropagation(); restartRun(); };
   $('menuBtn').onclick = e => { e.stopPropagation(); toMenu(); };
@@ -34,6 +37,7 @@ function menuMark() {
   const ctr = assignControls(G.nPlayers);
   $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
   $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'В бой';
+  lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
 function menuConfirm() {

@@ -3,6 +3,7 @@
 const keys = new Set(); const mouse = { x: 0, y: 0, down: false, has: false };
 const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
 addEventListener('keydown', e => {
+  if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
   keys.add(e.code);
   if (G.state === 'menu') { menuKey(e.code); return; }

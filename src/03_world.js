@@ -213,16 +213,16 @@ function parseVox(b64) {
 }
 // Части тела по долям размера (подходит для гуманоида в позе «руки вдоль тела»)
 function voxPartOf(x, y, z, S) {
-  const [sx, , sz] = S;
+  const [sx, , sz] = S, aL = S.armL || sx * 0.14, aR = S.armR || sx * 0.86;     // у героев из редактора границы рук свои
   if (z >= sz * 0.78) return 'head';
-  if (z <= sz * 0.765 && x < sx * 0.14) return 'armA';
-  if (z <= sz * 0.765 && x > sx * 0.86) return 'armB';
+  if (z <= sz * 0.765 && x < aL) return 'armA';
+  if (z <= sz * 0.765 && x > aR) return 'armB';
   if (z < sz * 0.5) return x < sx / 2 ? 'legA' : 'legB';
   return 'body';
 }
 const VOX_PARTS = ['legA', 'legB', 'body', 'head', 'armA', 'armB'];
-function buildVoxModel(b64, recolor) {
-  const M = parseVox(b64); if (recolor) M.pal = M.pal.map(recolor);
+function buildVoxModel(src, recolor) {               // src — base64 .vox или готовые данные { size, vox, pal } из genHeroVox
+  const M = typeof src === 'string' ? parseVox(src) : { size: src.size, vox: src.vox, pal: src.pal.slice() }; if (recolor) M.pal = M.pal.map(recolor);
   const S = M.size, s = 1 / S[2], cx = S[0] / 2, cy = S[1] / 2;
   const groups = {}; for (const k of VOX_PARTS) groups[k] = new Map();
   for (const [x, y, z, c] of M.vox) groups[voxPartOf(x, y, z, S)].set(x + ',' + y + ',' + z, c);

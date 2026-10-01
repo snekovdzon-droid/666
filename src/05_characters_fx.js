@@ -246,22 +246,32 @@ const VZ = { on: lsGet('voxZ', true), fullShadow: false, H: lsGet('voxH', 1.35),
 // Цвет куртки игрока: синий, красный, зелёный, жёлтый (перекрашиваем синие цвета модели героя)
 const PLAYER_COL = [[56, 86, 112], [150, 62, 50], [66, 110, 58], [176, 140, 46]];
 const PLAYER_CSS = ['#6a9cc8', '#e07a64', '#8cc870', '#e8c860'];
-const VOXHEROES = PLAYER_COL.map((c, i) => buildVoxModel(VOX_HERO, i === 0 ? null : ([r, g, b]) => {
+// Стандартный герой игрока i: базовая модель, куртка перекрашена в цвет игрока
+const buildDefaultHero = i => buildVoxModel(VOX_HERO, i === 0 ? null : ([r, g, b]) => {
   if (!(b > r + 30 && b > g + 10)) return [r, g, b];
-  const k = b / 112; return c.map(v => Math.min(255, Math.round(v * k)));
-}));
-const VOXHERO = VOXHEROES[0];
+  const k = b / 112; return PLAYER_COL[i].map(v => Math.min(255, Math.round(v * k)));
+});
+const VOXHEROES = PLAYER_COL.map((c, i) => buildDefaultHero(i));
+const VOXHERO = buildVoxModel(VOX_HERO);                  // эталон для точек хвата оружия и вещей класса (в сцену не добавляется)
 const VOXALL = [...VOXMS, ...VOXHEROES];
 // у каждой модели свои части-InstancedMesh и своя текстура; счётчик экземпляров — на модель
-for (const M of VOXALL) {
+function setupVoxModel(M) {
   M.mat = new THREE.MeshLambertMaterial({ map: M.tex }); M.mesh = {}; M.box = {}; M.n = 0;
   for (const k of VOX_PARTS) {
     const m = new THREE.InstancedMesh(M.parts[k].geo, M.mat, MAX_VZ);
     m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_VZ * 3).fill(1), 3);
-    m.frustumCulled = false; m.receiveShadow = true; m.castShadow = false; m.count = 0; scene.add(m); M.mesh[k] = m;
+    m.frustumCulled = false; m.receiveShadow = true; m.castShadow = VZ.fullShadow; m.count = 0; scene.add(m); M.mesh[k] = m;
     const bb = new THREE.Box3().setFromBufferAttribute(M.parts[k].geo.attributes.position);   // коробка части — для тени
     M.box[k] = { c: bb.getCenter(new THREE.Vector3()), s: bb.getSize(new THREE.Vector3()) };
   }
+}
+for (const M of VOXALL) setupVoxModel(M);
+// заменить модель героя в слоте игрока i (редактор персонажа)
+function setHeroModel(i, M) {
+  const old = VOXHEROES[i];
+  for (const k of VOX_PARTS) { scene.remove(old.mesh[k]); old.mesh[k].dispose(); old.parts[k].geo.dispose(); }
+  old.mat.dispose(); old.tex.dispose();
+  setupVoxModel(M); VOXHEROES[i] = M; VOXALL[VOXMS.length + i] = M;
 }
 // невидимые коробки, которые только отбрасывают тень (в десятки раз дешевле точной тени)
 const voxShadow = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }), MAX_VZ * VOX_PARTS.length);

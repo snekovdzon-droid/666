@@ -81,6 +81,25 @@ body:not(.touch) #btns .t{display:none}
 #lvlBuild,#pausePerks{margin-top:14px;font-size:13px;max-width:720px;text-align:center;line-height:1.6;color:#c8bea8}
 #lvlUp .hint{margin-top:10px;font-size:12px;color:#8a806c}
 #pause{background:rgba(10,8,6,.6)}#pause h1{margin:0;font-size:34px}
+#lookRow{margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;color:#c8bea8;font-size:14px}
+#lookRow button{font:inherit;padding:6px 12px;border-radius:8px;border:1px solid #6a6252;background:#2a241e;color:#f2ead6;cursor:pointer}#lookRow #lookName{min-width:120px;text-align:center;color:#ffd08a}
+#editor{background:#17130f;z-index:6;justify-content:flex-start;padding:10px;gap:8px}
+#editor button,#editor select{font:inherit;font-size:13px;padding:6px 10px;border-radius:7px;border:1px solid #5a5242;background:#2a241e;color:#f2ead6;cursor:pointer}
+#editor button.on{background:#d9793a;color:#1b120b;border-color:#d9793a}#editor button.go{background:#d9793a;color:#1b120b;font-weight:600}
+.edTop{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:min(1100px,100%)}.edTop b{font-size:16px;color:#e8a050;margin-right:6px}
+.edWrap{display:flex;gap:12px;width:min(1100px,100%);flex:1;min-height:0}
+.edView{position:relative;flex:1 1 40%;min-width:0;background:radial-gradient(ellipse at 50% 60%,#3a3128,#14110d);border-radius:12px;overflow:hidden}
+#edCanvas{width:100%;height:100%;touch-action:none;cursor:grab}
+.edViewBtns{position:absolute;left:8px;top:8px;display:flex;gap:6px}.edHint{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:11.5px;color:#8a806c;pointer-events:none}
+.edSide{flex:1 1 56%;min-width:0;overflow:auto;padding-right:4px}
+#edName{width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:7px 10px;margin-bottom:8px;border-radius:7px;border:1px solid #5a5242;background:#221c16;color:#f2ead6;user-select:text;-webkit-user-select:text}
+.edRow{margin:0 0 9px}.edRow label{display:block;font-size:12px;color:#a89e88;margin-bottom:3px}
+.edOpts,.edSw{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+#editor .sw{width:24px;height:24px;padding:0;border-radius:6px;border:2px solid #4a4032}#editor .sw.on{border-color:#fff;box-shadow:0 0 0 1px #d9793a}
+#editor .sw.none{width:auto;padding:0 8px;font-size:12px;background:#2a241e}
+.edSw input[type=color]{width:34px;height:26px;padding:0;border:1px solid #5a5242;border-radius:6px;background:none}
+.edBar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(1100px,100%)}
+@media (max-width:760px){.edWrap{flex-direction:column}.edView{flex:0 0 38vh}.edSide{flex:1 1 auto}}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -91,9 +110,18 @@ body:not(.touch) #btns .t{display:none}
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
 <div id="loading">Загрузка…</div><div id="ver">v0.18</div>
 <div id="menu" class="scr"><h1>ZOMBIE SURVIVORS</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
+  <div id="lookRow"><span id="lookWho"></span> <button id="lookPrev">◀</button> <b id="lookName"></b> <button id="lookNext">▶</button> <button id="lookEdit">Редактор персонажа</button></div>
   <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go" id="goBtn">В бой</button></div>
   <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
   <label class="opts"><input type="checkbox" id="optSound"> звук</label></div>
+<div id="editor" class="scr">
+  <div class="edTop"><b>Редактор персонажа</b> <select id="edList"></select> <button id="edNew">Новый</button> <button id="edCopy">Копия</button> <button id="edDel">Удалить</button></div>
+  <div class="edWrap">
+    <div class="edView"><canvas id="edCanvas"></canvas><div class="edViewBtns"><button id="edWalk" class="on">Ходьба</button><button id="edTurn" class="on">Вращение</button></div><div class="edHint">Потяни мышью — повернуть</div></div>
+    <div class="edSide"><input id="edName" maxlength="24" placeholder="Имя героя"><div id="edPanel"></div></div>
+  </div>
+  <div class="edBar"><button id="edRand">Случайный</button><button id="edVox">Скачать .vox</button><button id="edSave">Сохранить</button><button class="go" id="edDone">Готово — выбрать</button><button id="edBack">Назад</button></div>
+</div>
 <div id="over" class="scr"><h1 id="overTitle">Тебя съели</h1><div id="overTxt"></div><div><button id="againBtn">Ещё раз</button><button class="alt" id="menuBtn">Сменить ствол</button></div></div>
 <div id="lvlUp" class="scr"><h2 id="lvlTitle"></h2><div id="lvlCards"></div><div id="lvlBuild"></div><div class="hint">1–4 или клик · стрелки / крестовина + Enter / A</div></div>
 <div id="pause" class="scr"><h1>Пауза</h1><div id="pausePerks"></div><div><button id="resumeBtn">Продолжить</button><button class="alt" id="quitBtn">В меню</button></div></div>
@@ -106,6 +134,7 @@ body:not(.touch) #btns .t{display:none}
 <script src="src/02_vox_assets.js"></script>
 <script src="src/03_world.js"></script>
 <script src="src/04_buildings_map.js"></script>
+<script src="src/04b_hero_gen.js"></script>
 <script src="src/05_characters_fx.js"></script>
 <script src="src/06_state.js"></script>
 <script src="src/07_input_aim.js"></script>
@@ -113,5 +142,6 @@ body:not(.touch) #btns .t{display:none}
 <script src="src/09_perks_items.js"></script>
 <script src="src/10_update.js"></script>
 <script src="src/11_audio_debug.js"></script>
+<script src="src/11b_hero_editor.js"></script>
 <script src="src/12_ui_loop.js"></script>
 </body></html>
