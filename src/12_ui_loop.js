@@ -121,7 +121,8 @@ const START = { x: 48, z: 44 };                   // двор перед гла�
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll();
-  Object.assign(G, { pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
+  clearMobs();
+  Object.assign(G, { nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z;
 }
@@ -191,13 +192,14 @@ function tick(dt, T) {
       G.spawnAcc += (0.9 + G.t * 0.045) * SPAWN_MUL * coopMul() * dt;
       while (G.spawnAcc >= 1) { G.spawnAcc -= 1; spawnZombie(); }
       if (G.t >= G.nextHorde) { spawnHorde(); G.nextHorde += 60; }
+      mobTimers();                                                    // стаи псов и начальник тюрьмы
     }
   }
   if (live) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }

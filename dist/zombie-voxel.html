@@ -31,6 +31,9 @@ canvas{display:block}
 #topInfo{font-size:14px;margin-top:3px}#timer{font-size:20px;font-weight:600;letter-spacing:1px}
 #lvlMsg{position:fixed;left:50%;top:22%;transform:translateX(-50%);color:#ffe28a;font-size:30px;font-weight:700;text-shadow:0 2px 6px #000;pointer-events:none;opacity:0;transition:opacity .3s}
 #hurt{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(170,20,10,.75) 100%);opacity:0}
+#bossBar{position:fixed;left:50%;top:62px;transform:translateX(-50%);width:min(520px,62vw);text-align:center;color:#ffd0c0;text-shadow:0 1px 2px #000;display:none;pointer-events:none}
+#bossBar b{font-size:14px;letter-spacing:2px;text-transform:uppercase}#bossBar div{height:12px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.25);border-radius:6px;overflow:hidden;margin-top:3px}
+#bossBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a1c14,#e0452a)}
 #fps{position:fixed;right:10px;top:8px;color:#bfb7a2;font-size:12px;text-shadow:0 1px 2px #000}
 body.touch #help{display:none}
 #help{position:fixed;left:12px;bottom:10px;color:#d8d0bc;font-size:12.5px;background:rgba(0,0,0,.45);padding:6px 10px;border-radius:6px;line-height:1.5;display:none}
@@ -119,6 +122,7 @@ body:not(.touch) #btns .t{display:none}
 <div id="huds"></div>
 <div id="top"><div id="xpbar"><i></i></div><div id="topInfo"><span id="timer"></span> · ур. <b id="lvl">1</b> · убито <b id="kills">0</b></div></div>
 <div id="lvlMsg"></div>
+<div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
@@ -276,6 +280,13 @@ const ZOMBIES = {
   runner:  { name:'Бегун',        hp:12,  speed:2.0,  r:0.26, xp:2, h:11, col:'#c7c46a', dark:'#7a6f2e', from:40 },
   armored: { name:'Бронированный', hp:62, speed:0.72, r:0.32, xp:3, h:14, col:'#7f8f6a', dark:'#44503a', from:240, helmet:true },
   fat:     { name:'Толстяк',      hp:100, speed:0.45, r:0.46, xp:4, h:17, col:'#8fa66e', dark:'#4d5c3c', from:360, fat:true },
+  // ---- особые мобы: у каждого своя задача (см. 11d_mobs.js) ----
+  hound:    { name:'Тюремный пёс',     hp:9,   speed:3.0,  r:0.24, xp:2,  h:8,  col:'#6a5a48', dark:'#2e2c2a', from:200 },   // стаями по 4–6
+  screamer: { name:'Кричащий',         hp:24,  speed:0.85, r:0.27, xp:6,  h:14, col:'#b8c0a8', dark:'#5a6050', from:300 },   // ускоряет зомби и зовёт новых
+  spitter:  { name:'Плевун',           hp:30,  speed:0.7,  r:0.3,  xp:6,  h:14, col:'#8ac04a', dark:'#46602a', from:360 },   // кислотные лужи
+  brute:    { name:'Громила',          hp:120, speed:0.55, r:0.44, xp:8,  h:18, col:'#a06a3a', dark:'#5a3a1e', from:420 },   // сносит укрытия, таранит
+  riot:     { name:'Бунтарь со щитом', hp:70,  speed:0.6,  r:0.34, xp:6,  h:15, col:'#7a8aa0', dark:'#3a4658', from:480 },   // спереди почти неуязвим
+  warden:   { name:'Начальник тюрьмы', hp:500, speed:0.6,  r:0.5,  xp:40, h:20, col:'#3a4a6e', dark:'#1c2438', from:600, boss:true },
 };
 const SPAWN_MUL = 0.75;                 // общий темп появления зомби (−25%)
 const FAT_BOOM = { delay:0.4, R:1.5, dmg:40 };   // взрыв толстяка: ранит и игроков, и зомби
@@ -1263,6 +1274,7 @@ function drawChar(c, t) {
   _q.setFromEuler(_e.set(lean, c.yaw, c.roll || 0, 'YXZ'));
   _root.compose(_v.set(c.x, c.y - (c.sink || 0), c.z), _q, _s.set(ss * (c.form === 'fat' ? 1.08 : 1), ss, ss));
   const [skin, top, bot, hair, cap] = c.look, f = c.flash > 0 ? 0.75 : c.swell ? c.swell * 0.6 : 0;
+  if (c.form === 'hound') { drawHound(c, f); return; }
   if (c.form === 'crawl') {                                  // ползун: лежит, тянется руками, ноги волочатся
     const a = Math.sin(c.phase * 0.8) * 0.5;
     part(top, 0, 0.17, 0, 0, 0.42 * sc, 0.24, 0.52, 0, 0, f);
@@ -1491,15 +1503,15 @@ const voxShadow = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ 
 voxShadow.castShadow = true; voxShadow.frustumCulled = false; voxShadow.instanceMatrix.setUsage(THREE.DynamicDrawUsage); voxShadow.count = 0; scene.add(voxShadow);
 function setVoxShadow(full) { VZ.fullShadow = full; for (const M of VOXALL) for (const k of VOX_PARTS) M.mesh[k].castShadow = full; voxShadow.visible = !full; }
 const _vs = new THREE.Matrix4(), _vr = new THREE.Matrix4(), _vl = new THREE.Matrix4(), _vm = new THREE.Matrix4(), _vb = new THREE.Matrix4();
-const isVoxZ = c => VZ.on && c.zombie && (c.form === 'walk' || c.form === 'run' || c.form === 'crawl' || c.form === 'fat' || c.form === 'armored');   // толстяк и бронированный — тоже из пака (черновые)
+const isVoxZ = c => VZ.on && c.zombie && (c.form === 'walk' || c.form === 'run' || c.form === 'crawl' || c.form === 'fat' || c.form === 'armored' || FORM_H[c.form] !== undefined);   // толстяк и бронированный — тоже из пака (черновые)
 function drawVoxZombie(c) {
   if (c.vm === undefined) c.vm = Math.floor(Math.random() * VOXMS.length);   // какая модель из пака
   const M = VOXMS[c.vm % VOXMS.length]; if (M.n >= MAX_VZ || c.boomed) return;
   const fat = c.form === 'fat', arm = c.form === 'armored', sw1 = fat && c.swell ? 1 + c.swell * 0.55 : 1;
-  const H = VZ.H * (c.form === 'run' ? 0.95 : fat ? 1.05 : arm ? 1.04 : 1) * (fat ? Math.sqrt(sw1) : 1), crawl = c.form === 'crawl', run = c.form === 'run';
+  const H = VZ.H * (c.form === 'run' ? 0.95 : fat ? 1.05 : arm ? 1.04 : FORM_H[c.form] || 1) * (fat ? Math.sqrt(sw1) : 1), crawl = c.form === 'crawl', run = c.form === 'run';
   const sw0 = c.moving ? Math.sin(c.phase) : 0, sw = sw0 * (run ? 1.0 : 0.6);
   let lean = c.fall || 0, x = c.x, y = c.y - (c.sink || 0), z = c.z;
-  if (!c.dead) { if (run) lean += 0.28; if (c.hurtT > 0) lean -= 0.35 * c.hurtT / 0.16; if (c.atkT > 0) lean += 0.25 * Math.sin((1 - c.atkT / 0.45) * Math.PI); }
+  if (!c.dead) { lean += c.lean || 0; if (run) lean += 0.28; if (c.hurtT > 0) lean -= 0.35 * c.hurtT / 0.16; if (c.atkT > 0) lean += 0.25 * Math.sin((1 - c.atkT / 0.45) * Math.PI); }
   if (crawl) { lean = Math.PI / 2 - 0.08; y += 0.1; x -= Math.sin(c.yaw) * H * 0.45; z -= Math.cos(c.yaw) * H * 0.45; }
   _q.setFromEuler(_e.set(lean, c.yaw, c.roll || 0, 'YXZ'));
   _vr.compose(_v.set(x, y, z), _q, _s.set(H, H, H));
@@ -1510,18 +1522,20 @@ function drawVoxZombie(c) {
     let r1, r2;
     if (run) { r1 = -0.5 + sw0 * 0.9; r2 = -0.5 - sw0 * 0.9; } else { r1 = -1.35 + Math.sin(c.phase * 0.5) * 0.12; r2 = r1 + 0.1; }
     if (c.atkT > 0) { const k = Math.sin((1 - c.atkT / 0.45) * Math.PI); r1 -= k * 0.6; r2 -= k * 0.5; }
+    if (c.raise > 0) { r1 += (-2.7 - r1) * c.raise; r2 += (-2.7 - r2) * c.raise; ang.head = -0.55 * c.raise; }   // замах, крик, рёв
     if (c.dead) { r1 = r2 = -0.3; }
     ang.armA = r1; ang.armB = r2;
   }
-  const wMul = fat ? 1.45 * sw1 : arm ? 1.12 : 1;
+  const wMul = fat ? 1.45 * sw1 : arm ? 1.12 : FORM_W[c.form] || 1;
   voxEmit(M, ang, null, c.flash > 0 ? 3.2 : fat && c.swell ? 1 + c.swell * 1.6 : 1, wMul);
-  if (fat || arm) zedGear(M, ang, wMul, fat);
+  if (fat || arm || FORM_H[c.form] !== undefined) zedGear(M, ang, wMul, fat, c);
 }
 const _linC = {}; const lin = c => _linC[c] ?? (_linC[c] = new THREE.Color(c).convertSRGBToLinear().getHex());
 // Черновые вещи толстяка и бронированного поверх модели пака: пузо / каска и бронежилет
-function zedGear(M, ang, wMul, fat) {
+function zedGear(M, ang, wMul, fat, c) {
   _gs.makeScale(VZ.W * wMul, 1, VZ.W * wMul);
   const at = k => { const pv = M.parts[k].pivot; _gt.makeRotationX(ang[k] || 0); _gt.setPosition(pv[0] * VZ.W * wMul, pv[1], pv[2] * VZ.W * wMul); _root.multiplyMatrices(_vr, _gt); _root.multiply(_gs); return M.box[k]; };
+  if (c && c.form !== 'armored' && !fat) { mobGear(c, at, M); return; }                                                   // особые мобы (11d_mobs.js)
   if (fat) { const b = at('body'); part(lin(0x7a8a5c), 0, 0, 0, 0, b.s.x * 0.95, b.s.y * 0.55, b.s.z * 0.7, b.c.y - b.s.y * 0.12, b.c.z + b.s.z * 0.45, 0, b.c.x); return; }
   const h = at('head'); part(lin(0x3e4632), 0, 0, 0, 0, h.s.x * 1.18, h.s.y * 0.42, h.s.z * 1.18, h.c.y + h.s.y * 0.38, h.c.z, 0, h.c.x);   // каска
   part(lin(0x343a2c), 0, 0, 0, 0, h.s.x * 1.3, h.s.y * 0.06, h.s.z * 1.3, h.c.y + h.s.y * 0.18, h.c.z, 0, h.c.x);                              // поля каски
@@ -1746,15 +1760,16 @@ function findSpawnPos(at) {
   return null;
 }
 function pickZombieType(t) {
+  const sp = pickSpecial(t); if (sp) return sp;
   const r = Math.random();
   if (t >= ZOMBIES.fat.from && r < 0.07) return 'fat';
   if (t >= ZOMBIES.armored.from && r < 0.07 + Math.min(0.2, 0.08 + (t - ZOMBIES.armored.from) / 1500)) return 'armored';
   const runnerChance = t < ZOMBIES.runner.from ? 0 : Math.min(0.4, 0.12 + (t - ZOMBIES.runner.from) / 600);
   return Math.random() < runnerChance ? 'runner' : 'walker';
 }
-const FORM = { walker: 'walk', runner: 'run', armored: 'armored', fat: 'fat' };
-function spawnZombie(forceType, at, crawl) {
-  if (zombies.filter(z => !z.dead).length >= MAX_ENEMIES) return null;
+const FORM = { walker: 'walk', runner: 'run', armored: 'armored', fat: 'fat', hound: 'hound', screamer: 'screamer', spitter: 'spitter', brute: 'brute', riot: 'riot', warden: 'warden' };
+function spawnZombie(forceType, at, crawl, ignoreCap) {
+  if (!ignoreCap && zombies.filter(z => !z.dead).length >= MAX_ENEMIES) return null;
   const t = G.t, type = forceType || pickZombieType(t);
   const pos = findSpawnPos(at); if (!pos) return null;
   const T = ZOMBIES[type];
@@ -1764,6 +1779,7 @@ function spawnZombie(forceType, at, crawl) {
     hp: T.hp * (1 + t / 150), r: T.r, speed: T.speed * rnd(0.92, 1.08), scale: type === 'runner' ? 0.9 : 1,
     phase: Math.random() * 6, moving: true, flash: 0, kx: 0, kz: 0, dead: false, deadT: 0, fall: 0, atkT: 0, hurtT: 0, nod: 0,
     slideT: 0, side: 1, slowT: 0, slowMul: 1, stunT: 0, burnT: 0, bleedT: 0, dotT: 0 };
+  if (MOB_INIT[type]) MOB_INIT[type](z);                                  // особые мобы: свои поля (щит, масть, запасы)
   zombies.push(z);
   return z;
 }
@@ -1938,7 +1954,7 @@ function readControl(p) {
 
 /* ---------- 11. Прицел: луч из-под курсора в мир / автоприцел ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-const zAimY = z => z.y + (z.form === 'crawl' ? 0.3 : z.form === 'fat' ? 0.75 : isVoxZ(z) ? VZ.H * 0.6 : 0.65);
+const zAimY = z => z.y + (z.form === 'crawl' ? 0.3 : z.form === 'hound' ? 0.28 : z.form === 'fat' ? 0.75 : isVoxZ(z) ? VZ.H * 0.6 : 0.65);
 // Возвращает { pt, target }: точку прицела и зомби под прицелом (если есть)
 function aimPoint(p, c) {
   if (c.auto) {                                          // автоприцел: телефон, геймпад, ПК без мыши
@@ -2080,7 +2096,7 @@ function shoot(p, ws, ap, mul, pelletMul) {
     let d = ws.dmg * mul * smul, crit = smul > 1;
     const e = elev + (ws.fan ? 0 : rnd(-0.03, 0.03)), ch = Math.cos(e);
     bullets.push({ owner: p, x0: p.x, z0: p.z, x: mz.x, y: mz.y, z: mz.z, vx: Math.sin(a) * ch * sp, vy: Math.sin(e) * sp, vz: Math.cos(a) * ch * sp,
-      life: ws.life, dmg: d, pierce: Math.min(99, ws.pierce + xp), knock: ws.knock, hits: [], big: mul > 1 || crit, heavy: ws.heavy || (id === 'shotgun' && L(p, 'sg_slug') > 0),
+      slug: id === 'shotgun' && L(p, 'sg_slug') > 0, life: ws.life, dmg: d, pierce: Math.min(99, ws.pierce + xp), knock: ws.knock, hits: [], big: mul > 1 || crit, heavy: ws.heavy || (id === 'shotgun' && L(p, 'sg_slug') > 0),
       pb: id === 'sawnoff' ? L(p, 'so_pb') : 0, ignite, burn, core: id === 'shotgun' ? L(p, 'sg_core') : 0, thin: id === 'shotgun' && !!p.evo.sg_elephant && L(p, 'sg_slug') > 0, grow: rv ? L(p, 'rv_grow') : 0,
       mark, tracer: mark, supp: id === 'rifle' ? L(p, 'ri_supp') : 0, under: id === 'rifle' && L(p, 'ri_under') > 0, far: id === 'rifle' && L(p, 'ri_scope') > 0,
       helm: id === 'mg' && L(p, 'mg_core') > 0, stag: id === 'mg' && L(p, 'mg_stag') > 0, pop: id === 'mg' && !!p.evo.mg_127,
@@ -2155,7 +2171,7 @@ function startReload(p, ws) {
   p.reloadT = p.reloadMax = t; p.burstN = 0; p.fanShots = 0; p.fanN = 0;
 }
 /* ---- Пули ---- */
-const zHeight = z => z.form === 'crawl' ? 0.8 : z.form === 'fat' ? 1.35 : isVoxZ(z) ? VZ.H + 0.05 : BODY_H * (z.scale || 1) + 0.1;
+const zHeight = z => z.form === 'crawl' ? 0.8 : z.form === 'hound' ? 0.55 : z.form === 'fat' ? 1.35 : isVoxZ(z) ? VZ.H * (FORM_H[z.form] || 1) + 0.05 : BODY_H * (z.scale || 1) + 0.1;
 function updateBullets(dt) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i]; b.life -= dt;
@@ -2195,7 +2211,7 @@ function hitByBullet(z, b) {
   if (b.pop && z.type === 'fat') { z.safeBoom = true; z.popNow = true; }              // «12.7»: толстяк лопается на месте
   if (b.thin && z.type === 'fat') z.safeBoom = true;                                   // «Слонобой»: толстяк лопается, не раня игроков
   if (z.form === 'armored' && b.y > z.y + 0.95) sparks(b.x, b.y, b.z);               // пуля звякнула о каску
-  damageZombie(z, d, b.vx / s, b.vz / s, b.knock, b.y);
+  damageZombie(z, d, b.vx / s, b.vz / s, b.knock, b.y, b.slug || b.boom);
   SFX.hit();
   if (b.ignite) { const f = b.burn || { t: 2.5, dps: 6 * (b.owner ? b.owner.st.dmg : 1) }; setBurn(z, f.t, f.dps, f.spread, 0, f.slow); }
   if (z.dead && b.owner && close) onCloseKill(b.owner);
@@ -2218,8 +2234,13 @@ function hitByBullet(z, b) {
   if (b.pierce-- <= 0) return false;
 }
 /* ---- Урон зомби: вздрагивание, кровь, отлёт трупа, кристалл опыта ---- */
-function damageZombie(z, dmg, dx, dz, knock, hy) {
+function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   if (z.dead) return;
+  if (z.shield && !pierce && (dx || dz)) {                                              // щит бунтаря: спереди почти не берёт; взрывы и «Жакан» пробивают, огонь и колючка идут мимо щита
+    const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw);
+    if (dx * fx + dz * fz < -0.35) { dmg *= 0.06; knock *= 0.3; sparks(z.x + fx * 0.35, z.y + 0.9, z.z + fz * 0.35); SFX.impact('metal'); }
+  }
+  if (z.kres) knock *= z.kres;
   if (z.markT > 0) dmg *= 1.15;                                                         // метка трассера
   z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
   z.kx += dx * knock * 8; z.kz += dz * knock * 8;
@@ -2233,6 +2254,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy) {
   bloodDecal(z.x + dx * 0.35, z.z + dz * 0.35, 0.3 + Math.random() * 0.1, dx, dz);          // лужа меньше, чем была (правка из плейтеста)
   blood(z.x, z.y + 0.6, z.z, dx, dz, 12);
   gems.push({ x: z.x, y: z.y, z: z.z, v: T.xp, pull: false, t: Math.random() * 6, vy: 2.5 });
+  if (z.type === 'warden') wardenDown(z);
   if (T.fat) { z.swell = z.popNow ? 0.999 : 0.001; z.flash = 0; return; }                                    // толстяк раздувается и взрывается
   const sp = Math.min(7, 1.5 + knock * 10) * rnd(0.8, 1.2) * 0.35;                        // труп отлетает по направлению удара
   z.cvx = dx * sp; z.cvz = dz * sp; z.vy = 1.2 + knock * 3;
@@ -2255,7 +2277,7 @@ function explode(x, y, z, dmg, R, o = {}) {
   forNear(x, z, e => {
     if (e.dead || Math.abs(e.y - y) > 1.5) return;
     const dx = e.x - x, dz = e.z - z, d = Math.hypot(dx, dz); if (d >= R) return;
-    damageZombie(e, dmg, dx / (d || 1), dz / (d || 1), 0.35 * (o.knock || 1));
+    damageZombie(e, dmg, dx / (d || 1), dz / (d || 1), 0.35 * (o.knock || 1), undefined, true);
     if (o.stun) e.stunT = Math.max(e.stunT || 0, o.stun);
   }, R + 1);
 }
@@ -3519,12 +3541,15 @@ function updateZombies(dt) {
       z.confT -= dt; z.wanderT = (z.wanderT || 0) - dt; if (z.wanderT <= 0) { z.wanderT = rnd(0.6, 1.4); z.wanderA = Math.random() * TAU; }
       dx = Math.sin(z.wanderA) * 0.5; dz = Math.cos(z.wanderA) * 0.5;
     }
+    let mobMul = 1;
+    if (MOB_AI[z.type]) { const r = MOB_AI[z.type](z, dt, target, dist, dx, dz); if (r) { dx = r[0]; dz = r[1]; mobMul = r[2]; } }   // особые мобы: свои повадки
+    if (z.rageT > 0) z.rageT -= dt;                                      // крик: ускорение
     if (z.slowT > 0) z.slowT -= dt; else z.slowMul = 1;
     if (z.stunT > 0) z.stunT -= dt;
     if (z.supT > 0) z.supT -= dt;                                        // «Прижать огнём»
     if (z.markT > 0) { z.markT -= dt; if (Math.random() < dt * 6) spawnP({ x: z.x, y: z.y + zHeight(z) + 0.1, z: z.z, vy: 0.3, s: 0.07, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.3 }); }   // метка трассера
     const ox = z.x, oz = z.z;
-    const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * dt;
+    const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
     const wx0 = dx * step + z.kx * dt, wz0 = dz * step + z.kz * dt;
     moveEntity(z, wx0, wz0, z.r);
     if (z.wallT > 0) { z.wallT -= dt; const want = Math.hypot(wx0, wz0); if (want > 0.03 && Math.hypot(z.x - ox, z.z - oz) < want * 0.4) { z.wallT = 0; damageZombie(z, z.wallDmg, 0, 0, 0); dust(z.x, z.y + 0.6, z.z, 0xb0a690, 6); } }   // «В стену»
@@ -3545,7 +3570,7 @@ function updateZombies(dt) {
     z.moving = moved > 1e-4;
     z.phase += moved * (z.form === 'run' ? 5 : 6.5);
     z.nod = Math.sin(z.phase * 0.5) * 0.12;
-    if (dx || dz) { let a = Math.atan2(dx, dz) - z.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); z.yaw += a * Math.min(1, dt * 8); }
+    if (dx || dz) { let a = Math.atan2(dx, dz) - z.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); z.yaw += a * Math.min(1, dt * (z.turn || 8)); }
     // горение и кровотечение (перки и снаряжение подключатся на этапах 4–5)
     if (z.burnT > 0) { z.burnT -= dt; if (Math.random() < dt * 14 * BURN_K) spawnP({ x: z.x + rnd(-0.15, 0.15), y: z.y + rnd(0.4, 1.2), z: z.z + rnd(-0.15, 0.15), vy: 1.5, s: rnd(0.07, 0.13), s1: 0.02, col: 0xffc040, col1: 0xd03010, glow: true, life: 0.45 }); }
     if (z.bleedT > 0) z.bleedT -= dt;
@@ -4111,6 +4136,264 @@ function mainKey(code) {
 }
 </script>
 <script>'use strict';
+/* ---------- Особые мобы: у каждого своя задача, которую обычный зомби не ставит ----------
+   Громила      — сносит мешки, турели и колючку, таранит по прямой (против «окопался в углу»)
+   Кричащий     — держится позади, его крик ускоряет зомби и зовёт новых (цель номер один)
+   Плевун       — плюёт кислотными лужами издалека (против «стою на месте»)
+   Бунтарь      — щит спереди почти не пробить; берут бок, спина, огонь, взрывы и «Жакан»
+   Тюремный пёс — быстрые, стаями по 4–6
+   Начальник    — босс с охраной из бронированных (10-я и 18-я минуты)
+   Данные (здоровье, скорость, время появления) — в ZOMBIES в 01_data.js; поведение — в MOB_AI ниже. */
+const FORM_H = { brute: 1.15, screamer: 0.97, spitter: 1, riot: 1.02, warden: 1.28 };      // рост относительно обычного зомби
+const FORM_W = { brute: 1.5, screamer: 0.82, spitter: 1.05, riot: 1.12, warden: 1.3 };      // ширина
+const MOB_CAP = { brute: [2, 3], riot: [3, 4], spitter: [3, 4], screamer: [2, 3] };          // сколько таких одновременно (до 15-й минуты / позже)
+const MOB_CHANCE = { brute: 0.03, riot: 0.035, spitter: 0.035, screamer: 0.025 };            // шанс на каждое появление зомби после их времени
+const BOSS_AT = [600, 1080];                                                                  // секунды забега
+const COATS = [0x6a5a48, 0x3a3430, 0x8a7a5a, 0x2e2c2a, 0x9a8a70];
+const SPITS = [], PUDDLES = [];
+
+// появление особых мобов вместо обычных (с потолком, чтобы не заполонили карту)
+function pickSpecial(t) {
+  for (const type of ['brute', 'riot', 'spitter', 'screamer']) {
+    if (t < ZOMBIES[type].from || Math.random() > MOB_CHANCE[type]) continue;
+    let n = 0; for (const z of zombies) if (!z.dead && z.type === type) n++;
+    if (n < MOB_CAP[type][t > 900 ? 1 : 0] + (players.length > 1 ? 1 : 0)) return type;
+  }
+  return null;
+}
+const MOB_INIT = {
+  hound: z => { const c = COATS[Math.floor(Math.random() * COATS.length)]; z.look = [c, c, c, null]; },
+  riot: z => { z.shield = true; z.turn = 2.6; },
+  brute: z => { z.kres = 0.3; z.chgCd = rnd(2, 4); },
+  screamer: z => { z.scCd = rnd(3, 6); },
+  spitter: z => { z.spCd = rnd(1.5, 3); },
+  warden: z => { z.kres = 0.15; z.boss = true; z.slamCd = 6; z.callCd = 12; },
+};
+const faceDir = (z, t) => { const dx = t.x - z.x, dz = t.z - z.z, l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; };
+const sameLevel = (z, t) => Math.abs(t.y - z.y) < 0.6;
+const ringFx = (x, y, z, R, col, n = 14) => { for (let i = 0; i < n; i++) { const a = i / n * TAU; spawnP({ x: x + Math.cos(a) * R, y, z: z + Math.sin(a) * R, vy: 0.3, s: 0.1, s1: 0.02, col, glow: true, life: 0.3 }); } };
+
+// Все особые мобы получают (z, dt, цель, дистанция, dx, dz) и возвращают null или [dx, dz, множитель скорости]
+const MOB_AI = {
+  brute(z, dt, target, dist, dx, dz) {
+    smashStructures(z, 0.35);
+    const moved = Math.hypot(z.x - (z.px ?? z.x), z.z - (z.pz ?? z.z)); z.px = z.x; z.pz = z.z;
+    z.raise = Math.max(0, (z.raise || 0) - dt * 3); z.lean = 0;
+    if (z.chg === 'wind') {                                          // замер и набирает ярость
+      z.chgT -= dt; z.raise = Math.min(1, 1.2 - z.chgT);
+      if (target) { const f = faceDir(z, target); dx = f[0]; dz = f[1]; }
+      if (Math.random() < dt * 40) spawnP({ x: z.x + rnd(-0.3, 0.3), y: z.y + 0.1, z: z.z + rnd(-0.3, 0.3), vy: 1.2, s: 0.09, s1: 0.02, col: 0xff5a2a, glow: true, life: 0.4 });
+      if (z.chgT <= 0) { z.chg = 'dash'; z.chgT = 1.0; z.dashed = 0; z.cdx = dx; z.cdz = dz; SFX.thump(); }
+      return [dx, dz, 0];
+    }
+    if (z.chg === 'dash') {                                          // рывок по прямой, сносит всё
+      z.chgT -= dt; z.dashed += dt; z.lean = 0.35;
+      if (Math.random() < dt * 25) dust(z.x, z.y + 0.1, z.z, 0xb0a690, 2);
+      if (z.dashed > 0.2 && moved < z.speed * 10 * dt * 0.35) {      // врезался в стену — оглушён
+        z.chg = 0; z.chgCd = rnd(5, 7); z.stunT = 1.4; shake = Math.max(shake, 0.4); SFX.thump(); dust(z.x + z.cdx * 0.5, z.y + 0.8, z.z + z.cdz * 0.5, 0xb0a690, 10);
+        return [dx, dz, 0];
+      }
+      if (z.chgT <= 0) { z.chg = 0; z.chgCd = rnd(5, 7); }
+      return [z.cdx, z.cdz, 10];
+    }
+    z.chgCd -= dt;
+    if (target && z.stunT <= 0 && z.chgCd <= 0 && dist > 3 && dist < 9 && sameLevel(z, target)) { z.chg = 'wind'; z.chgT = 0.9; SFX.roar(); }
+    return null;
+  },
+  screamer(z, dt, target, dist, dx, dz) {
+    z.raise = Math.max(0, (z.raise || 0) - dt * 3);
+    if ((z.markP = (z.markP || 0) - dt) <= 0) { z.markP = 0.18; spawnP({ x: z.x, y: z.y + VZ.H * 1.0 + 0.4, z: z.z, vy: 0.5, s: 0.09, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.5 }); }   // красная метка над головой
+    if (z.scWind > 0) { z.scWind -= dt; z.raise = 1; if (z.scWind <= 0) doScream(z); return [dx, dz, 0]; }
+    z.scCd -= dt;
+    if (!target) return null;
+    if (z.scCd <= 0 && dist < 18) { z.scWind = 0.8; return [dx, dz, 0]; }
+    if (dist < 7.5) { const f = faceDir(z, target); return [-f[0], -f[1], 1.1]; }       // пятится — держится позади толпы
+    if (dist < 10.5) return [dx, dz, 0];
+    return null;
+  },
+  spitter(z, dt, target, dist, dx, dz) {
+    z.raise = Math.max(0, (z.raise || 0) - dt * 3);
+    if (z.spWind > 0) { z.spWind -= dt; z.raise = 0.8; if (z.spWind <= 0) spitAt(z, z.spRef); return [dx, dz, 0]; }
+    z.spCd -= dt;
+    if (!target) return null;
+    if (z.spCd <= 0 && dist > 3.5 && dist < 11 && Math.abs(target.y - z.y) < 1.5) { z.spWind = 0.55; z.spRef = target; return [dx, dz, 0]; }
+    if (dist < 5) { const f = faceDir(z, target); return [-f[0], -f[1], 0.9]; }
+    if (dist < 8) return [dx, dz, 0];
+    return null;
+  },
+  warden(z, dt, target, dist, dx, dz) {
+    if (z.stunT > 0.3) z.stunT = 0.3;                                // босса почти не оглушить
+    smashStructures(z, 0.5);
+    const enr = z.hp < z.maxHp * 0.3;
+    z.raise = Math.max(0, (z.raise || 0) - dt * 3);
+    if (z.slamWind > 0) {
+      z.slamWind -= dt; z.raise = Math.min(1, 1.1 - z.slamWind);
+      if (Math.random() < dt * 14) ringFx(z.x, z.y + 0.1, z.z, 3.4, 0xff3a2a, 10);       // красное кольцо на земле — туда прилетит удар
+      if (z.slamWind <= 0) doSlam(z, enr);
+      return [dx, dz, 0];
+    }
+    z.slamCd -= dt; z.callCd -= dt;
+    if (z.callCd <= 0) { callGuards(z, enr); z.callCd = enr ? 14 : 20; }
+    if (target && z.slamCd <= 0 && dist < 4.2 && sameLevel(z, target)) { z.slamWind = 1.0; SFX.roar(); }
+    return [dx, dz, enr ? 1.35 : 1];
+  },
+};
+
+// Громила и босс ломают всё, что стоит на пути: мешки, турели, колючую проволоку
+function smashStructures(z, reach) {
+  for (const B of BAGS) {
+    const s = B.s; if (B.hp <= 0 || Math.abs(z.y - s.y1) > 0.6) continue;
+    const ex = Math.max(s.x1 - z.x, 0, z.x - s.x2), ez = Math.max(s.z1 - z.z, 0, z.z - s.z2);
+    if (ex * ex + ez * ez < (z.r + reach) ** 2) { B.hp = 0; shake = Math.max(shake, 0.2); }
+  }
+  for (const t of TURRETS) if (t.life > 0 && Math.abs(t.y - z.y) < 0.8 && Math.hypot(t.x - z.x, t.z - z.z) < z.r + reach + 0.2) { t.life = 0; t.hp = 0; shake = Math.max(shake, 0.2); }
+  for (const w of WIRES) if (w.uses > 0 && Math.abs(w.y - z.y) < 0.8 && inWire(w, z.x, z.z, z.r + reach)) { w.uses = 0; shake = Math.max(shake, 0.1); }
+}
+
+/* ---------- Кричащий: крик ускоряет зомби вокруг и зовёт новых ---------- */
+function doScream(z) {
+  z.scCd = 10; SFX.scream(); shake = Math.max(shake, 0.25);
+  ringFx(z.x, z.y + 0.9, z.z, 1.2, 0xff6a4a, 16); ringFx(z.x, z.y + 0.9, z.z, 2.4, 0xff6a4a, 20);
+  forNear(z.x, z.z, o => { if (!o.dead && o !== z) o.rageT = 5; }, 8);
+  let alive = 0, sum = 0;
+  for (const o of zombies) if (!o.dead) { alive++; if (o.summoned) sum++; }
+  const n = Math.min(3, MAX_ENEMIES - alive - 4, 14 - sum);                    // зовёт до 3 за раз, всего не больше 14 «зов» живых
+  for (let k = 0; k < n; k++) { const w = spawnZombie('walker', { x: z.x, z: z.z }); if (w) { w.summoned = true; w.rageT = 5; } }
+}
+
+/* ---------- Плевун: плевок дугой, кислотная лужа ---------- */
+function spitAt(z, tg) {
+  z.spCd = rnd(3.2, 4.6); if (!tg || tg.down) return;
+  const T = 0.9, g = 14, y0 = z.y + 1.1, y1 = floorAt(tg.x, tg.z, tg.y) + 0.05;
+  SPITS.push({ x: z.x, y: y0, z: z.z, vx: (tg.x - z.x) / T, vz: (tg.z - z.z) / T, vy: (y1 - y0) / T + 0.5 * g * T, g, t: 0, T, y1 });
+  SFX.spit();
+}
+function addPuddle(x, z, y) {
+  const m = new THREE.Mesh(PUD_GEO, PUD_MAT); m.position.set(x, y + 0.04, z); m.renderOrder = 2; scene.add(m);
+  PUDDLES.push({ x, z, y, R: 1.15, t: 7, max: 7, m });
+  if (PUDDLES.length > 14) { const o = PUDDLES.shift(); scene.remove(o.m); }
+}
+const PUD_GEO = new THREE.CircleGeometry(1, 24); PUD_GEO.rotateX(-Math.PI / 2);
+const PUD_MAT = new THREE.MeshBasicMaterial({ color: 0x7be02a, transparent: true, opacity: 0.5, depthWrite: false });
+
+/* ---------- Босс ---------- */
+function doSlam(z, enr) {
+  z.slamCd = enr ? 5 : 8; shake = Math.max(shake, 0.6); SFX.slam();
+  ringFx(z.x, z.y + 0.15, z.z, 1.2, 0xe8d8b0, 14); ringFx(z.x, z.y + 0.15, z.z, 2.4, 0xe8d8b0, 18); ringFx(z.x, z.y + 0.15, z.z, 3.4, 0xe8d8b0, 22);
+  dust(z.x, z.y + 0.2, z.z, 0xb0a690, 14);
+  for (const p of players) {
+    if (p.down || p.inv > 0 || Math.abs(p.y - z.y) > 0.8 || Math.hypot(p.x - z.x, p.z - z.z) > 3.4) continue;
+    hurtPlayer(p, null); p.trapT = Math.max(p.trapT || 0, 0.5);
+  }
+  smashStructures(z, 3.2);
+}
+function callGuards(z, enr) {
+  let g = 0; for (const o of zombies) if (!o.dead && o.guard) g++;
+  const n = Math.min(enr ? 3 : 2, 6 - g); if (n <= 0) return;
+  SFX.scream();
+  for (let k = 0; k < n; k++) { const w = spawnZombie('armored', { x: z.x, z: z.z }, undefined, true); if (w) { w.guard = true; w.rageT = 4; } }
+}
+function spawnWarden() {
+  const sp = spawnPoint(); if (!sp) return;
+  const n = G.bossN, z = spawnZombie('warden', sp, undefined, true); if (!z) return;
+  G.bossN++; z.hp *= (1 + 0.5 * n) * coopMul(); z.maxHp = z.hp; G.boss = z;
+  for (let k = 0; k < 4 + 2 * n; k++) { const g = spawnZombie('armored', sp, undefined, true); if (g) g.guard = true; }
+  banner(n ? 'Начальник тюрьмы вернулся' : 'Начальник тюрьмы идёт за вами'); SFX.roar();
+}
+function wardenDown(z) {
+  if (G.boss === z) G.boss = null;
+  banner('Начальник тюрьмы повержен'); SFX.level();
+  spawnCrate(z.x + 0.8, z.z, true); spawnCrate(z.x - 0.8, z.z, true);
+}
+function banner(text) {
+  const el = $('lvlMsg'); if (!el) return; el.textContent = text; el.style.opacity = 1;
+  clearTimeout(banner.t); banner.t = setTimeout(() => { el.style.opacity = 0; }, 3000);
+}
+
+/* ---------- Стаи псов и расписание боссов ---------- */
+function spawnPack() {
+  const sp = spawnPoint(); if (!sp) return;
+  const n = Math.min(8, Math.round(Math.min(6, 4 + (G.t - 200) / 300) * (1 + 0.3 * (players.length - 1))));
+  for (let i = 0; i < n; i++) spawnZombie('hound', sp);
+  SFX.bark();
+}
+function mobTimers() {
+  if (G.t >= G.nextPack) { spawnPack(); G.nextPack = G.t + rnd(70, 95); }
+  if (G.bossN < BOSS_AT.length && G.t >= BOSS_AT[G.bossN]) spawnWarden();
+}
+
+/* ---------- Каждый кадр: плевки, лужи, полоса босса ---------- */
+function updateMobFx(dt) {
+  for (let i = SPITS.length - 1; i >= 0; i--) {
+    const s = SPITS[i]; s.t += dt; s.vy -= s.g * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
+    spawnP({ x: s.x, y: s.y, z: s.z, s: 0.12, s1: 0.03, col: 0x9ae03a, glow: true, life: 0.3 });
+    if (s.t >= s.T) { addPuddle(s.x, s.z, floorAt(s.x, s.z, s.y1)); dust(s.x, s.y1 + 0.1, s.z, 0x7be02a, 6); SPITS.splice(i, 1); }
+  }
+  for (let i = PUDDLES.length - 1; i >= 0; i--) {
+    const P = PUDDLES[i]; P.t -= dt;
+    if (P.t <= 0) { scene.remove(P.m); PUDDLES.splice(i, 1); continue; }
+    const k = Math.min(1, P.t / 1.2, (P.max - P.t) / 0.25 + 0.2);                // появляется быстро, гаснет за последнюю секунду
+    P.m.scale.set(P.R * k, 1, P.R * k);
+    if (Math.random() < dt * 4) spawnP({ x: P.x + rnd(-P.R, P.R) * 0.7, y: P.y + 0.1, z: P.z + rnd(-P.R, P.R) * 0.7, vy: 0.6, s: 0.07, s1: 0.02, col: 0x9ae03a, glow: true, life: 0.5 });
+  }
+  for (const p of players) {
+    let inside = false;
+    for (const P of PUDDLES) if (!p.down && Math.abs(p.y - P.y) < 0.6 && Math.hypot(p.x - P.x, p.z - P.z) < P.R * 0.9) { inside = true; break; }
+    if (inside) {
+      p.slowT = Math.max(p.slowT || 0, 0.35); p.acidT = (p.acidT || 0) + dt;
+      if (p.acidT >= 0.8 && p.inv <= 0 && G.state === 'play') { hurtPlayer(p, null); p.acidT = -0.7; }       // жжёт, если стоять в луже
+    } else if (p.acidT > 0) p.acidT = Math.max(0, p.acidT - dt);
+  }
+  const bar = $('bossBar'), B = G.boss;
+  if (bar) { const on = B && !B.dead && G.state === 'play'; bar.style.display = on ? 'block' : 'none'; if (on) bar.querySelector('i').style.width = Math.max(0, B.hp / B.maxHp * 100).toFixed(1) + '%'; }
+}
+function clearMobs() {
+  SPITS.length = 0; for (const P of PUDDLES) scene.remove(P.m); PUDDLES.length = 0;
+  G.boss = null; const bar = $('bossBar'); if (bar) bar.style.display = 'none';
+}
+
+/* ---------- Вид: вещи на моделях зомби из пака и пёс из коробок ---------- */
+function mobGear(c, at, M) {
+  const P = (col, b, sx, sy, sz, oy, oz, ox = 0) => part(lin(col), 0, 0, 0, 0, b.s.x * sx, b.s.y * sy, b.s.z * sz, b.c.y + b.s.y * oy, b.c.z + b.s.z * oz, 0, b.c.x + b.s.x * ox);
+  switch (c.form) {
+    case 'brute': {
+      let b = at('body'); P(0xb5601d, b, 1.06, 0.6, 1.1, 0.1, 0);                           // оранжевая тюремная жилетка
+      b = at('armA'); P(0x555555, b, 1.3, 0.12, 1.3, -0.35, 0); b = at('armB'); P(0x555555, b, 1.3, 0.12, 1.3, -0.35, 0);   // кандалы на запястьях
+      break; }
+    case 'screamer': {
+      const h = at('head'); P(0x120808, h, 0.5, 0.3, 0.12, -0.18, 0.5); break; }           // распахнутый рот
+    case 'spitter': {
+      const h = at('head'); P(0x86c43a, h, 0.8, 0.35, 0.7, -0.5, 0.1); P(0x5a8a22, h, 0.4, 0.2, 0.1, -0.12, 0.5); break; }   // зоб с кислотой
+    case 'riot': {
+      let h = at('head'); P(0x1f2a44, h, 1.18, 0.42, 1.18, 0.38, 0); P(0x9ac8e0, h, 1.05, 0.22, 0.1, 0.05, 0.55);      // шлем с забралом
+      let b = at('body'); P(0x2a3a52, b, 1.12, 0.7, 1.2, 0.1, 0);                          // жилет
+      if (!c.dead) { b = at('body'); P(0x2a3a52, b, 1.68, 1.28, 0.1, 0, 0.85); P(0xa8d0e8, b, 1.5, 1.14, 0.12, 0, 0.9); }   // щит: рамка и стекло
+      break; }
+    case 'warden': {
+      let h = at('head'); P(0x1a2238, h, 1.2, 0.34, 1.2, 0.4, 0); P(0x1a2238, h, 1.1, 0.07, 1.5, 0.18, 0.3); P(0xd8b040, h, 1.22, 0.06, 1.22, 0.27, 0);   // фуражка с козырьком и околышем
+      let b = at('body'); P(0x1c2440, b, 1.14, 0.8, 1.28, 0.08, 0); P(0xd8b040, b, 0.18, 0.8, 1.3, 0.08, 0); P(0x1c2440, b, 1.45, 0.12, 1.1, 0.46, 0);   // жилет, золотая полоса, погоны
+      break; }
+  }
+}
+function drawHound(c, f) {
+  const col = c.look[0], a = Math.sin(c.phase * 0.7) * (c.moving ? 0.9 : 0), body = c.moving ? Math.abs(Math.sin(c.phase * 0.7)) * 0.03 : 0;
+  part(col, 0, 0.3 + body, 0, 0, 0.2, 0.2, 0.56, 0, 0, f);                                                  // туловище
+  for (const [x, z, s] of [[-0.07, 0.2, 1], [0.07, 0.2, -1], [-0.07, -0.2, -1], [0.07, -0.2, 1]]) part(col, x, 0.26 + body, z, a * s, 0.07, 0.27, 0.07, -0.13, 0, f);   // лапы
+  part(col, 0, 0.38 + body, 0.3, c.nod || 0, 0.16, 0.16, 0.2, 0.02, 0.08, f);                                // голова
+  part(0x2a2420, 0, 0.36 + body, 0.3, c.nod || 0, 0.08, 0.08, 0.1, 0, 0.22, f);                              // морда
+  part(col, -0.06, 0.46 + body, 0.28, 0, 0.04, 0.08, 0.04, 0, 0, f); part(col, 0.06, 0.46 + body, 0.28, 0, 0.04, 0.08, 0.04, 0, 0, f);   // уши
+  part(col, 0, 0.4 + body, -0.28, -0.7 + a * 0.15, 0.05, 0.05, 0.22, 0, -0.1, f);                            // хвост
+}
+
+Object.assign(SFX, {
+  roar() { if (!soundOn()) return; tone({ f0: 130, f1: 55, dur: 0.7, vol: 0.4, type: 'sawtooth' }); noiseHit({ dur: 0.6, type: 'lowpass', freq: 600, vol: 0.25 }); },
+  scream() { if (!soundOn() || !canPlay('scream', 300)) return; tone({ f0: 520, f1: 1500, dur: 0.9, vol: 0.22, type: 'sawtooth' }); tone({ f0: 760, f1: 2000, dur: 0.8, vol: 0.12, type: 'square', delay: 0.05 }); noiseHit({ dur: 0.8, type: 'bandpass', freq: 2600, q: 1, vol: 0.12 }); },
+  spit() { if (!soundOn() || !canPlay('spit', 80)) return; noiseHit({ dur: 0.25, type: 'bandpass', freq: 1200, q: 0.8, vol: 0.2, sweep: 500 }); tone({ f0: 300, f1: 700, dur: 0.2, vol: 0.12 }); },
+  bark() { if (!soundOn() || !canPlay('bark', 200)) return; for (let i = 0; i < 3; i++) { tone({ f0: 420, f1: 200, dur: 0.13, vol: 0.2, type: 'square', delay: i * 0.18 }); noiseHit({ dur: 0.08, type: 'bandpass', freq: 1400, q: 1, vol: 0.1 }); } },
+  slam() { if (!soundOn()) return; SFX.thump(); noiseHit({ dur: 0.6, type: 'lowpass', freq: 500, vol: 0.5 }); tone({ f0: 70, f1: 28, dur: 0.5, vol: 0.6 }); },
+});
+</script>
+<script>'use strict';
 /* ---------- 16. Интерфейс: меню (число игроков, ствол каждому), HUD каждого игрока со своей стороны, пауза, конец ---------- */
 const $ = id => document.getElementById(id);
 const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -4233,7 +4516,8 @@ const START = { x: 48, z: 44 };                   // двор перед гла�
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll();
-  Object.assign(G, { pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
+  clearMobs();
+  Object.assign(G, { nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z;
 }
@@ -4303,13 +4587,14 @@ function tick(dt, T) {
       G.spawnAcc += (0.9 + G.t * 0.045) * SPAWN_MUL * coopMul() * dt;
       while (G.spawnAcc >= 1) { G.spawnAcc -= 1; spawnZombie(); }
       if (G.t >= G.nextHorde) { spawnHorde(); G.nextHorde += 60; }
+      mobTimers();                                                    // стаи псов и начальник тюрьмы
     }
   }
   if (live) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }

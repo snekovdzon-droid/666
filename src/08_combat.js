@@ -101,7 +101,7 @@ function shoot(p, ws, ap, mul, pelletMul) {
     let d = ws.dmg * mul * smul, crit = smul > 1;
     const e = elev + (ws.fan ? 0 : rnd(-0.03, 0.03)), ch = Math.cos(e);
     bullets.push({ owner: p, x0: p.x, z0: p.z, x: mz.x, y: mz.y, z: mz.z, vx: Math.sin(a) * ch * sp, vy: Math.sin(e) * sp, vz: Math.cos(a) * ch * sp,
-      life: ws.life, dmg: d, pierce: Math.min(99, ws.pierce + xp), knock: ws.knock, hits: [], big: mul > 1 || crit, heavy: ws.heavy || (id === 'shotgun' && L(p, 'sg_slug') > 0),
+      slug: id === 'shotgun' && L(p, 'sg_slug') > 0, life: ws.life, dmg: d, pierce: Math.min(99, ws.pierce + xp), knock: ws.knock, hits: [], big: mul > 1 || crit, heavy: ws.heavy || (id === 'shotgun' && L(p, 'sg_slug') > 0),
       pb: id === 'sawnoff' ? L(p, 'so_pb') : 0, ignite, burn, core: id === 'shotgun' ? L(p, 'sg_core') : 0, thin: id === 'shotgun' && !!p.evo.sg_elephant && L(p, 'sg_slug') > 0, grow: rv ? L(p, 'rv_grow') : 0,
       mark, tracer: mark, supp: id === 'rifle' ? L(p, 'ri_supp') : 0, under: id === 'rifle' && L(p, 'ri_under') > 0, far: id === 'rifle' && L(p, 'ri_scope') > 0,
       helm: id === 'mg' && L(p, 'mg_core') > 0, stag: id === 'mg' && L(p, 'mg_stag') > 0, pop: id === 'mg' && !!p.evo.mg_127,
@@ -176,7 +176,7 @@ function startReload(p, ws) {
   p.reloadT = p.reloadMax = t; p.burstN = 0; p.fanShots = 0; p.fanN = 0;
 }
 /* ---- Пули ---- */
-const zHeight = z => z.form === 'crawl' ? 0.8 : z.form === 'fat' ? 1.35 : isVoxZ(z) ? VZ.H + 0.05 : BODY_H * (z.scale || 1) + 0.1;
+const zHeight = z => z.form === 'crawl' ? 0.8 : z.form === 'hound' ? 0.55 : z.form === 'fat' ? 1.35 : isVoxZ(z) ? VZ.H * (FORM_H[z.form] || 1) + 0.05 : BODY_H * (z.scale || 1) + 0.1;
 function updateBullets(dt) {
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i]; b.life -= dt;
@@ -216,7 +216,7 @@ function hitByBullet(z, b) {
   if (b.pop && z.type === 'fat') { z.safeBoom = true; z.popNow = true; }              // «12.7»: толстяк лопается на месте
   if (b.thin && z.type === 'fat') z.safeBoom = true;                                   // «Слонобой»: толстяк лопается, не раня игроков
   if (z.form === 'armored' && b.y > z.y + 0.95) sparks(b.x, b.y, b.z);               // пуля звякнула о каску
-  damageZombie(z, d, b.vx / s, b.vz / s, b.knock, b.y);
+  damageZombie(z, d, b.vx / s, b.vz / s, b.knock, b.y, b.slug || b.boom);
   SFX.hit();
   if (b.ignite) { const f = b.burn || { t: 2.5, dps: 6 * (b.owner ? b.owner.st.dmg : 1) }; setBurn(z, f.t, f.dps, f.spread, 0, f.slow); }
   if (z.dead && b.owner && close) onCloseKill(b.owner);
@@ -239,8 +239,13 @@ function hitByBullet(z, b) {
   if (b.pierce-- <= 0) return false;
 }
 /* ---- Урон зомби: вздрагивание, кровь, отлёт трупа, кристалл опыта ---- */
-function damageZombie(z, dmg, dx, dz, knock, hy) {
+function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   if (z.dead) return;
+  if (z.shield && !pierce && (dx || dz)) {                                              // щит бунтаря: спереди почти не берёт; взрывы и «Жакан» пробивают, огонь и колючка идут мимо щита
+    const fx = Math.sin(z.yaw), fz = Math.cos(z.yaw);
+    if (dx * fx + dz * fz < -0.35) { dmg *= 0.06; knock *= 0.3; sparks(z.x + fx * 0.35, z.y + 0.9, z.z + fz * 0.35); SFX.impact('metal'); }
+  }
+  if (z.kres) knock *= z.kres;
   if (z.markT > 0) dmg *= 1.15;                                                         // метка трассера
   z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
   z.kx += dx * knock * 8; z.kz += dz * knock * 8;
@@ -254,6 +259,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy) {
   bloodDecal(z.x + dx * 0.35, z.z + dz * 0.35, 0.3 + Math.random() * 0.1, dx, dz);          // лужа меньше, чем была (правка из плейтеста)
   blood(z.x, z.y + 0.6, z.z, dx, dz, 12);
   gems.push({ x: z.x, y: z.y, z: z.z, v: T.xp, pull: false, t: Math.random() * 6, vy: 2.5 });
+  if (z.type === 'warden') wardenDown(z);
   if (T.fat) { z.swell = z.popNow ? 0.999 : 0.001; z.flash = 0; return; }                                    // толстяк раздувается и взрывается
   const sp = Math.min(7, 1.5 + knock * 10) * rnd(0.8, 1.2) * 0.35;                        // труп отлетает по направлению удара
   z.cvx = dx * sp; z.cvz = dz * sp; z.vy = 1.2 + knock * 3;
@@ -276,7 +282,7 @@ function explode(x, y, z, dmg, R, o = {}) {
   forNear(x, z, e => {
     if (e.dead || Math.abs(e.y - y) > 1.5) return;
     const dx = e.x - x, dz = e.z - z, d = Math.hypot(dx, dz); if (d >= R) return;
-    damageZombie(e, dmg, dx / (d || 1), dz / (d || 1), 0.35 * (o.knock || 1));
+    damageZombie(e, dmg, dx / (d || 1), dz / (d || 1), 0.35 * (o.knock || 1), undefined, true);
     if (o.stun) e.stunT = Math.max(e.stunT || 0, o.stun);
   }, R + 1);
 }

@@ -50,6 +50,7 @@ function drawChar(c, t) {
   _q.setFromEuler(_e.set(lean, c.yaw, c.roll || 0, 'YXZ'));
   _root.compose(_v.set(c.x, c.y - (c.sink || 0), c.z), _q, _s.set(ss * (c.form === 'fat' ? 1.08 : 1), ss, ss));
   const [skin, top, bot, hair, cap] = c.look, f = c.flash > 0 ? 0.75 : c.swell ? c.swell * 0.6 : 0;
+  if (c.form === 'hound') { drawHound(c, f); return; }
   if (c.form === 'crawl') {                                  // ползун: лежит, тянется руками, ноги волочатся
     const a = Math.sin(c.phase * 0.8) * 0.5;
     part(top, 0, 0.17, 0, 0, 0.42 * sc, 0.24, 0.52, 0, 0, f);
@@ -278,15 +279,15 @@ const voxShadow = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ 
 voxShadow.castShadow = true; voxShadow.frustumCulled = false; voxShadow.instanceMatrix.setUsage(THREE.DynamicDrawUsage); voxShadow.count = 0; scene.add(voxShadow);
 function setVoxShadow(full) { VZ.fullShadow = full; for (const M of VOXALL) for (const k of VOX_PARTS) M.mesh[k].castShadow = full; voxShadow.visible = !full; }
 const _vs = new THREE.Matrix4(), _vr = new THREE.Matrix4(), _vl = new THREE.Matrix4(), _vm = new THREE.Matrix4(), _vb = new THREE.Matrix4();
-const isVoxZ = c => VZ.on && c.zombie && (c.form === 'walk' || c.form === 'run' || c.form === 'crawl' || c.form === 'fat' || c.form === 'armored');   // толстяк и бронированный — тоже из пака (черновые)
+const isVoxZ = c => VZ.on && c.zombie && (c.form === 'walk' || c.form === 'run' || c.form === 'crawl' || c.form === 'fat' || c.form === 'armored' || FORM_H[c.form] !== undefined);   // толстяк и бронированный — тоже из пака (черновые)
 function drawVoxZombie(c) {
   if (c.vm === undefined) c.vm = Math.floor(Math.random() * VOXMS.length);   // какая модель из пака
   const M = VOXMS[c.vm % VOXMS.length]; if (M.n >= MAX_VZ || c.boomed) return;
   const fat = c.form === 'fat', arm = c.form === 'armored', sw1 = fat && c.swell ? 1 + c.swell * 0.55 : 1;
-  const H = VZ.H * (c.form === 'run' ? 0.95 : fat ? 1.05 : arm ? 1.04 : 1) * (fat ? Math.sqrt(sw1) : 1), crawl = c.form === 'crawl', run = c.form === 'run';
+  const H = VZ.H * (c.form === 'run' ? 0.95 : fat ? 1.05 : arm ? 1.04 : FORM_H[c.form] || 1) * (fat ? Math.sqrt(sw1) : 1), crawl = c.form === 'crawl', run = c.form === 'run';
   const sw0 = c.moving ? Math.sin(c.phase) : 0, sw = sw0 * (run ? 1.0 : 0.6);
   let lean = c.fall || 0, x = c.x, y = c.y - (c.sink || 0), z = c.z;
-  if (!c.dead) { if (run) lean += 0.28; if (c.hurtT > 0) lean -= 0.35 * c.hurtT / 0.16; if (c.atkT > 0) lean += 0.25 * Math.sin((1 - c.atkT / 0.45) * Math.PI); }
+  if (!c.dead) { lean += c.lean || 0; if (run) lean += 0.28; if (c.hurtT > 0) lean -= 0.35 * c.hurtT / 0.16; if (c.atkT > 0) lean += 0.25 * Math.sin((1 - c.atkT / 0.45) * Math.PI); }
   if (crawl) { lean = Math.PI / 2 - 0.08; y += 0.1; x -= Math.sin(c.yaw) * H * 0.45; z -= Math.cos(c.yaw) * H * 0.45; }
   _q.setFromEuler(_e.set(lean, c.yaw, c.roll || 0, 'YXZ'));
   _vr.compose(_v.set(x, y, z), _q, _s.set(H, H, H));
@@ -297,18 +298,20 @@ function drawVoxZombie(c) {
     let r1, r2;
     if (run) { r1 = -0.5 + sw0 * 0.9; r2 = -0.5 - sw0 * 0.9; } else { r1 = -1.35 + Math.sin(c.phase * 0.5) * 0.12; r2 = r1 + 0.1; }
     if (c.atkT > 0) { const k = Math.sin((1 - c.atkT / 0.45) * Math.PI); r1 -= k * 0.6; r2 -= k * 0.5; }
+    if (c.raise > 0) { r1 += (-2.7 - r1) * c.raise; r2 += (-2.7 - r2) * c.raise; ang.head = -0.55 * c.raise; }   // замах, крик, рёв
     if (c.dead) { r1 = r2 = -0.3; }
     ang.armA = r1; ang.armB = r2;
   }
-  const wMul = fat ? 1.45 * sw1 : arm ? 1.12 : 1;
+  const wMul = fat ? 1.45 * sw1 : arm ? 1.12 : FORM_W[c.form] || 1;
   voxEmit(M, ang, null, c.flash > 0 ? 3.2 : fat && c.swell ? 1 + c.swell * 1.6 : 1, wMul);
-  if (fat || arm) zedGear(M, ang, wMul, fat);
+  if (fat || arm || FORM_H[c.form] !== undefined) zedGear(M, ang, wMul, fat, c);
 }
 const _linC = {}; const lin = c => _linC[c] ?? (_linC[c] = new THREE.Color(c).convertSRGBToLinear().getHex());
 // Черновые вещи толстяка и бронированного поверх модели пака: пузо / каска и бронежилет
-function zedGear(M, ang, wMul, fat) {
+function zedGear(M, ang, wMul, fat, c) {
   _gs.makeScale(VZ.W * wMul, 1, VZ.W * wMul);
   const at = k => { const pv = M.parts[k].pivot; _gt.makeRotationX(ang[k] || 0); _gt.setPosition(pv[0] * VZ.W * wMul, pv[1], pv[2] * VZ.W * wMul); _root.multiplyMatrices(_vr, _gt); _root.multiply(_gs); return M.box[k]; };
+  if (c && c.form !== 'armored' && !fat) { mobGear(c, at, M); return; }                                                   // особые мобы (11d_mobs.js)
   if (fat) { const b = at('body'); part(lin(0x7a8a5c), 0, 0, 0, 0, b.s.x * 0.95, b.s.y * 0.55, b.s.z * 0.7, b.c.y - b.s.y * 0.12, b.c.z + b.s.z * 0.45, 0, b.c.x); return; }
   const h = at('head'); part(lin(0x3e4632), 0, 0, 0, 0, h.s.x * 1.18, h.s.y * 0.42, h.s.z * 1.18, h.c.y + h.s.y * 0.38, h.c.z, 0, h.c.x);   // каска
   part(lin(0x343a2c), 0, 0, 0, 0, h.s.x * 1.3, h.s.y * 0.06, h.s.z * 1.3, h.c.y + h.s.y * 0.18, h.c.z, 0, h.c.x);                              // поля каски

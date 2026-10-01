@@ -10,3 +10,8 @@
 - `vendor/` — three.js, GLTFLoader, meshopt-декодер (не править)
 - `tools/build.py` — собирает один файл `dist/zombie-voxel.html`
 - `tools/smoke.js` — проверка в Chromium: `node tools/smoke.js index.html` (меню) и `node tools/play.js index.html` (запуск боя)
+
+## Особые мобы
+Данные (здоровье, скорость, время появления) — `ZOMBIES` в `src/01_data.js`; поведение, вид и звуки — `src/11d_mobs.js`.
+Громила, Кричащий, Плевун, Бунтарь со щитом, Тюремный пёс (стаи), Начальник тюрьмы (босс на 10-й и 18-й минутах).
+Проверка: `node tools/mobs_test.js index.html`.

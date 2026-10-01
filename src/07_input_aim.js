@@ -151,7 +151,7 @@ function readControl(p) {
 
 /* ---------- 11. Прицел: луч из-под курсора в мир / автоприцел ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-const zAimY = z => z.y + (z.form === 'crawl' ? 0.3 : z.form === 'fat' ? 0.75 : isVoxZ(z) ? VZ.H * 0.6 : 0.65);
+const zAimY = z => z.y + (z.form === 'crawl' ? 0.3 : z.form === 'hound' ? 0.28 : z.form === 'fat' ? 0.75 : isVoxZ(z) ? VZ.H * 0.6 : 0.65);
 // Возвращает { pt, target }: точку прицела и зомби под прицелом (если есть)
 function aimPoint(p, c) {
   if (c.auto) {                                          // автоприцел: телефон, геймпад, ПК без мыши

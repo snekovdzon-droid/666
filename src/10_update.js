@@ -97,12 +97,15 @@ function updateZombies(dt) {
       z.confT -= dt; z.wanderT = (z.wanderT || 0) - dt; if (z.wanderT <= 0) { z.wanderT = rnd(0.6, 1.4); z.wanderA = Math.random() * TAU; }
       dx = Math.sin(z.wanderA) * 0.5; dz = Math.cos(z.wanderA) * 0.5;
     }
+    let mobMul = 1;
+    if (MOB_AI[z.type]) { const r = MOB_AI[z.type](z, dt, target, dist, dx, dz); if (r) { dx = r[0]; dz = r[1]; mobMul = r[2]; } }   // особые мобы: свои повадки
+    if (z.rageT > 0) z.rageT -= dt;                                      // крик: ускорение
     if (z.slowT > 0) z.slowT -= dt; else z.slowMul = 1;
     if (z.stunT > 0) z.stunT -= dt;
     if (z.supT > 0) z.supT -= dt;                                        // «Прижать огнём»
     if (z.markT > 0) { z.markT -= dt; if (Math.random() < dt * 6) spawnP({ x: z.x, y: z.y + zHeight(z) + 0.1, z: z.z, vy: 0.3, s: 0.07, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.3 }); }   // метка трассера
     const ox = z.x, oz = z.z;
-    const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * dt;
+    const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
     const wx0 = dx * step + z.kx * dt, wz0 = dz * step + z.kz * dt;
     moveEntity(z, wx0, wz0, z.r);
     if (z.wallT > 0) { z.wallT -= dt; const want = Math.hypot(wx0, wz0); if (want > 0.03 && Math.hypot(z.x - ox, z.z - oz) < want * 0.4) { z.wallT = 0; damageZombie(z, z.wallDmg, 0, 0, 0); dust(z.x, z.y + 0.6, z.z, 0xb0a690, 6); } }   // «В стену»
@@ -123,7 +126,7 @@ function updateZombies(dt) {
     z.moving = moved > 1e-4;
     z.phase += moved * (z.form === 'run' ? 5 : 6.5);
     z.nod = Math.sin(z.phase * 0.5) * 0.12;
-    if (dx || dz) { let a = Math.atan2(dx, dz) - z.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); z.yaw += a * Math.min(1, dt * 8); }
+    if (dx || dz) { let a = Math.atan2(dx, dz) - z.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); z.yaw += a * Math.min(1, dt * (z.turn || 8)); }
     // горение и кровотечение (перки и снаряжение подключатся на этапах 4–5)
     if (z.burnT > 0) { z.burnT -= dt; if (Math.random() < dt * 14 * BURN_K) spawnP({ x: z.x + rnd(-0.15, 0.15), y: z.y + rnd(0.4, 1.2), z: z.z + rnd(-0.15, 0.15), vy: 1.5, s: rnd(0.07, 0.13), s1: 0.02, col: 0xffc040, col1: 0xd03010, glow: true, life: 0.45 }); }
     if (z.bleedT > 0) z.bleedT -= dt;

@@ -159,15 +159,16 @@ function findSpawnPos(at) {
   return null;
 }
 function pickZombieType(t) {
+  const sp = pickSpecial(t); if (sp) return sp;
   const r = Math.random();
   if (t >= ZOMBIES.fat.from && r < 0.07) return 'fat';
   if (t >= ZOMBIES.armored.from && r < 0.07 + Math.min(0.2, 0.08 + (t - ZOMBIES.armored.from) / 1500)) return 'armored';
   const runnerChance = t < ZOMBIES.runner.from ? 0 : Math.min(0.4, 0.12 + (t - ZOMBIES.runner.from) / 600);
   return Math.random() < runnerChance ? 'runner' : 'walker';
 }
-const FORM = { walker: 'walk', runner: 'run', armored: 'armored', fat: 'fat' };
-function spawnZombie(forceType, at, crawl) {
-  if (zombies.filter(z => !z.dead).length >= MAX_ENEMIES) return null;
+const FORM = { walker: 'walk', runner: 'run', armored: 'armored', fat: 'fat', hound: 'hound', screamer: 'screamer', spitter: 'spitter', brute: 'brute', riot: 'riot', warden: 'warden' };
+function spawnZombie(forceType, at, crawl, ignoreCap) {
+  if (!ignoreCap && zombies.filter(z => !z.dead).length >= MAX_ENEMIES) return null;
   const t = G.t, type = forceType || pickZombieType(t);
   const pos = findSpawnPos(at); if (!pos) return null;
   const T = ZOMBIES[type];
@@ -177,6 +178,7 @@ function spawnZombie(forceType, at, crawl) {
     hp: T.hp * (1 + t / 150), r: T.r, speed: T.speed * rnd(0.92, 1.08), scale: type === 'runner' ? 0.9 : 1,
     phase: Math.random() * 6, moving: true, flash: 0, kx: 0, kz: 0, dead: false, deadT: 0, fall: 0, atkT: 0, hurtT: 0, nod: 0,
     slideT: 0, side: 1, slowT: 0, slowMul: 1, stunT: 0, burnT: 0, bleedT: 0, dotT: 0 };
+  if (MOB_INIT[type]) MOB_INIT[type](z);                                  // особые мобы: свои поля (щит, масть, запасы)
   zombies.push(z);
   return z;
 }

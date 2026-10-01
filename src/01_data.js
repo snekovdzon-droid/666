@@ -88,6 +88,13 @@ const ZOMBIES = {
   runner:  { name:'Бегун',        hp:12,  speed:2.0,  r:0.26, xp:2, h:11, col:'#c7c46a', dark:'#7a6f2e', from:40 },
   armored: { name:'Бронированный', hp:62, speed:0.72, r:0.32, xp:3, h:14, col:'#7f8f6a', dark:'#44503a', from:240, helmet:true },
   fat:     { name:'Толстяк',      hp:100, speed:0.45, r:0.46, xp:4, h:17, col:'#8fa66e', dark:'#4d5c3c', from:360, fat:true },
+  // ---- особые мобы: у каждого своя задача (см. 11d_mobs.js) ----
+  hound:    { name:'Тюремный пёс',     hp:9,   speed:3.0,  r:0.24, xp:2,  h:8,  col:'#6a5a48', dark:'#2e2c2a', from:200 },   // стаями по 4–6
+  screamer: { name:'Кричащий',         hp:24,  speed:0.85, r:0.27, xp:6,  h:14, col:'#b8c0a8', dark:'#5a6050', from:300 },   // ускоряет зомби и зовёт новых
+  spitter:  { name:'Плевун',           hp:30,  speed:0.7,  r:0.3,  xp:6,  h:14, col:'#8ac04a', dark:'#46602a', from:360 },   // кислотные лужи
+  brute:    { name:'Громила',          hp:120, speed:0.55, r:0.44, xp:8,  h:18, col:'#a06a3a', dark:'#5a3a1e', from:420 },   // сносит укрытия, таранит
+  riot:     { name:'Бунтарь со щитом', hp:70,  speed:0.6,  r:0.34, xp:6,  h:15, col:'#7a8aa0', dark:'#3a4658', from:480 },   // спереди почти неуязвим
+  warden:   { name:'Начальник тюрьмы', hp:500, speed:0.6,  r:0.5,  xp:40, h:20, col:'#3a4a6e', dark:'#1c2438', from:600, boss:true },
 };
 const SPAWN_MUL = 0.75;                 // общий темп появления зомби (−25%)
 const FAT_BOOM = { delay:0.4, R:1.5, dmg:40 };   // взрыв толстяка: ранит и игроков, и зомби
