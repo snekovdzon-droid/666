@@ -75,7 +75,7 @@ function touchItems(p, sl) {
 }
 function hudBuild() {
   tItemsKey = ''; if ($('tItems')) $('tItems').innerHTML = '';
-  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}">${players.length > 1 ? `<div class="pn" style="color:${PLAYER_CSS[i]}">Игрок ${i + 1}</div>` : ''}<div class="hp"></div><div class="bar stam"><i></i></div><div class="gun"></div><div class="ammo"></div><div class="bar rel"><i></i></div><div class="items"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div>`).join('');
+  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate"><div class="ph"><span class="pn">${players.length > 1 ? 'ИГРОК ' + (i + 1) : 'ДОСЬЕ'}</span></div><div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div></div>`).join('');
   hudLast = {};
 }
 let hudLast = {};
@@ -85,22 +85,25 @@ function hud() {
   for (const p of players) {
     const box = $('hud' + p.idx); if (!box) { hudBuild(); return; }
     const q = s => box.querySelector(s), K = 'p' + p.idx, ws = wStat(p);
-    hudSet(q('.hp'), K + 'hp', '♥'.repeat(Math.max(0, p.hp)) + '♡'.repeat(Math.max(0, p.maxHp - p.hp)) + (p.armor > 0 ? `<span style="color:#6a9cff">${'♥'.repeat(p.armor)}</span>` : '') + (p.shield ? '<span style="color:#b8bcc4">♥</span>' : ''), 'innerHTML');   // серое — щит стойки
+    hudSet(q('.hp'), K + 'hp', heartsHtml(p), 'innerHTML');
     hudSet(q('.stam'), K + 'st', (p.stam * 100).toFixed(0) + '%', 'width'); q('.stam').classList.toggle('lock', p.stamLock);
-    hudSet(q('.gun'), K + 'gun', CLASSES[p.gun].name + ' · ' + WEAPONS[p.gun].name + (p.gun === 'mg' && p.spin > 0.05 ? ` · раскрутка ${Math.round(p.spin * 100)}%` : '') +
-      (L(p, 'ri_ubgl') ? ` · подствольник ${'●'.repeat(p.ubglC || 0)}${'○'.repeat(ubglMax(p) - (p.ubglC || 0))}` : '') + (p.handN > 0 ? ` · ловкость ×${p.handN}` : '') + (p.gun === 'crossbow' ? ` · колчан ${p.quiver}${p.quiver <= 0 && p.ammo <= 0 ? ' (болт через ' + Math.ceil(3 - p.boltT) + ' с)' : ''}` : ''));
+    hudSet(q('.cls'), K + 'cls', `${CLASSES[p.gun].name}<small>${WEAPONS[p.gun].name}</small>`, 'innerHTML');
+    hudSet(q('.gun'), K + 'gun', [p.gun === 'mg' && p.spin > 0.05 ? `раскрутка ${Math.round(p.spin * 100)}%` : '', L(p, 'ri_ubgl') ? `подствольник ${'●'.repeat(p.ubglC || 0)}${'○'.repeat(ubglMax(p) - (p.ubglC || 0))}` : '', p.handN > 0 ? `ловкость ×${p.handN}` : '',
+      p.gun === 'crossbow' ? `колчан ${p.quiver}${p.quiver <= 0 && p.ammo <= 0 ? ' (болт через ' + Math.ceil(3 - p.boltT) + ' с)' : ''}` : ''].filter(Boolean).join(' · '));
     const key = p.ammo + '/' + ws.mag;
-    if (hudLast[K + 'am'] !== key) { hudLast[K + 'am'] = key; const el = q('.ammo'); el.classList.toggle('many', ws.mag > 40);
-      el.innerHTML = ws.mag > 60 ? `<span style="font-size:15px">${p.ammo} / ${ws.mag}</span>` : Array.from({ length: ws.mag }, (_, i) => `<b class="${i < p.ammo ? '' : 'e'}"></b>`).join(''); }
+    if (hudLast[K + 'am'] !== key) { hudLast[K + 'am'] = key; const el = q('.ammo'); el.classList.toggle('many', ws.mag > 40); q('.am').textContent = key;
+      el.innerHTML = ws.mag > 40 ? '' : Array.from({ length: ws.mag }, (_, i) => `<b class="${i < p.ammo ? '' : 'e'}"></b>`).join(''); }
     q('.rel').style.display = p.reloadT > 0 ? 'block' : 'none';
     if (p.reloadT > 0) hudSet(q('.rel'), K + 'rl', (p.reloadK * 100).toFixed(0) + '%', 'width');
     // подсумок: слоты 1–4 (у игрока на стрелках — 7–0), в руке — подсвечен; сообщения о находках и обмене
     const keysOf = p.ctrl === 'keys2' ? ['7', '8', '9', '0', '-', '='] : p.ctrl === 'pad' || (p.ctrl === 'all' && PAD.active) ? ['↑', '→', '↓', '←', 'Y', 'Y'] : ['1', '2', '3', '4', '5', '6'];
-    const sl = slotTypes(p), itemsHtml = sl.length || pouchN(p) || p.fuel != null ? (p.fuel != null ? `<span class="sl on">КАНИСТ · бензин ${p.fuel.toFixed(1)} с</span>` : '') + sl.slice(0, 6).map((id, i) => `<span class="sl${p.hand === id ? ' on' : ''}">${IS_TOUCH ? '' : `<b>${keysOf[i]}</b>`}${ITEM_SHORT[id]} ×${p.pouch[id]}<i>ур.${itemLv(p, id)}</i></span>`).join('') + `<span class="cap">${pouchN(p)}/${pouchCap(p)}</span>` : '';
+    const sl = slotTypes(p);
+    const itemsHtml = sl.length || pouchN(p) || p.fuel != null ? sl.slice(0, 6).map((id, i) => `<div class="slot${p.hand === id ? ' on' : ''}" title="${ITEMS[id].name}">${IS_TOUCH ? '' : `<u>${keysOf[i]}</u>`}${pixIcon(id, 26)}<b>×${p.pouch[id]}</b>${pips(itemLv(p, id), 5)}</div>`).join('')
+      + (p.fuel != null ? `<div class="chip">${pixIcon('canister', 16)} ${p.fuel.toFixed(1)} с</div>` : '') + `<span class="cap">${pouchN(p)}/${pouchCap(p)}</span>` : '';
     hudSet(q('.items'), K + 'it', itemsHtml, 'innerHTML');
-    const dv = Object.keys(p.dev || {}).map(id => DEVICES[id].name + ' ' + p.dev[id] + (id === 'hook' ? (p.hookCd > 0 ? ` (${Math.ceil(p.hookCd)} с)` : ' ✓') : id === 'inject' ? (p.injReady ? ' ✓' : p.injT > 0 ? ` (${Math.ceil(p.injT)} с)` : ' —') : '')).join(' · ');
-    const at = Object.keys(p.att || {}).map(id => ATTACH[id].name).join(', ');
-    hudSet(q('.devs'), K + 'dv', dv + (at ? (dv ? ' · ' : '') + 'обвесы: ' + at : ''));
+    const devHtml = Object.keys(p.dev || {}).map(id => { const st = devState(p, id); return `<div class="dev" title="${DEVICES[id].name} ур.${p.dev[id]}">${pixIcon(id, 22)}${pips(p.dev[id], 3)}${st ? `<em>${st}</em>` : ''}</div>`; }).join('')
+      + Object.keys(p.att || {}).map(id => `<div class="dev att" title="${ATTACH[id].name}">${pixIcon(id, 20)}</div>`).join('');
+    hudSet(q('.devs'), K + 'dv', devHtml, 'innerHTML');
     hudSet(q('.msg'), K + 'ms', p.msgT > 0 ? `<span style="color:${p.msgCol}">${p.msg}</span>` : '', 'innerHTML');
     if (IS_TOUCH && p.idx === 0) touchItems(p, sl);
     hudSet(q('.down'), K + 'dn', p.down ? (players.length > 1 ? `ЛЕЖИТ — отстреливается, подними! ${Math.round(p.reviveT / CFG.REVIVE_TIME * 100)}%` : '') : '');
@@ -219,7 +222,7 @@ function render(T) {
   voxFrameEnd(); drawMarkers(T);
   charMesh.count = chN; charMesh.instanceMatrix.needsUpdate = true; charMesh.instanceColor.needsUpdate = true;
   renderer.render(scene, cam);
-  hud(); debugUpdate();
+  hud(); hudExtra(T); debugUpdate();
 }
 // старт: сначала модели Meshy, потом карта (коллизии моделей нужны навигации)
 loadModels().then(() => {
