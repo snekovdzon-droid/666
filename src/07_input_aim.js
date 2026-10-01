@@ -169,7 +169,10 @@ function aimPoint(p, c) {
     if (dir) return { pt: new THREE.Vector3(p.x + dir[0] * 6, p.y + 0.7, p.z + dir[1] * 6), target: null };   // никого — стреляем по стику
     return { pt: null, target: null };
   }
-  ndc.set(mouse.x / innerWidth * 2 - 1, -(mouse.y / innerHeight) * 2 + 1);
+  let nx = mouse.x / innerWidth * 2 - 1, ny = -(mouse.y / innerHeight) * 2 + 1;
+  const V = SPLIT.on ? viewFor(p) : null;                // раздельный экран: курсор считается внутри своей половины
+  if (V) { placeViewCam(V); nx = clamp((mouse.x - V.rect.x) / V.rect.w * 2 - 1, -1, 1); ny = clamp(-((mouse.y - V.rect.y) / V.rect.h) * 2 + 1, -1, 1); }
+  ndc.set(nx, ny);
   ray.setFromCamera(ndc, cam);
   // курсор на зомби — целимся в него
   let best = null, bt = 1e9;

@@ -15,6 +15,7 @@ function menuBuild() {
   });
   $('goBtn').onclick = e => { e.stopPropagation(); menuConfirm(); };
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('splitBtn').onclick = e => { e.stopPropagation(); toggleSplit(); };
   $('backMain').onclick = e => { e.stopPropagation(); mmEnter(); };
   $('lookPrev').onclick = e => { e.stopPropagation(); lookCycle(-1); }; $('lookNext').onclick = e => { e.stopPropagation(); lookCycle(1); };
   $('lookEdit').onclick = e => { e.stopPropagation(); edOpen(); };
@@ -37,12 +38,14 @@ function menuMark() {
     b.querySelector('.who').innerHTML = G.nPlayers > 1 ? G.guns.slice(0, G.pick).map((g, k) => g === MAIN_IDS[i] ? `<i style="background:${PLAYER_CSS[k]}">И${k + 1}</i>` : '').join('') : '';
   });
   $('plBtn').textContent = 'Игроков: ' + G.nPlayers;
+  $('splitBtn').style.display = G.nPlayers > 1 && !IS_TOUCH ? '' : 'none'; $('splitBtn').textContent = 'Экран: ' + (G.split ? 'раздельный' : 'общий');
   const ctr = assignControls(G.nPlayers);
   $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
   $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'В бой';
   lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
+function toggleSplit() { G.split = !G.split; lsSet('split', G.split); SFX.click(); menuMark(); }
 function menuConfirm() {
   SFX.click();
   if (G.pick < G.nPlayers - 1) { G.pick++; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); menuMark(); return; }
@@ -126,7 +129,7 @@ const START = { x: 48, z: 44 };                   // двор перед гла�
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll();
-  clearMobs();
+  clearMobs(); splitEnd();
   Object.assign(G, { killsBy: {}, bossKills: 0, nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z;
@@ -136,7 +139,7 @@ function makePlayers() {
   const n = Math.min(G.nPlayers, maxPlayers()), ctr = assignControls(n);
   players.length = 0;
   for (let i = 0; i < n; i++) { const a = n === 1 ? 0 : i / n * TAU; players.push(makePlayer(i, G.guns[i] || 'shotgun', START.x + Math.cos(a) * 0.8 * (n > 1), START.z + Math.sin(a) * 0.8 * (n > 1), ctr[i])); }
-  player = players[0]; hudBuild(); updateMarkers();
+  player = players[0]; hudBuild(); updateMarkers(); splitStart();
 }
 function startRun() {
   if (IS_TOUCH) goFullscreen(true);                                    // телефон: с первого забега — полный экран
@@ -203,7 +206,7 @@ function tick(dt, T) {
   }
   if (live) {
     zgridBuild();
-    if (run) { for (const p of players) updatePlayer(p, dt); tether(); updateRevive(dt); }
+    if (run) { for (const p of players) updatePlayer(p, dt); if (!SPLIT.on) tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
     updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
@@ -224,7 +227,16 @@ function render(T) {
   if (G.state === 'main') mmDraw();
   voxFrameEnd(); drawMarkers(T);
   charMesh.count = chN; charMesh.instanceMatrix.needsUpdate = true; charMesh.instanceColor.needsUpdate = true;
-  renderer.render(scene, cam);
+  if (SPLIT.on && G.state !== 'main') {
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.clear(); renderer.setScissorTest(true);
+    for (const v of SPLIT.views) {
+      const r = v.rect, y = innerHeight - r.y - r.h;
+      renderer.setViewport(r.x, y, r.w, r.h); renderer.setScissor(r.x, y, r.w, r.h);
+      placeViewCam(v); setLampLights(v.x, v.z); setFireLights(v.x, v.z, T);
+      renderer.render(scene, cam);
+    }
+    renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
+  } else renderer.render(scene, cam);
   hud(); hudExtra(T); debugUpdate();
 }
 // старт: сначала модели Meshy, потом карта (коллизии моделей нужны навигации)

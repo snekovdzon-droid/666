@@ -113,7 +113,7 @@ function nearestAlive(x, z) { let best = null, bd = Infinity; for (const p of pl
 
 const zombies = [], bullets = [], gems = [];
 const G = { state: 'menu', t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, over: false, win: false,
-  night: 0, nightT: 0, fps: 60, navT: 0, zId: 1, hurtFx: 0, gun: lsGet('gun', 'shotgun'), nPlayers: 1, guns: lsGet('guns', ['shotgun', 'rifle', 'mg', 'revolver']), pick: 0 };
+  night: 0, nightT: 0, fps: 60, navT: 0, zId: 1, hurtFx: 0, gun: lsGet('gun', 'shotgun'), nPlayers: 1, split: lsGet('split', false), guns: lsGet('guns', ['shotgun', 'rifle', 'mg', 'revolver']), pick: 0 };
 if (!WEAPONS[G.gun]) G.gun = 'shotgun';
 G.guns = G.guns.map(g => WEAPONS[g] ? g : 'shotgun');
 
@@ -131,7 +131,10 @@ function lookFor(type) {
 let SPAWNS = [];                                   // точки выхода — из карты (mapSpawns в 35_map), заполняются после buildMap
 let spawnDist = 16;
 const _pv = new THREE.Vector3();
-function onScreen(x, z, y = 0) { _pv.set(x, y + 0.6, z).project(cam); return Math.abs(_pv.x) < 1.08 && Math.abs(_pv.y) < 1.12; }
+function onScreen(x, z, y = 0) {
+  if (SPLIT.on) { for (const v of SPLIT.views) { _pv.set(x, y + 0.6, z).applyMatrix4(v.vm).applyMatrix4(v.pm); if (Math.abs(_pv.x) < 1.08 && Math.abs(_pv.y) < 1.12) return true; } return false; }
+  _pv.set(x, y + 0.6, z).project(cam); return Math.abs(_pv.x) < 1.08 && Math.abs(_pv.y) < 1.12;
+}
 function spawnPoint(allowVisible) {
   const al = alivePlayers(); if (!al.length) return null;
   const cand = [];

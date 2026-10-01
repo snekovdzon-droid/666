@@ -170,12 +170,21 @@ body.hudEdit #bossBar{width:min(520px,62vw)}
 .hp-t{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#e8a050;font-weight:700}.hp-s{font-size:13px;margin:4px 0 7px;color:#f2ead6}.hp-h{font-size:11px;color:#8a806c;margin-top:6px}
 .hp-row{display:flex;gap:6px;align-items:center;margin:4px 0}.hp-row b{min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
 #hudPanel button{font:inherit;font-size:13px;padding:6px 12px;background:rgba(30,24,18,.95);border:1px solid #5a5242;color:#f2ead6;cursor:pointer;border-radius:0}#hudPanel button:hover{border-color:#e8a050}#hudPanel #hpDone{background:#7a4a1e;border-color:#e8a050}
+/* ---------- раздельный экран ---------- */
+#splitLines{position:fixed;inset:0;pointer-events:none;display:none;z-index:2}
+#splitLines i{position:absolute;background:#0c0a08;box-shadow:0 0 0 1px rgba(232,160,80,.55)}
+#splitLines i:nth-child(1){left:calc(50% - 2px);width:4px;top:0;bottom:0}#splitLines i:nth-child(2){display:none;top:calc(50% - 2px);height:4px;left:0;right:0}
+#splitLines.three i:nth-child(2),#splitLines.four i:nth-child(2){display:block}
+#splitLines.three i:nth-child(1){bottom:50%}
+body.split .hud.c1{top:30px}
+body.split #radarBox{right:auto;left:50%;top:auto;bottom:12px;margin-left:-59px}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
 <div id="top"><div class="tbox"><span class="tl">УР. <b id="lvl">1</b></span><span id="timer"></span><span class="tk">☠ <b id="kills">0</b></span></div><div id="xpbar"><i></i></div></div>
 <div id="lvlMsg"></div>
-<div id="radarBox"><canvas id="radar"></canvas></div><div id="hints"></div><div id="hudPanel"><div class="hp-t">Настройка HUD</div><div class="hp-s" id="hpSel">Выберите элемент и перетащите</div><div class="hp-row"><button id="hpMinus">−</button><b id="hpScale">100%</b><button id="hpPlus">+</button><button id="hpOne">Сбросить элемент</button></div><div class="hp-row"><button id="hpAll">Сбросить всё</button><button id="hpDone">Готово</button></div><div class="hp-h">Тащите элементы мышью или пальцем. Колёсико мыши — размер.</div></div>
+<div id="radarBox"><canvas id="radar"></canvas></div><div id="hints"></div><div id="splitLines"><i></i><i></i></div>
+<div id="hudPanel"><div class="hp-t">Настройка HUD</div><div class="hp-s" id="hpSel">Выберите элемент и перетащите</div><div class="hp-row"><button id="hpMinus">−</button><b id="hpScale">100%</b><button id="hpPlus">+</button><button id="hpOne">Сбросить элемент</button></div><div class="hp-row"><button id="hpAll">Сбросить всё</button><button id="hpDone">Готово</button></div><div class="hp-h">Тащите элементы мышью или пальцем. Колёсико мыши — размер.</div></div>
 <div id="bossArrow"><i></i><b></b></div>
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
@@ -188,7 +197,7 @@ body.hudEdit #bossBar{width:min(520px,62vw)}
 <div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
   <div><button class="go alt" id="backMain">← Главное меню</button></div>
   <div id="lookRow"><span id="lookWho"></span> <button id="lookPrev">◀</button> <b id="lookName"></b> <button id="lookNext">▶</button> <button id="lookEdit">Редактор персонажа</button></div>
-  <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go" id="goBtn">В бой</button></div>
+  <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go alt" id="splitBtn">Экран: общий</button> <button class="go" id="goBtn">В бой</button></div>
   <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
   <label class="opts"><input type="checkbox" id="optSound"> звук</label></div>
 <div id="editor" class="scr">

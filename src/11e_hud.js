@@ -57,7 +57,8 @@ function radarDraw(T) {
   const dpr = Math.min(2, window.devicePixelRatio || 1), S = RADAR.S;
   if (cv.width !== Math.round(S * dpr)) { cv.width = cv.height = Math.round(S * dpr); cv.style.width = cv.style.height = S + 'px'; }
   const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, S, S);
-  const c = S / 2, rad = c - 5, C = camCenter(), k = rad / RADAR.R;
+  const C = camCenter(); RADAR.R = 26; if (SPLIT.on) for (const p of players) RADAR.R = Math.max(RADAR.R, Math.min(70, Math.hypot(p.x - C.x, p.z - C.z) * 1.6 + 8));   // раздельный экран: охватить всех игроков
+  const c = S / 2, rad = c - 5, k = rad / RADAR.R;
   const pt = (x, z) => { const [ox, od] = scrOff(x - C.x, z - C.z); return [c + ox * k, c + od * k]; };
   g.save(); g.beginPath(); g.arc(c, c, rad, 0, TAU); g.clip();
   g.fillStyle = 'rgba(12,10,8,0.8)'; g.fillRect(0, 0, S, S);
@@ -80,47 +81,62 @@ function radarDraw(T) {
   }
 }
 
+/* --- виды экрана для HUD: один (общий) или по одному на игрока (раздельный) --- */
+function uiViews() {
+  if (SPLIT.on) return SPLIT.views.map(v => ({ rect: v.rect, vm: v.vm, pm: v.pm, ps: [v.p] }));
+  cam.updateMatrixWorld(); return [{ rect: { x: 0, y: 0, w: innerWidth, h: innerHeight }, vm: cam.matrixWorldInverse, pm: cam.projectionMatrix, ps: alivePlayers() }];
+}
+// мировая точка → пиксели вида; null, если за краем вида
+function toView(V, x, y, z, m = 1) {
+  _pv.set(x, y, z).applyMatrix4(V.vm).applyMatrix4(V.pm);
+  if (Math.abs(_pv.x) > m || Math.abs(_pv.y) > m) return null;
+  return [V.rect.x + (_pv.x + 1) / 2 * V.rect.w, V.rect.y + (1 - _pv.y) / 2 * V.rect.h];
+}
+
 /* --- подсказки над ящиками и предметами рядом с игроком --- */
 const HINT_RANGE = 8, HINT_MAX = 6, hintEls = [];
 function hintsUpdate() {
   const box = $('hints'); if (!box) return;
   const live = G.state === 'play' && !G.paused, list = [];
-  if (live) {
-    const al = alivePlayers();
-    const near = (x, z) => { let d = 99; for (const p of al) d = Math.min(d, Math.hypot(p.x - x, p.z - z)); return d; };
-    for (const c of CRATES) { const d = near(c.x, c.z); if (d < HINT_RANGE) list.push({ d, x: c.x, y: c.y + (c.big ? 0.85 : 0.65), z: c.z, ico: 'crate', tx: c.big ? 'Большой ящик' : 'Ящик', cls: 'crate' }); }
+  if (live) for (const V of uiViews()) {
+    const near = (x, z) => { let d = 99; for (const p of V.ps) d = Math.min(d, Math.hypot(p.x - x, p.z - z)); return d; }, mine = [];
+    for (const c of CRATES) { const d = near(c.x, c.z); if (d < HINT_RANGE) mine.push({ d, x: c.x, y: c.y + (c.big ? 0.85 : 0.65), z: c.z, ico: 'crate', tx: c.big ? 'Большой ящик' : 'Ящик', cls: 'crate' }); }
     for (const g of GITEMS) {
       const d = near(g.x, g.z); if (d >= HINT_RANGE) continue;
-      const on = al.find(p => Math.hypot(p.x - g.x, p.z - g.z) < 0.8 && pouchN(p) >= pouchCap(p));
-      list.push({ d, x: g.x, y: g.y + 0.7, z: g.z, ico: g.id, tx: ITEMS[g.id].name, sub: on ? `${swapKey(on)} — обменять` : '', cls: 'item' });
+      const on = V.ps.find(p => Math.hypot(p.x - g.x, p.z - g.z) < 0.8 && pouchN(p) >= pouchCap(p));
+      mine.push({ d, x: g.x, y: g.y + 0.7, z: g.z, ico: g.id, tx: ITEMS[g.id].name, sub: on ? `${swapKey(on)} — обменять` : '', cls: 'item' });
     }
+    mine.sort((a, b) => a.d - b.d);
+    for (const h of mine.slice(0, HINT_MAX)) { const pos = toView(V, h.x, h.y, h.z); if (pos) { h.px = pos; list.push(h); } }
   }
-  list.sort((a, b) => a.d - b.d);
-  const n = Math.min(HINT_MAX, list.length);
+  const n = Math.min(HINT_MAX * 4, list.length);
   while (hintEls.length < n) { const e = document.createElement('div'); e.className = 'ghint'; box.appendChild(e); hintEls.push(e); }
   for (let i = 0; i < hintEls.length; i++) {
     const e = hintEls[i], h = list[i];
     if (i >= n) { e.style.display = 'none'; continue; }
-    _pv.set(h.x, h.y, h.z).project(cam);
-    if (Math.abs(_pv.x) > 1 || Math.abs(_pv.y) > 1) { e.style.display = 'none'; continue; }
     const html = `${pixIcon(h.ico, 20)}<span><b>${h.tx}</b>${h.sub ? `<em>${h.sub}</em>` : ''}</span>`, key = h.cls + h.tx + h.sub;
     if (e._k !== key) { e._k = key; e.className = 'ghint ' + h.cls; e.innerHTML = html; }
-    e.style.display = 'flex'; e.style.transform = `translate(${((_pv.x + 1) / 2 * innerWidth).toFixed(1)}px,${((1 - _pv.y) / 2 * innerHeight).toFixed(1)}px) translate(-50%,-100%)`;
+    e.style.display = 'flex'; e.style.transform = `translate(${h.px[0].toFixed(1)}px,${h.px[1].toFixed(1)}px) translate(-50%,-100%)`;
   }
 }
 
-/* --- стрелка к боссу, когда он за краем экрана --- */
+/* --- стрелка к боссу, когда он за краем вида (в раздельном экране — своя в каждой половине) --- */
+const arrowEls = [];
 function bossArrowUpdate() {
-  const el = $('bossArrow'), B = G.boss; if (!el) return;
-  if (!B || B.dead || G.state !== 'play') { el.style.display = 'none'; return; }
-  _pv.set(B.x, B.y + 1, B.z).project(cam);
-  const nx = _pv.x, ny = _pv.y;
-  if (Math.abs(nx) < 0.95 && Math.abs(ny) < 0.9) { el.style.display = 'none'; return; }
-  const k = Math.max(Math.abs(nx) / 0.9, Math.abs(ny) / 0.84);
-  let d = 99; for (const p of players) d = Math.min(d, Math.hypot(p.x - B.x, p.z - B.z));
-  el.style.display = 'flex'; el.style.left = ((nx / k + 1) / 2 * innerWidth).toFixed(1) + 'px'; el.style.top = ((1 - ny / k) / 2 * innerHeight).toFixed(1) + 'px';
-  el.querySelector('i').style.transform = `rotate(${Math.atan2(-ny, nx).toFixed(3)}rad)`;
-  el.querySelector('b').textContent = Math.round(d) + ' м';
+  const base = $('bossArrow'), B = G.boss; if (!base) return;
+  const views = !B || B.dead || G.state !== 'play' ? [] : uiViews();
+  while (arrowEls.length < views.length) { const e = arrowEls.length ? base.cloneNode(true) : base; if (arrowEls.length) { e.removeAttribute('id'); document.body.appendChild(e); } arrowEls.push(e); }
+  arrowEls.forEach((el, i) => {
+    const V = views[i]; if (!V) { el.style.display = 'none'; return; }
+    _pv.set(B.x, B.y + 1, B.z).applyMatrix4(V.vm).applyMatrix4(V.pm);
+    const nx = _pv.x, ny = _pv.y;
+    if (Math.abs(nx) < 0.95 && Math.abs(ny) < 0.9) { el.style.display = 'none'; return; }
+    const k = Math.max(Math.abs(nx) / 0.9, Math.abs(ny) / 0.84);
+    let d = 99; for (const p of V.ps) d = Math.min(d, Math.hypot(p.x - B.x, p.z - B.z));
+    el.style.display = 'flex'; el.style.left = (V.rect.x + (nx / k + 1) / 2 * V.rect.w).toFixed(1) + 'px'; el.style.top = (V.rect.y + (1 - ny / k) / 2 * V.rect.h).toFixed(1) + 'px';
+    el.querySelector('i').style.transform = `rotate(${Math.atan2(-ny, nx).toFixed(3)}rad)`;
+    el.querySelector('b').textContent = Math.round(d) + ' м';
+  });
 }
 
 // каждый кадр из render(): всё, что рисуется поверх игры

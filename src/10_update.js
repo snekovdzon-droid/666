@@ -143,13 +143,17 @@ function updateZombies(dt) {
   }
 }
 const CORPSE_MAX = IS_TOUCH ? 30 : 60;
-function updateFires(dt, T) {
-  const near = CAM.zoom * 2 + 5, cx = CAM.x, cz = CAM.z;
-  for (const f of fires) f.d = Math.hypot(f.x - cx, f.z - cz);
-  const lit = fires.filter(f => f.d < near + 6).sort((a, b) => a.d - b.d);
+// огоньки-лампы у костров, ближайших к точке обзора (в раздельном экране — свои для каждой половины)
+function setFireLights(cx, cz, T) {
+  const near = CAM.zoom * 2 + 5, lit = fires.filter(f => Math.hypot(f.x - cx, f.z - cz) < near + 6).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz));
   FIRE_LIGHTS.forEach((l, i) => { const f = lit[i]; if (!f) { l.intensity = 0; return; }
     const fl = 0.8 + 0.2 * Math.sin(T * 13 + f.seed) * Math.sin(T * 7.3 + f.seed * 2);
     l.position.set(f.x, f.y + 0.6, f.z); l.distance = 9 * f.s; l.intensity = (1.4 + G.night * 2.2) * fl * f.s; });
+}
+function updateFires(dt, T) {
+  const near = CAM.zoom * 2 + 5, pts = SPLIT.on ? SPLIT.views : [CAM];
+  for (const f of fires) { let d = 1e9; for (const v of pts) d = Math.min(d, Math.hypot(f.x - v.x, f.z - v.z)); f.d = d; }
+  setFireLights(CAM.x, CAM.z, T);
   for (const f of fires) {
     if (f.d > near) { f.acc = 0; continue; }                     // огонь далеко за экраном — не дымит
     f.acc += dt * 34 * f.s;
@@ -172,19 +176,25 @@ function updateSky(dt) {
   hemi.intensity = 0.5 - n * 0.34; hemi.color.setRGB(1 - n * 0.55, 0.88 - n * 0.45, 0.75 - n * 0.2);
   scene.background.setRGB(0.13 - n * 0.09, 0.1 - n * 0.06, 0.09 - n * 0.03); scene.fog.color.copy(scene.background);
   for (const m of winMats) m.emissiveIntensity = 0.25 + n * 1.1;
-  for (const L of lamps) { L.bulb.material.color.setRGB(0.4 + n * 0.6, 0.39 + n * 0.55, 0.3 + n * 0.45); L.d = Math.hypot(L.x - CAM.x, L.z - CAM.z); }
+  for (const L of lamps) L.bulb.material.color.setRGB(0.4 + n * 0.6, 0.39 + n * 0.55, 0.3 + n * 0.45);
+  setLampLights(CAM.x, CAM.z);
+}
+// прожекторы фонарей, ближайших к точке обзора (в раздельном экране — для каждой половины свои)
+function setLampLights(cx, cz) {
+  const n = G.night;
+  for (const L of lamps) L.d = Math.hypot(L.x - cx, L.z - cz);
   const ls = lamps.slice().sort((a, b) => a.d - b.d);
   LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 : 0; if (L) { sp.position.set(L.x + 0.6, 3.95, L.z); sp.target.position.set(L.x + 1.2, 0, L.z); sp.target.updateMatrixWorld(); } });
 }
 // Здание между камерой и героем — полупрозрачное
 const camDir = new THREE.Vector3();
 function updateFade() {
-  const to = cam.position;
+  const toShared = cam.position;
   for (const B of buildings) {
     const bb = new THREE.Box3(new THREE.Vector3(B.x1, 0, B.z1), new THREE.Vector3(B.x2, B.H + 0.5, B.z2));
     let hit = false;
     for (const p of players) {                           // здание закрывает хоть одного игрока — полупрозрачное
-      const from = new THREE.Vector3(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(from).normalize();
+      const to = SPLIT.on && viewFor(p) ? viewFor(p).cp : toShared, from = new THREE.Vector3(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(from).normalize();
       if (new THREE.Ray(from, camDir).intersectsBox(bb) && !(p.y >= B.H - 0.1 && p.x > B.x1 && p.x < B.x2 && p.z > B.z1 && p.z < B.z2)) { hit = true; break; }
     }
     const target = hit ? 0.28 : 1;
@@ -223,8 +233,55 @@ function updateRevive(dt) {
     } else p.reviveT = Math.max(0, p.reviveT - dt * 0.5);
   }
 }
+/* ---------- Раздельный экран (кооп): у каждого игрока своя камера и своя часть окна ---------- */
+const SPLIT = { on: false, views: [], hs: 1 };
+function viewFor(p) { return SPLIT.views.find(v => v.p === p) || null; }
+function splitStart() {
+  SPLIT.on = !!G.split && players.length > 1 && !IS_TOUCH;
+  SPLIT.views = SPLIT.on ? players.map(p => ({ p, x: p.x, z: p.z, y: p.y * 0.5, kx: 0, kz: 0, rect: null, cp: new THREE.Vector3(), vm: new THREE.Matrix4(), pm: new THREE.Matrix4() })) : [];
+  document.body.classList.toggle('split', SPLIT.on); splitLayout();
+}
+function splitEnd() { SPLIT.on = false; SPLIT.views = []; document.body.classList.remove('split'); const el = $('splitLines'); if (el) el.style.display = 'none'; }
+function splitLayout() {
+  if (!SPLIT.on) return;
+  const W = innerWidth, H = innerHeight, g = 4, v = SPLIT.views, n = v.length, hw = W / 2 - g / 2, hh = H / 2 - g / 2;
+  const set = (i, x, y, w, h) => { v[i].rect = { x, y, w, h }; };
+  if (n === 2) { set(0, 0, 0, hw, H); set(1, W / 2 + g / 2, 0, hw, H); SPLIT.hs = 1; }
+  else { set(0, 0, 0, hw, hh); set(1, W / 2 + g / 2, 0, hw, hh); set(2, 0, H / 2 + g / 2, n === 3 ? W : hw, hh); if (n > 3) set(3, W / 2 + g / 2, H / 2 + g / 2, hw, hh); SPLIT.hs = 0.78; }
+  const el = $('splitLines'); if (el) { el.style.display = 'block'; el.className = n === 2 ? 'two' : n === 3 ? 'three' : 'four'; }
+}
+addEventListener('resize', splitLayout);
+// камера по виду: кадр, свет, тени
+function placeCam(cx, cy, cz, sx, sz, aspect, h, shift) {
+  const D = 40, cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
+  cam.position.set(cx + Math.sin(CAM.yaw) * cp * D + sx, cy + sp * D, cz + Math.cos(CAM.yaw) * cp * D + sz);
+  cam.lookAt(cx + sx, cy, cz + sz);
+  cam.left = -h * aspect - shift; cam.right = h * aspect - shift; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+  sun.position.set(cx - 14, 26, cz - 10); sun.target.position.set(cx, 0, cz);
+}
+function placeViewCam(v) {
+  let sx = v.kx, sz = v.kz; if (shake > 0) { sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
+  placeCam(v.x, v.y, v.z, sx, sz, v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs, 0); v.cp.copy(cam.position);
+}
+function updateSplitCams(dt) {
+  CAM.zoom += (CAM.zoomT - CAM.zoom) * Math.min(1, dt * 4);
+  if (shake > 0) shake -= dt;
+  const kd = Math.exp(-16 * dt), k = Math.min(1, dt * 6); let ax = 0, az = 0, sd = 0;
+  for (const v of SPLIT.views) {
+    v.x += (v.p.x - v.x) * k; v.z += (v.p.z - v.z) * k; v.y += (v.p.y * 0.5 - v.y) * k; v.kx *= kd; v.kz *= kd; ax += v.p.x; az += v.p.z;
+    const sh = shake; shake = 0; placeViewCam(v); shake = sh;                // для кэша матриц без дрожания
+    v.vm.copy(cam.matrixWorldInverse); v.pm.copy(cam.projectionMatrix);
+    sd = Math.max(sd, Math.hypot(CAM.zoom * SPLIT.hs * v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs * 1.6) + 1.5);
+  }
+  CAM.x = ax / SPLIT.views.length; CAM.z = az / SPLIT.views.length; CAM.y = 0; spawnDist = sd;
+}
 function updateCamera(dt) {
   CAM.yaw += (CAM.yawT - CAM.yaw) * Math.min(1, dt * 8);
+  if (SPLIT.on && G.state !== 'main') {
+    updateSplitCams(dt);
+    if (muzzleT > 0) { muzzleT -= dt; if (muzzleT <= 0) muzzleLight.intensity = 0; }
+    updateBoomLight(dt); return;
+  }
   const MAIN = G.state === 'main', C = MAIN ? { x: MM.cam.x, z: MM.cam.z, y: 0 } : players.length ? camCenter() : { x: CAM.x, z: CAM.z, y: 0 };
   let need = 0;                                          // кооп: насколько отдалить, чтобы все были на экране
   if (players.length > 1) { const a = innerWidth / innerHeight, sp = Math.sin(CAM.pitch);
@@ -232,15 +289,10 @@ function updateCamera(dt) {
   const zt = MAIN ? MM.zoom : Math.max(CAM.zoomT, Math.min(CAM_MAX, need));
   CAM.zoom += (zt - CAM.zoom) * Math.min(1, dt * 4);
   CAM.x += (C.x - CAM.x) * Math.min(1, dt * 6); CAM.z += (C.z - CAM.z) * Math.min(1, dt * 6); CAM.y = (CAM.y || 0) + (C.y * 0.5 - (CAM.y || 0)) * Math.min(1, dt * 6);
-  const D = 40, cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
   let sx = CAM.kx, sz = CAM.kz; if (shake > 0) { shake -= dt; sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
   const kd = Math.exp(-16 * dt); CAM.kx *= kd; CAM.kz *= kd;
-  cam.position.set(CAM.x + Math.sin(CAM.yaw) * cp * D + sx, CAM.y + sp * D, CAM.z + Math.cos(CAM.yaw) * cp * D + sz);
-  cam.lookAt(CAM.x + sx, CAM.y, CAM.z + sz);
   const a = innerWidth / innerHeight, h = CAM.zoom; const sh = MAIN && a > 1.1 ? h * a * 0.34 : 0;   // главное меню: сцена смещена вправо, слева — кнопки
-  cam.left = -h * a - sh; cam.right = h * a - sh; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-  sun.position.set(CAM.x - 14, 26, CAM.z - 10); sun.target.position.set(CAM.x, 0, CAM.z);
+  placeCam(CAM.x, CAM.y, CAM.z, sx, sz, a, h, sh);
   if (muzzleT > 0) { muzzleT -= dt; if (muzzleT <= 0) muzzleLight.intensity = 0; }
   updateBoomLight(dt);
   spawnDist = Math.hypot(CAM.zoom * innerWidth / innerHeight, CAM.zoom * 1.6) + 1.5;

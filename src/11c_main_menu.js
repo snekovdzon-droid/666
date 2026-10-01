@@ -38,7 +38,7 @@ function mmLeave() { G.nightT = 0; }
 function mmPanel(name) {
   MM.panel = name; const el = $('mmPanel'); $('mmBtns').style.display = name ? 'none' : 'block'; el.style.display = name ? 'block' : 'none';
   if (name === 'settings') {
-    el.innerHTML = `<h3>Настройки</h3><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
+    el.innerHTML = `<h3>Настройки</h3><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
   } else if (name === 'exit') {
     el.innerHTML = `<h3>Спасибо за игру!</h3><p>Браузер не даёт игре закрыть вкладку сам — закройте её, когда захотите.</p><button data-s="back">В меню</button>`;
   }
@@ -49,6 +49,7 @@ function mmSetting(s) {
   if (s === 'sound') { setSound(!Sound.on); $('optSound').checked = Sound.on; mmPanel('settings'); }
   else if (s === 'full') goFullscreen();
   else if (s === 'hud') heOpen();
+  else if (s === 'split') { G.split = !G.split; lsSet('split', G.split); mmPanel('settings'); }
   else if (s === 'reset') { if (confirm('Удалить всех сохранённых героев и загруженные модели?')) { for (const k of ['heroes', 'heroSel', 'customParts']) { try { localStorage.removeItem('zsv_' + k); } catch (e) {} } location.reload(); } }
   else if (s === 'back') mmPanel('');
 }

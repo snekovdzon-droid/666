@@ -140,7 +140,7 @@ function shotFeel(p, ang, use) {
   const F = FEEL[p.gun], mz = muzzleOf(p), dx = Math.sin(ang), dz = Math.cos(ang);
   SFX.shot(p.gun);
   p.kick = F.kick / 3;
-  CAM.kx -= dx * F.cam * 0.02; CAM.kz -= dz * F.cam * 0.02;
+  const KV = (SPLIT.on && viewFor(p)) || CAM; KV.kx -= dx * F.cam * 0.02; KV.kz -= dz * F.cam * 0.02;
   shake = Math.max(shake, F.cam * 0.012);
   rumble(p, F.rumble[0] * (p.gun === 'mg' ? 0.5 + 0.5 * p.spin : 1), F.rumble[1]);
   muzzleT = 0.05; muzzleLight.position.set(mz.x, mz.y, mz.z); muzzleLight.intensity = 3.5 * F.flash / 26;
