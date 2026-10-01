@@ -139,6 +139,8 @@ const lsGet = (k, d) => { try { const v = localStorage.getItem('zsv_' + k); retu
 const lsSet = (k, v) => { try { localStorage.setItem('zsv_' + k, JSON.stringify(v)); } catch (e) {} };
 
 
+</script>
+<script>'use strict';
 /* ---------- Данные игры: перенесены из 2D-версии v33 без изменений баланса ---------- */
 const CFG = {
   TILE_W: 32, TILE_H: 16,     // размер ромба-клетки в игровых пикселях (изометрия 2:1)
@@ -487,6 +489,8 @@ const BRANCHES = {
   ],
 };
 
+</script>
+<script>'use strict';
 /* =====================================================================
    2. ИЗОМЕТРИЯ — главные формулы
    Мир живёт на обычной плоской сетке (x, y). При рисовании клетку
@@ -508,6 +512,8 @@ const VOX_ASSETS = {
   zed6: 'Vk9YIJYAAABNQUlOAAAAANQWAABTSVpFDAAAAAAAAAAPAAAACAAAAEAAAABYWVpJpBIAAAAAAACoBAAAAwAA9gQAAO8KAABeCwAA9QMBAPYEAQD2CgEAXQsBAF4DAgD2BAIA9goCAF4LAgBeAwMA9gQDAPYKAwD1CwMAXgMEAPYEBAD2CgQAXgsEAF4DBQD2BAUA9goFAF4LBQBeAwYA9gQGAPYKBgBeCwYA7wMEAfYEBAHvAwUB7wQFAe8KBQFdCwUBXQMGAfYEBgH2CgYBXQsGAV0DBQL2BAUC9goFAl4LBQLvAwYC7wQGAvYKBgJdCwYCXQMFA/YEBQP2CgUDXgsFA+8DBgPvBAYD9goGA/YLBgNeAwUE9gQFBPYKBQT2CwUEXQMGBO8EBgT2CgYE9gsGBF4DBQX2BAUF9goFBfYLBQVeAwYF9gQGBe8KBgX2CwYFXgMFBvUEBQb2CgUG9gsFBvYDBgb2BAYG7woGBl4LBgb2AwUH9QQFB/YKBQdeCwUH9gMGB/YEBgfvCgYH9gsGB/YDBQj2BAUI9goFCPYLBQj2AwYI9gQGCO8KBgj2CwYIXgMFCfUEBQn2CgUJ9gsFCfYDBgn2BAYJ7woGCfYLBgn2AwUK9QQFCvYKBQrvCwUK9gMGCvYEBgrvCgYK9gsGCvYDBQv1BAUL9QoFC/YLBQv1AwYL9gQGC/YKBgv2CwYL9gMFDPYEBQzvCgUM7wsFDPUDBgzvBAYM9goGDPYLBgz2AwUN7wQFDV0KBQ3vCwUN9gMGDV0EBg32CgYN7wsGDfYDBQ5dBAUO9QoFDu8LBQ71AwYOXQQGDl0KBg7vCwYO7wMFD10EBQ/1CgUP7wsFD/UDBg9dBAYPXQoGD+8LBg/vAwUQ9QQFEF0KBRDvCwUQ7wMGEF0EBhBdCgYQ7wsGEO8DBRFeBAURXgoFEfcLBRH3AwYRXQQGEV0KBhHvCwYR7wMEElwEBBJdCgQS9gsEEvYDBRJdBAUSXQoFEvYLBRL2AwQTXgQEE/YKBBPvCwQT7wMFE10EBRNdCgUT9QsFE/UDAxRcBAMUXAoDFO8LAxT2AwQUXAQEFFwKBBT2CwQU9gMFFFwEBRRcCgUU9gsFFPYDAxXvBAMVXQoDFfYLAxX2AwQV9gQEFV0KBBX2CwQV7wMFFfYEBRX2CgUV9gsFFfYDAxb2BAMWXgoDFu8LAxb2AwQW7wQEFl4KBBb2CwQW7w4EFvYDBRb2BAUWXQoFFvULBRb1DgUW9QwCF/MDAxf2BAMX7wUDF/YJAxf2CgMX7wsDF/YDBBfvBAQX9gUEF14JBBf2CgQX9gsEF+8OBBf2AwUX9gQFF/YFBRdeCQUX9goFF/YLBRf2DgUX9gwCGPQDAxj2BAMY9gUDGO8JAxj2CgMY7wsDGO8OAxj2AwQY7wQEGPYFBBj2CQQY9goEGPYLBBj2DQQY9Q4EGPUDBRj2BAUY9gUFGPYJBRj2CgUY9gsFGO8NBRj2DgUY9QkBGfMMAhnzAwMZ9gQDGfUFAxn2CQMZ9goDGe8LAxn2DgMZ9gMEGfYEBBn2BQQZ9gkEGfYKBBn2CwQZ9g0EGfUOBBnvAwUZ7wQFGfYFBRn2CQUZ9goFGfYLBRnvDQUZ9g4FGfUJARrzDAIa9AMDGu8EAxr2BQMa9gkDGvYKAxrvCwMa9g0DGvUOAxr2AwQa9gQEGvYFBBr2CQQa9goEGvYLBBr2DQQa9Q4EGvYDBRrvBAUa9gUFGvYJBRr2CgUa7wsFGu8NBRrvDgUa7wkBG/MMAhv0AwMb7wQDG/UFAxvvCQMb9goDG+8LAxvvAwQb9gQEG/YFBBv2CQQb9goEG/YLBBv2DQQb9Q4EG/UDBRvvBAUb9gUFG+8JBRv2CgUb9gsFG+8NBRvvDgUb9QYBHPMKARzzDAIc9AMDHPcEAxz1BQMc7wkDHO8KAxz2CwMc7wMEHPYEBBz2BQQc9gkEHPYKBBz2CwQc9g0EHO8OBBz1AwUc7wQFHPYFBRz2CQUc9goFHO8LBRzvDQUc7w4FHO8GAR30CgEd9AMDHfcEAx31BQMd7wkDHfcKAx32CwMd7wwDHfQDBB31BAQd9gUEHfYJBB32CgQd9gsEHfYNBB3vDgQd9QMFHe8EBR32BQUd7wkFHfYKBR3vCwUd9Q0FHe8OBR3vBQEe8woBHvQDAx7vBAMe9QUDHvYJAx73CgMe9gsDHu8MAx70AwQe9QQEHvYFBB72CQQe9goEHvYLBB72DQQe7w4EHu8DBR72BAUe9gUFHu8JBR72CgUe7wsFHvUNBR7vDgUe7wUBH/QJAR/zAwMf7wQDH+8FAx/2CQMf9goDH/cLAx/vDAMf9AMEH/YEBB/2BQQf9gkEH/YKBB/2CwQf9g0EH+8OBB/vAwUf9gQFH+8FBR/v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',
 };
 
+</script>
+<script>'use strict';
 /* ---------- 1. Рендер, камера, свет ---------- */
 const renderer = new THREE.WebGLRenderer({ antialias: !IS_TOUCH, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.5 : 2));
@@ -807,6 +813,8 @@ function buildVoxModel(b64, recolor) {
   return { parts: out, tex, tris, size: S };
 }
 
+</script>
+<script>'use strict';
 /* ---------- 4. Постройки ---------- */
 const WALL = 0xb8a488, WALL2 = 0xa48f74, ROOF = 0x8a8072, RED = 0xa8382a, DARK = 0x221c1a;
 const winMat = new THREE.MeshLambertMaterial({ color: 0x241e1c, emissive: 0xffb050, emissiveIntensity: 0 }), winMats = [winMat];
@@ -997,6 +1005,8 @@ function mapSpawns() {
   return S;
 }
 
+</script>
+<script>'use strict';
 /* ---------- 6. Персонажи: воксельные части, все сразу одним InstancedMesh ---------- */
 const MAX_CH = 420, PARTS = 11;
 const charMesh = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial(), MAX_CH * PARTS);
@@ -1359,6 +1369,8 @@ function drawGear(p, ang, yaw) {
   }
 }
 
+</script>
+<script>'use strict';
 /* ---------- 9. Состояние игры: игроки, стволы, зомби, появление ---------- */
 const MAX_ENEMIES = IS_TOUCH ? CFG.MAX_ENEMIES_MOBILE : CFG.MAX_ENEMIES_PC;
 const HERO_LOOK = [0xd8a880, 0x3c6a8a, 0x3a3630, 0x4a3020];
@@ -1557,6 +1569,8 @@ function nearestZombie(x, z, range, except) {
   return best;
 }
 
+</script>
+<script>'use strict';
 /* ---------- 10. Управление: клавиатура, мышь, палец, несколько геймпадов → «пульт» каждого игрока ---------- */
 const keys = new Set(); const mouse = { x: 0, y: 0, down: false, has: false };
 const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
@@ -1744,6 +1758,8 @@ const groundHit = new THREE.Mesh(new THREE.PlaneGeometry(400, 400).rotateX(-Math
 groundHit.position.set(MAP / 2, 0, MAP / 2); scene.add(groundHit);
 
 
+</script>
+<script>'use strict';
 /* ---------- 12. Стволы: стрельба, перезарядка, пули, урон, взрывы (логика из 2D v33) ---------- */
 const muzzleLight = new THREE.PointLight(0xffd090, 0, 6, 2); scene.add(muzzleLight);
 let muzzleT = 0;
@@ -2249,6 +2265,8 @@ function addXp(v) {
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; for (const p of players) G.pickQueue.push(p.idx); }   // каждый игрок выбирает свою карточку
 }
 
+</script>
+<script>'use strict';
 /* ---------- 13б. Перки и ветки стволов: карточки на повышении уровня ---------- */
 // Фильтр по стволу (решения автора): общий перк не выпадает, если ломает логику ствола
 const PERK_BAN = { mag: ['shotgun', 'sawnoff', 'revolver', 'mg', 'crossbow'], pierce: ['revolver'], rate: ['sawnoff'], proj: ['crossbow'] };   // арбалету: магазин и «Лишний ствол» закрыты (болты считаются)   // «Бронебойные» револьверу закрыты: пробитие — у Магнума
@@ -3183,6 +3201,8 @@ function updateAttach(dt) {
 }
 function clearAttach() { for (const v of ATTV.values()) { if (v.beam) scene.remove(v.beam); if (v.light) { scene.remove(v.light); scene.remove(v.light.target); } } ATTV.clear(); }
 
+</script>
+<script>'use strict';
 /* ---------- 14. Обновление: игроки, зомби, небо, камера ---------- */
 function moveEntity(e, dx, dz, r) {
   let moved = false;
@@ -3434,6 +3454,8 @@ function updateShield(p, dt) {
   if (!p.shield && p.shieldT >= p.shieldCd) { p.shield = true; p.shieldCd = 1; SFX.click(); }
 }
 
+</script>
+<script>'use strict';
 /* ---------- 15. Звук: синтез, перенесён из 2D v33 (свои звуки у каждого ствола) ---------- */
 const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true) };
 function audioInit() {
@@ -3619,6 +3641,8 @@ function debugUpdate() {
 }
 function p1Finale(b) { player.evo[b.fin.id] = true; }
 
+</script>
+<script>'use strict';
 /* ---------- 16. Интерфейс: меню (число игроков, ствол каждому), HUD каждого игрока со своей стороны, пауза, конец ---------- */
 const $ = id => document.getElementById(id);
 const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;

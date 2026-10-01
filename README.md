@@ -3,8 +3,8 @@
 Версия: v0.18. Браузерный выживач на three.js.
 
 - `index.html` — разметка и стили, запуск: открыть файл в браузере
-- `src/game.js` — весь код игры
+- `src/*.js` — код игры по разделам, грузятся по порядку номеров: 00 ядро, 01 данные (классы, зомби, перки), 02 воксельные модели, 03 мир и рендер, 04 постройки и карта, 05 персонажи и частицы, 06 состояние, 07 управление, 08 бой, 09 перки/предметы/девайсы, 10 обновление кадра, 11 звук и отладка, 12 меню и главный цикл
 - `assets/models.js` — модели Meshy (base64 glb)
 - `vendor/` — three.js, GLTFLoader, meshopt-декодер (не править)
 - `tools/build.py` — собирает один файл `dist/zombie-voxel.html`
-- `tools/smoke.js` — проверка в Chromium: `node tools/smoke.js index.html`
+- `tools/smoke.js` — проверка в Chromium: `node tools/smoke.js index.html` (меню) и `node tools/play.js index.html` (запуск боя)
