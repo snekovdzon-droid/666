@@ -24,6 +24,8 @@ function menuBuild() {
   $('menuBtn').onclick = e => { e.stopPropagation(); toMenu(); };
   $('resumeBtn').onclick = e => { e.stopPropagation(); G.paused = false; };
   $('quitBtn').onclick = e => { e.stopPropagation(); G.paused = false; toMenu(); };
+  $('pMainBtn').onclick = e => { e.stopPropagation(); G.paused = false; toMenu(); mmEnter(); };
+  $('mainBtn').onclick = e => { e.stopPropagation(); toMenu(); mmEnter(); };
   if (IS_TOUCH) $('plBtn').style.display = 'none';
   menuMark();
 }
@@ -115,7 +117,7 @@ function hud() {
   if ($('flashFx')) $('flashFx').style.opacity = (G.flashFx || 0).toFixed(2);   // вспышка светошумовой
   $('hurt').style.opacity = Math.max(G.hurtFx, low ? 0.35 + Math.sin(G.t * 6) * 0.1 : 0).toFixed(2);
   const ps = G.paused && G.state === 'play'; $('pause').style.display = ps ? 'flex' : 'none';
-  if (ps) hudSet($('pausePerks'), 'pp', players.map(p => (players.length > 1 ? `<b style="color:${PLAYER_CSS[p.idx]}">Игрок ${p.idx + 1}</b> ` : '') + (buildText(p) || 'Перков пока нет')).join('<br>'), 'innerHTML');
+  if (ps) hudSet($('pausePerks'), 'pp', pauseHtml(), 'innerHTML');
 }
 
 /* ---------- 17. Забег и главный цикл ---------- */
@@ -125,7 +127,7 @@ function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll();
   clearMobs();
-  Object.assign(G, { nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
+  Object.assign(G, { killsBy: {}, bossKills: 0, nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z;
 }
@@ -150,7 +152,8 @@ function endRun(win) {
   $('over').classList.toggle('win', win);
   const co = players.length > 1;
   $('overTitle').textContent = win ? (co ? 'Вы пережили эту ночь!' : 'Ты пережил эту ночь!') : (co ? 'Вас съели' : 'Тебя съели');
-  $('overTxt').innerHTML = `${co ? 'Продержались' : 'Продержался'}: <b>${fmtT(G.t)}</b> из ${fmtT(RUN_TIME)}<br>Уровень: <b>${G.level}</b> · Убито зомби: <b>${G.kills}</b><br>${players.map(p => `${co ? `<span style="color:${PLAYER_CSS[p.idx]}">И${p.idx + 1}</span>: ` : 'Класс: '}${CLASSES[p.gun].name} · ${WEAPONS[p.gun].name}`).join(' · ')}`;
+  $('overKick').textContent = win ? 'Рассвет' : 'Забег окончен';
+  $('overTxt').innerHTML = resultsHtml(win);
   setTimeout(() => { if (G.state === 'end') showScreen('over'); }, win ? 300 : 1200);
 }
 const coopMul = () => 1 + 0.6 * (players.length - 1);     // в коопе зомби больше (в 2D на двоих ×1.6)

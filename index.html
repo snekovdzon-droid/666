@@ -36,28 +36,7 @@ body:not(.touch) #btns .t{display:none}
 #menu .go{margin-top:14px;font-size:18px;padding:11px 28px;border-radius:8px;border:0;background:#d9793a;color:#1b120b;font-weight:600;cursor:pointer}
 #menu .hint{margin-top:10px;font-size:12.5px;color:#a89e88;text-align:center;line-height:1.6}
 #menu .opts{margin-top:8px;font-size:13px;color:#c8bea8}
-#over{background:rgba(10,6,6,.72)}
-#over h1{margin:0 0 8px;font-size:40px;color:#e04a3a;text-align:center}#over.win h1{color:#8fd46a}
-#overTxt{font-size:16px;line-height:1.7;text-align:center}
-#over button,#pause button{margin:14px 6px 0;font-size:17px;padding:10px 20px;border-radius:8px;border:0;background:#d9793a;color:#1b120b;cursor:pointer}
-#over button.alt,#pause button.alt{background:#4a4032;color:#f2ead6}
 @media (max-height:520px){#menu h1{font-size:26px}#menu .sub{margin:2px 0 8px}.card p{display:none}.card{padding:6px 10px}#menu .go{margin-top:8px;padding:8px 22px}#menu .hint{display:none}}
-#lvlUp{background:rgba(10,8,6,.55)}#lvl h2{margin:0 0 14px;font-size:30px;color:#ffe28a;text-shadow:0 2px 6px #000}
-#lvlCards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.pcard{width:clamp(150px,27vw,230px);min-height:140px;padding:12px;box-sizing:border-box;cursor:pointer;border:2px solid;border-radius:10px;color:#f2ead6;font:inherit;text-align:left;display:flex;flex-direction:column;gap:6px;transition:transform .08s}
-.pcard .tag{font-size:11px;font-weight:700;letter-spacing:1px}.pcard b{font-size:17px}.pcard span:not(.tag){font-size:13px;color:#d8cfb8}.pcard i{font-style:normal;font-size:11.5px;color:#a89e88;margin-top:auto}
-.pcard.sel,.pcard:hover{transform:translateY(-4px);box-shadow:0 0 0 2px #fff4}
-.pcard.gen{border-color:#5fae68;background:#1d2a1f}.pcard.gen .tag,#lvlBuild .gen,#pausePerks .gen{color:#7ee08a}
-.pcard.wpn{border-color:#d9793a;background:#2f2219}.pcard.wpn .tag,#lvlBuild .wpn,#pausePerks .wpn{color:#ffa060}
-.pcard.item{border-color:#4f8fd0;background:#1a2431}.pcard.item .tag{color:#7cc0ff}
-.pcard.dev{border-color:#3ab8a8;background:#17292a}.pcard.dev .tag{color:#6ee8d8}
-.pcard.att{border-color:#c8b040;background:#2a2716}.pcard.att .tag{color:#ffe070}
-.pcard.fork{border-color:#c8a0ff;background:#261d33}.pcard.fork .tag{color:#d8b8ff}
-#lvlBuild .evo,#pausePerks .evo{color:#ffd76a}
-.pcard.evo{border-color:#e8b93a;background:#3a311a;box-shadow:0 0 16px rgba(255,200,80,.45)}.pcard.evo .tag,.pcard.evo b{color:#ffd76a}
-#lvlBuild,#pausePerks{margin-top:14px;font-size:13px;max-width:720px;text-align:center;line-height:1.6;color:#c8bea8}
-#lvlUp .hint{margin-top:10px;font-size:12px;color:#8a806c}
-#pause{background:rgba(10,8,6,.6)}#pause h1{margin:0;font-size:34px}
 #lookRow{margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;color:#c8bea8;font-size:14px}
 #lookRow button{font:inherit;padding:6px 12px;border-radius:8px;border:1px solid #6a6252;background:#2a241e;color:#f2ead6;cursor:pointer}#lookRow #lookName{min-width:120px;text-align:center;color:#ffd08a}
 #editor{background:#17130f;z-index:6;justify-content:flex-start;padding:10px;gap:8px}
@@ -125,9 +104,9 @@ body:not(.touch) #btns .t{display:none}
 #xpbar{height:6px;width:100%;background:rgba(0,0,0,.65);border:1px solid #3a3228;overflow:hidden}#xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c87a2a,#ecd060);transition:width .15s}
 #radar{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:none;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
 #hints{position:fixed;inset:0;pointer-events:none;z-index:3}
-.hint{position:absolute;left:0;top:0;align-items:center;gap:6px;padding:3px 9px 3px 5px;background:rgba(14,11,8,.88);border:1px solid #6a5a3a;font-size:12px;white-space:nowrap;color:#f2ead6;margin-top:-6px}
-.hint::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-top-color:#6a5a3a;border-bottom:0}
-.hint b{font-weight:600;letter-spacing:.3px}.hint em{display:block;font-style:normal;font-size:11px;color:#ffb080}.hint.item{border-color:#3a7a8a}.hint.item::after{border-top-color:#3a7a8a}
+.ghint{position:absolute;left:0;top:0;align-items:center;gap:6px;padding:3px 9px 3px 5px;background:rgba(14,11,8,.88);border:1px solid #6a5a3a;font-size:12px;white-space:nowrap;color:#f2ead6;margin-top:-6px}
+.ghint::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-top-color:#6a5a3a;border-bottom:0}
+.ghint b{font-weight:600;letter-spacing:.3px}.ghint em{display:block;font-style:normal;font-size:11px;color:#ffb080}.ghint.item{border-color:#3a7a8a}.ghint.item::after{border-top-color:#3a7a8a}
 #bossArrow{position:fixed;display:none;align-items:center;gap:5px;transform:translate(-50%,-50%);pointer-events:none;z-index:3;color:#ff6a5a;font-weight:700;font-size:12px;text-shadow:0 1px 3px #000;flex-direction:column}
 #bossArrow i{display:block;width:0;height:0;border-left:16px solid #ff2a2a;border-top:10px solid transparent;border-bottom:10px solid transparent;filter:drop-shadow(0 0 6px rgba(255,40,30,.8));animation:bossPulse .8s infinite alternate}
 @keyframes bossPulse{from{opacity:.55}to{opacity:1}}
@@ -135,6 +114,50 @@ body:not(.touch) #btns .t{display:none}
 #bossBar b{font-size:13px;letter-spacing:3px;text-transform:uppercase}#bossBar b::before{content:'☠ ';color:#ff4a3a}#bossBar div{height:11px;background:rgba(0,0,0,.7);border:1px solid #5a2a22;overflow:hidden;margin-top:4px}
 #bossBar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8a1c14,#e0452a)}
 @media (max-height:520px){.hud{width:176px}.plate{padding:5px 7px 6px}.hp svg{width:15px;height:13px}.cls{font-size:13px}.slot{width:34px;height:38px}#radar{width:120px!important;height:120px!important}#timer{font-size:19px}}
+/* ---------- единый стиль окон: бейдж, плашка с акцентом слева, кнопки как в главном меню ---------- */
+.box{background:linear-gradient(180deg,rgba(22,17,12,.95),rgba(12,9,7,.95));border-left:4px solid #e8a050;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+.kick{font-size:11px;letter-spacing:3px;color:#8a806c;text-transform:uppercase}
+.btn,#over .rs-btns button,#pause .pbtns button{display:block;width:100%;text-align:left;font:inherit;font-size:17px;letter-spacing:.5px;padding:11px 18px;margin:6px 0;border:0;border-left:4px solid #4a4032;background:rgba(20,16,12,.8);color:#d8d0bc;cursor:pointer;border-radius:0;transition:transform .15s,border-color .15s,background .15s}
+#over .rs-btns button:first-child,#pause .pbtns button:first-child{border-left-color:#e8a050;background:rgba(80,50,24,.9);color:#fff}
+#over .rs-btns button:hover,#pause .pbtns button:hover{transform:translateX(8px);border-left-color:#e8a050;background:rgba(62,40,22,.95);color:#fff}
+#menu .card{border:0;border-left:4px solid #4a4032;border-radius:0;background:rgba(20,16,12,.82)}#menu .card:hover,#menu .card.sel{border-left-color:#e8a050;background:rgba(62,40,22,.94)}
+#menu .go{border-radius:0}#menu .go.alt{border-left:4px solid #4a4032}
+#lookRow button{border-radius:0}
+#over{background:radial-gradient(ellipse at center,rgba(20,6,6,.8),rgba(4,3,3,.94))}
+.rs{width:min(780px,94vw);padding:20px 26px 16px;max-height:94vh;overflow:auto}
+.rs h1{margin:2px 0 14px;font-size:clamp(28px,5vw,44px);letter-spacing:3px;text-transform:uppercase;color:#e04a3a;text-shadow:0 3px 0 #000}#over.win .rs h1{color:#8fd46a}#over.win .rs{border-left-color:#8fd46a}
+.rs-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rs-stat{background:rgba(0,0,0,.35);border-top:2px solid #4a4032;padding:7px 10px}.rs-stat span{display:block;font-size:10.5px;letter-spacing:2px;color:#8a806c}.rs-stat b{font-size:24px;color:#f2ead6;font-variant-numeric:tabular-nums}.rs-stat small{display:block;font-size:11px;color:#a89e88}.rs-stat.rec{border-top-color:#ecd060}.rs-stat.rec small{color:#ecd060}
+.rs-h{font-size:10.5px;letter-spacing:3px;color:#8a806c;margin:14px 0 6px;text-transform:uppercase}
+.rs-row{display:grid;grid-template-columns:150px 1fr 44px;gap:8px;align-items:center;font-size:13px;margin:3px 0;color:#cfc4ac}.rs-row div{height:9px;background:rgba(0,0,0,.45)}.rs-row i{display:block;height:100%}.rs-row b{text-align:right;color:#f2ead6}
+.rs-pl{background:rgba(0,0,0,.28);border-left:3px solid var(--pc,#e8a050);padding:7px 12px;margin:6px 0;font-size:12.5px;line-height:1.6;color:#c8bea8}.rs-pl>b{font-size:14px;letter-spacing:.5px}
+.gear{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}.gi{display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.4);border:1px solid #3a3228;padding:2px 6px 2px 3px;font-size:11px;color:#a89e88}.gi.dv{border-color:#2e6a62}.gi.at{border-color:#6a6024}
+.rs-btns,.pbtns{margin-top:14px;width:min(330px,100%)}
+#lvlUp{background:radial-gradient(ellipse at center,rgba(8,6,4,.72),rgba(4,3,3,.92));gap:16px}
+#lvlTitle{margin:0;font-size:clamp(22px,4vw,34px);letter-spacing:5px;text-transform:uppercase;color:#f2ead6;text-shadow:0 3px 0 #000;text-align:center}
+#lvlCards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.pcard{--cc:#8a8270;width:clamp(180px,27vw,260px);min-height:230px;padding:0 0 12px;position:relative;cursor:pointer;border:0;border-top:4px solid var(--cc);background:linear-gradient(180deg,rgba(28,22,16,.97),rgba(13,10,8,.97));color:#f2ead6;font:inherit;text-align:left;display:flex;flex-direction:column;box-shadow:0 6px 24px rgba(0,0,0,.55);transition:transform .15s,box-shadow .15s;animation:pcIn .35s both}
+.pcard:nth-child(2){animation-delay:.07s}.pcard:nth-child(3){animation-delay:.14s}.pcard:nth-child(4){animation-delay:.21s}
+@keyframes pcIn{from{opacity:0;transform:translateY(26px) scale(.96)}to{opacity:1;transform:none}}
+.pcard.sel,.pcard:hover{transform:translateY(-7px);box-shadow:0 12px 30px rgba(0,0,0,.65),0 0 0 2px var(--cc),0 0 24px rgba(255,255,255,.08)}
+.pc-key{position:absolute;right:8px;top:10px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);border:1px solid #4a4032;font-size:12px;font-weight:700;color:var(--cc)}
+.pc-head{display:flex;gap:10px;align-items:center;padding:12px 38px 8px 12px}
+.pc-ico{flex:0 0 46px;height:46px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);border:1px solid #4a4032;border-bottom:2px solid var(--cc)}
+.pc-tag{font-size:10px;letter-spacing:1.4px;font-weight:700;color:var(--cc);text-transform:uppercase;line-height:1.3}
+.pc-name{font-size:17px;font-weight:700;line-height:1.15;margin-top:3px}
+.pc-desc{padding:2px 12px;font-size:13px;line-height:1.45;color:#cfc4ac;flex:1}
+.pc-foot{padding:9px 12px 0;font-size:11.5px;color:#8a806c;display:flex;flex-direction:column;gap:5px}
+.lvbar{display:flex;gap:2px}.lvbar i{width:13px;height:6px;background:#3a3228}.lvbar i.on{background:var(--cc);opacity:.7}.lvbar i.nw{background:#fff;box-shadow:0 0 7px var(--cc);animation:nwp .7s infinite alternate}@keyframes nwp{from{opacity:.5}to{opacity:1}}
+.pcard.gen{--cc:#7ee08a}.pcard.wpn{--cc:#ffa060}.pcard.item{--cc:#7cc0ff}.pcard.dev{--cc:#6ee8d8}.pcard.att{--cc:#ffe070}.pcard.fork{--cc:#d8b8ff}.pcard.evo{--cc:#ffd76a;box-shadow:0 6px 28px rgba(255,200,80,.35)}
+#lvlBuildWrap{max-width:780px;width:94vw;box-sizing:border-box;background:rgba(14,11,8,.82);border-left:4px solid #e8a050;padding:7px 14px;font-size:12.5px;line-height:1.55;color:#c8bea8;text-align:left}
+#lvlBuildWrap .rs-h{margin:0 0 3px}
+.gen{color:#7ee08a}.wpn{color:#ffa060}.evo{color:#ffd76a}
+#lvlUp .hint{font-size:12px;color:#8a806c}
+#pause{background:radial-gradient(ellipse at center,rgba(10,8,6,.75),rgba(4,3,3,.92))}
+.pbox{width:min(620px,94vw);padding:18px 24px 14px;max-height:94vh;overflow:auto}.pbox h1{margin:2px 0 10px;font-size:34px;letter-spacing:5px;text-transform:uppercase}
+#pausePerks{font-size:12.5px;line-height:1.6;color:#c8bea8}
+@media (max-height:520px){.rs{padding:10px 16px}.rs-stat b{font-size:19px}.pc-desc{font-size:12px}.pcard{min-height:170px}#lvlUp{gap:8px}.pbox{padding:10px 16px}}
+@media (max-width:640px){.rs-stats{grid-template-columns:repeat(2,1fr)}.rs-row{grid-template-columns:100px 1fr 36px}}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -163,9 +186,9 @@ body:not(.touch) #btns .t{display:none}
   </div>
   <div class="edBar"><button id="edRand">Случайный</button><button id="edVox">Скачать .vox</button><button id="edSave">Сохранить</button><button class="go" id="edDone">Готово — выбрать</button><button id="edBack">Назад</button></div>
 </div>
-<div id="over" class="scr"><h1 id="overTitle">Тебя съели</h1><div id="overTxt"></div><div><button id="againBtn">Ещё раз</button><button class="alt" id="menuBtn">Сменить ствол</button></div></div>
-<div id="lvlUp" class="scr"><h2 id="lvlTitle"></h2><div id="lvlCards"></div><div id="lvlBuild"></div><div class="hint">1–4 или клик · стрелки / крестовина + Enter / A</div></div>
-<div id="pause" class="scr"><h1>Пауза</h1><div id="pausePerks"></div><div><button id="resumeBtn">Продолжить</button><button class="alt" id="quitBtn">В меню</button></div></div>
+<div id="over" class="scr"><div class="rs box"><div class="kick" id="overKick">Забег окончен</div><h1 id="overTitle">Тебя съели</h1><div id="overTxt"></div><div class="rs-btns"><button id="againBtn">Ещё раз</button><button id="menuBtn">Сменить ствол</button><button id="mainBtn">Главное меню</button></div></div></div>
+<div id="lvlUp" class="scr"><h2 id="lvlTitle"></h2><div id="lvlCards"></div><div id="lvlBuildWrap"><div class="rs-h">Сборка</div><div id="lvlBuild"></div></div><div class="hint">1–4 или клик · стрелки / крестовина + Enter / A</div></div>
+<div id="pause" class="scr"><div class="pbox box"><div class="kick">Игра приостановлена</div><h1>Пауза</h1><div id="pausePerks"></div><div class="pbtns"><button id="resumeBtn">Продолжить</button><button id="quitBtn">Сменить ствол</button><button id="pMainBtn">Главное меню</button></div></div></div>
 <script src="vendor/three.min.js"></script>
 <script src="vendor/gltf-meshopt.js"></script>
 <script src="assets/models.js"></script>
@@ -188,5 +211,6 @@ body:not(.touch) #btns .t{display:none}
 <script src="src/11c_main_menu.js"></script>
 <script src="src/11d_mobs.js"></script>
 <script src="src/11e_hud.js"></script>
+<script src="src/11f_screens.js"></script>
 <script src="src/12_ui_loop.js"></script>
 </body></html>

@@ -92,7 +92,7 @@ function renderCards(p, title) {
   $('lvlTitle').innerHTML = (players.length > 1 ? `<span style="color:${PLAYER_CSS[p.idx]}">Игрок ${p.idx + 1}</span>: ` : '') + title;
   $('lvlCards').innerHTML = '';
   LV.choices.forEach((ch, i) => {
-    const c = cardHTML(p, ch, i), b = document.createElement('button');
+    const c = cardView(p, ch, i), b = document.createElement('button');
     b.className = 'pcard ' + c.cls; b.innerHTML = c.html;
     b.addEventListener('click', e => { e.stopPropagation(); pickCard(i); });
     b.addEventListener('mouseenter', () => { LV.sel = i; lvMark(); });

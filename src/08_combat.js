@@ -252,7 +252,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   const by = hy !== undefined ? hy : z.y + 0.6;
   if (dx || dz) { blood(z.x, by, z.z, dx, dz, 4); if (Math.random() < 0.5) bloodDecal(z.x + dx * 0.3, z.z + dz * 0.3, 0.2, dx, dz); }
   if (z.hp > 0) return;
-  z.dead = true; z.deadT = 0; G.kills++;
+  z.dead = true; z.deadT = 0; G.kills++; (G.killsBy || (G.killsBy = {}))[z.type] = (G.killsBy[z.type] || 0) + 1;
   if (z.bolts) dropBolts(z);                                                              // болты, застрявшие в зомби, остаются в трупе
   SFX.death(); dropFromZombie(z);                                                          // редкий малый ящик
   const T = ZOMBIES[z.type];

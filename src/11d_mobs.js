@@ -164,7 +164,7 @@ function spawnWarden() {
   banner(n ? 'Начальник тюрьмы вернулся' : 'Начальник тюрьмы идёт за вами'); SFX.roar();
 }
 function wardenDown(z) {
-  if (G.boss === z) G.boss = null;
+  if (G.boss === z) G.boss = null; G.bossKills = (G.bossKills || 0) + 1;
   banner('Начальник тюрьмы повержен'); SFX.level();
   spawnCrate(z.x + 0.8, z.z, true); spawnCrate(z.x - 0.8, z.z, true);
 }

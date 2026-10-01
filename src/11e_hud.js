@@ -97,14 +97,14 @@ function hintsUpdate() {
   }
   list.sort((a, b) => a.d - b.d);
   const n = Math.min(HINT_MAX, list.length);
-  while (hintEls.length < n) { const e = document.createElement('div'); e.className = 'hint'; box.appendChild(e); hintEls.push(e); }
+  while (hintEls.length < n) { const e = document.createElement('div'); e.className = 'ghint'; box.appendChild(e); hintEls.push(e); }
   for (let i = 0; i < hintEls.length; i++) {
     const e = hintEls[i], h = list[i];
     if (i >= n) { e.style.display = 'none'; continue; }
     _pv.set(h.x, h.y, h.z).project(cam);
     if (Math.abs(_pv.x) > 1 || Math.abs(_pv.y) > 1) { e.style.display = 'none'; continue; }
     const html = `${pixIcon(h.ico, 20)}<span><b>${h.tx}</b>${h.sub ? `<em>${h.sub}</em>` : ''}</span>`, key = h.cls + h.tx + h.sub;
-    if (e._k !== key) { e._k = key; e.className = 'hint ' + h.cls; e.innerHTML = html; }
+    if (e._k !== key) { e._k = key; e.className = 'ghint ' + h.cls; e.innerHTML = html; }
     e.style.display = 'flex'; e.style.transform = `translate(${((_pv.x + 1) / 2 * innerWidth).toFixed(1)}px,${((1 - _pv.y) / 2 * innerHeight).toFixed(1)}px) translate(-50%,-100%)`;
   }
 }
