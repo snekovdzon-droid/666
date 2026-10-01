@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- Главное меню: кнопки слева, справа — ночная дорога, по которой бредут зомби ---------- */
-const MM = { z: [], cam: { x: 48, z: 40 }, zoom: 6.8, sel: 0, panel: '', Z0: 8, Z1: 66 };
+const MM = { z: [], cam: { x: 48, z: 80 }, zoom: 6.8, sel: 0, panel: '', Z0: 66, Z1: 94 };
 // форма зомби, шанс, скорость (клеток/с)
 const MM_FORMS = [['walk', 0.6, 0.72], ['run', 0.1, 1.8], ['fat', 0.1, 0.5], ['armored', 0.1, 0.62], ['crawl', 0.1, 0.3]];
 const MM_BTNS = [['single', 'Одиночная игра'], ['coop', 'Кооп'], ['hero', 'Редактор персонажа'], ['map', 'Редактор карты', 'скоро'], ['settings', 'Настройки'], ['exit', 'Выйти']];
@@ -8,7 +8,7 @@ const MM_BTNS = [['single', 'Одиночная игра'], ['coop', 'Кооп']
 function mmSpawnZ(initial) {
   let r = Math.random(), form = 'walk', spd = 0.72;
   for (const [f, p, s] of MM_FORMS) { if (r < p) { form = f; spd = s; break; } r -= p; }
-  return { zombie: true, form, vm: Math.floor(Math.random() * VOXMS.length), x: rnd(43.5, 52.5), y: 0, z: initial ? rnd(MM.Z0, MM.Z1) : MM.Z0 - rnd(0, 5),
+  return { zombie: true, form, vm: Math.floor(Math.random() * VOXMS.length), x: rnd(45.4, 50.6), y: 0, z: initial ? rnd(MM.Z0, MM.Z1) : MM.Z0 - rnd(0, 5),
     spd: spd * rnd(0.85, 1.15), yaw: 0, base: rnd(-0.12, 0.12), phase: rnd(0, 6), moving: true, nod: 0 };
 }
 function mmUpdate(dt) {

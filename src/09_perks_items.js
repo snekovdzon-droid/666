@@ -214,7 +214,7 @@ function takeCharge(p, id) { if (!(p.pouch[id] > 0)) return false; p.pouch[id]--
 /* ---- Предмет в руке: вызывается из updatePlayerWeapon; true — ствол в этом кадре не работает ---- */
 function updateHand(p, c, A, fire, dt) {
   if (p.itemCool > 0) p.itemCool -= dt;
-  if (c.swap && !trySwap(p) && c.back && !p.hand && p.slots.length > 4) { p.slots.push(p.slots.shift()); SFX.click(); }   // геймпад: Y без дела — листает слоты (5-й и 6-й на крестовину)
+  if (c.swap && !trySwap(p) && !tryGate(p) && c.back && !p.hand && p.slots.length > 4) { p.slots.push(p.slots.shift()); SFX.click(); }   // геймпад: Y без дела — листает слоты (5-й и 6-й на крестовину)
   if (c.slot >= 0) {                                                   // нажали слот: взять в руку / убрать
     const id = slotTypes(p)[c.slot];
     if (id && p.hand !== id) { if (p.fuel != null) endCanister(p); p.hand = id; p.itemCool = Math.max(p.itemCool || 0, 0.15); SFX.click(); }
@@ -436,6 +436,10 @@ function crateTimer(dt) {
     let far = null, fd = 0; for (const c of big) { const d = Math.min(...al.map(p => Math.hypot(p.x - c.x, p.z - c.z))); if (d > fd) { fd = d; far = c; } }
     if (fd < 25) return; removeCrate(CRATES.indexOf(far));
   }
+  if (Math.random() < 0.6) {                                                              // фиксированные места: оружейная, кухня, склад топлива… (не на глазах и не рядом с игроком)
+    const free = MAP_PRISON.crates.filter(([x, z]) => !CRATES.some(c => Math.hypot(c.x - x, c.z - z) < 1.5) && al.every(q => Math.hypot(q.x - x, q.z - z) > 7) && !onScreen(x, z));
+    if (free.length) { const [x, z] = free[Math.floor(Math.random() * free.length)]; spawnCrate(x, z, true); return; }
+  }
   const p = al[Math.floor(Math.random() * al.length)];
   for (let i = 0; i < 40; i++) {
     const a = Math.random() * TAU, d = rnd(7, 15), x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
@@ -534,6 +538,7 @@ function clearItems() {
   for (const w of WIRES) scene.remove(w.g); WIRES.length = 0;
   while (CRATES.length) removeCrate(0);
   while (GITEMS.length) removeGItem(0);
+  resetGates();
   G.crateT = CRATE.first;
 }
 // Текст карточки уровня предмета: что даёт следующий уровень

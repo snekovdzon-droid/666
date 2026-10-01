@@ -26,6 +26,7 @@ const PIX = {
   light: ['..........', '.kk.......', 'kGGk.yyyy.', 'kGGGkyyyyy', 'kGGGkyyyy.', 'kGGk.yyyy.', '.kk.......', '..........', '..........', '..........'],
   barrel: ['..........', '..........', '.kkkkkkkkk', 'kGGGGGGGGk', 'kGggggggGk', '.kkkkkkkkk', '..........', '..........', '..........', '..........'],
   crate: ['..........', '.kkkkkkkk.', 'kNtttttNk.', 'kNtNttNtk.', 'kNtttttNk.', 'kNtNttNtk.', 'kNtttttNk.', '.kkkkkkkk.', '..........', '..........'],
+  gate: ['..........', 'rr......rr', 'rgggggggr.', 'rgGgGgGgr.', 'rgggggggr.', 'rgGgGgGgr.', 'rgggggggr.', 'rr......rr', '..........', '..........'],
   skull: ['..........', '..kkkkkk..', '.kwwwwwwk.', '.kwkwwkwk.', '.kwkwwkwk.', '.kwwwwwwk.', '..kwkkwk..', '..kwkwkk..', '...kkkk...', '..........'],
 };
 const _pixC = {};
@@ -106,6 +107,7 @@ function hintsUpdate() {
       const on = V.ps.find(p => Math.hypot(p.x - g.x, p.z - g.z) < 0.8 && pouchN(p) >= pouchCap(p));
       mine.push({ d, x: g.x, y: g.y + 0.7, z: g.z, ico: g.id, tx: ITEMS[g.id].name, sub: on ? `${swapKey(on)} — обменять` : '', cls: 'item' });
     }
+    for (const Gt of GATES) { const d = near((Gt.x1 + Gt.x2) / 2, (Gt.z1 + Gt.z2) / 2); if (d < 4.5) { const p = V.ps[0]; mine.push({ d, x: (Gt.x1 + Gt.x2) / 2, y: 2.5, z: (Gt.z1 + Gt.z2) / 2, ico: 'gate', tx: Gt.open ? 'Ворота открыты' : 'Ворота закрыты', sub: d < 2.4 && p ? `${swapKey(p)} — ${Gt.open ? 'закрыть' : 'открыть'}` : '', cls: 'item' }); } }
     mine.sort((a, b) => a.d - b.d);
     for (const h of mine.slice(0, HINT_MAX)) { const pos = toView(V, h.x, h.y, h.z); if (pos) { h.px = pos; list.push(h); } }
   }

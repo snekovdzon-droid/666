@@ -125,7 +125,7 @@ function hud() {
 
 /* ---------- 17. Забег и главный цикл ---------- */
 let lastT = performance.now(), fpsAcc = 0, fpsN = 0;
-const START = { x: 48, z: 44 };                   // двор перед главным корпусом
+const START = MAP_PRISON.start;                   // двор перед главным корпусом
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll();
@@ -208,7 +208,7 @@ function tick(dt, T) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); if (!SPLIT.on) tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }
@@ -216,7 +216,7 @@ function tick(dt, T) {
   if (G.state === 'play' && G.pickQueue.length) openLevelUp();
   G.hurtFx = Math.max(0, G.hurtFx - dt * 2.5); if (G.lvlFx > 0) G.lvlFx -= dt;
   if (!G.paused) { updateFires(dt, T); updateParts(dt); updateGems(dt, T); }
-  updateSky(dt); updateCamera(dt);
+  updateSky(dt); updateSearch(T); updateCamera(dt);
   flushDecals(dt);
 }
 function render(T) {

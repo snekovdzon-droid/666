@@ -91,30 +91,29 @@ const groundCv = document.createElement('canvas'); groundCv.width = groundCv.hei
 const gctx = groundCv.getContext('2d');
 const decalCv = document.createElement('canvas'); decalCv.width = decalCv.height = GW;
 const dctx = decalCv.getContext('2d');
-function paintGround() {
+function paintGround(zones) {
   const img = gctx.createImageData(GW, GW), d = img.data;
-  const zone = (x, z) => {
-    if (x >= 46 && x < 50 && z >= 36) return 'road';                                  // дорога от КПП к корпусу
-    if (x >= 54 && x < 78 && z >= 70 && z < 94) return 'asphalt';                     // стоянка
-    if (x >= 70 && x < 90 && z >= 40 && z < 58) return 'court';                       // спортплощадка
-    if ((x >= 24 && x < 72 && z >= 12 && z < 48) || (x >= 4 && x < 28 && z >= 14 && z < 56) || (x >= 34 && x < 46 && z >= 82 && z < 94)) return 'paving';   // двор, запад, КПП
-    return 'dirt';
-  };
+  const zoneAt = (x, z) => { let r = null; for (const Z of zones) if (x >= Z[1] && x < Z[3] && z >= Z[2] && z < Z[4]) r = Z; return r; };     // позже в списке — сверху
   let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let py = 0; py < GW; py++) for (let px = 0; px < GW; px++) {
-    const x = px / TPX, z = py / TPX, t = zone(x, z), n = r();
+    const x = px / TPX, z = py / TPX, Z = zoneAt(x, z), t = Z ? Z[0] : 'dirt', n = r();
     let c;
     if (t === 'dirt') c = n < 0.5 ? [128, 92, 60] : n < 0.85 ? [122, 88, 57] : [136, 99, 65];
     else if (t === 'asphalt' || t === 'road') c = n < 0.6 ? [62, 60, 58] : n < 0.9 ? [56, 54, 52] : [74, 72, 68];
-    else if (t === 'court') { c = n < 0.6 ? [150, 78, 58] : [142, 72, 54]; const bx = Math.min(x - 70.5, 89.5 - x), bz = Math.min(z - 40.5, 57.5 - z); if (Math.abs(bx) < 0.07 && bz > -0.07 || Math.abs(bz) < 0.07 && bx > -0.07 || Math.abs(x - 80) < 0.07 && bz > 0) c = [220, 214, 200]; }
-    else { c = n < 0.6 ? [170, 162, 146] : [160, 152, 138]; if (px % 32 === 0 || py % 32 === 0) c = [138, 130, 118]; }
-    if (t === 'asphalt' && z >= 72 && z < 82 && (Math.abs(x - Math.round(x / 3) * 3) < 0.07 && z % 6 < 4.5)) c = [214, 208, 190];   // разметка парковки
-    if (t === 'road' && Math.abs(x - 48) < 0.08 && z % 3 < 1.6) c = [214, 180, 60];
+    else if (t === 'grass') c = n < 0.5 ? [88, 112, 62] : n < 0.85 ? [80, 104, 56] : [98, 122, 70];
+    else if (t === 'gravel') c = n < 0.5 ? [122, 116, 106] : n < 0.85 ? [112, 106, 96] : [132, 126, 116];
+    else if (t === 'dark') c = n < 0.6 ? [92, 88, 84] : n < 0.9 ? [84, 80, 76] : [102, 98, 94];
+    else if (t === 'court') {
+      c = n < 0.6 ? [150, 78, 58] : [142, 72, 54];
+      const bx = Math.min(x - (Z[1] + 0.5), Z[3] - 0.5 - x), bz = Math.min(z - (Z[2] + 0.5), Z[4] - 0.5 - z);
+      if (Math.abs(bx) < 0.07 && bz > -0.07 || Math.abs(bz) < 0.07 && bx > -0.07 || Math.abs(x - (Z[1] + Z[3]) / 2) < 0.07 && bz > 0) c = [220, 214, 200];
+    } else { c = n < 0.6 ? [170, 162, 146] : [160, 152, 138]; if (px % 32 === 0 || py % 32 === 0) c = [138, 130, 118]; }
+    if (t === 'asphalt' && Z[5] && Z[5].lines && z >= Z[2] + 2 && z < Z[2] + 12 && (Math.abs(x - Math.round(x / 3) * 3) < 0.07 && z % 6 < 4.5)) c = [214, 208, 190];   // разметка парковки
+    if (t === 'road' && Math.abs(x - (Z[1] + Z[3]) / 2) < 0.08 && z % 3 < 1.6) c = [214, 180, 60];
     const o = (py * GW + px) * 4; d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
   }
   gctx.putImageData(img, 0, 0);
 }
-paintGround();
 const groundTex = new THREE.CanvasTexture(groundCv); groundTex.magFilter = THREE.NearestFilter; groundTex.encoding = THREE.sRGBEncoding;
 // Слой крови и следов — плитками 4×4: меняется только плитка, где упала капля (раньше вся текстура 1536² каждые 0,25 с)
 const DT = MAP / 4, DTP = DT * TPX, decalTiles = [];

@@ -168,7 +168,7 @@ function updateFires(dt, T) {
 }
 // Смена времени: закат → ночь (N — сразу)
 function updateSky(dt) {
-  const target = Math.max(G.nightT, clamp((G.t - 60) / (RUN_TIME * 0.8), 0, 1));   // закат → ночь к 17-й минуте
+  const target = Math.max(G.nightT, clamp((G.t - 600) / 60, 0, 1));   // до 10-й минуты закат, затем за минуту наступает ночь
   G.night += (target - G.night) * Math.min(1, dt * 1.5);
   const n = G.night;
   sun.intensity = 1.15 * (1 - n) + 0.1 * n;
@@ -184,6 +184,7 @@ function setLampLights(cx, cz) {
   const n = G.night;
   for (const L of lamps) L.d = Math.hypot(L.x - cx, L.z - cz);
   const ls = lamps.slice().sort((a, b) => a.d - b.d);
+  setSearchLights(cx, cz);
   LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 : 0; if (L) { sp.position.set(L.x + 0.6, 3.95, L.z); sp.target.position.set(L.x + 1.2, 0, L.z); sp.target.updateMatrixWorld(); } });
 }
 // Здание между камерой и героем — полупрозрачное

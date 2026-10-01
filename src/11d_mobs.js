@@ -109,6 +109,7 @@ function smashStructures(z, reach) {
     const ex = Math.max(s.x1 - z.x, 0, z.x - s.x2), ez = Math.max(s.z1 - z.z, 0, z.z - s.z2);
     if (ex * ex + ez * ez < (z.r + reach) ** 2) { B.hp = 0; shake = Math.max(shake, 0.2); }
   }
+  for (const Gt of GATES) if (!Gt.open) { const ex = Math.max(Gt.x1 - z.x, 0, z.x - Gt.x2), ez = Math.max(Gt.z1 - z.z, 0, z.z - Gt.z2); if (ex * ex + ez * ez < (z.r + reach) ** 2) { Gt.hp = 0; shake = Math.max(shake, 0.2); } }
   for (const t of TURRETS) if (t.life > 0 && Math.abs(t.y - z.y) < 0.8 && Math.hypot(t.x - z.x, t.z - z.z) < z.r + reach + 0.2) { t.life = 0; t.hp = 0; shake = Math.max(shake, 0.2); }
   for (const w of WIRES) if (w.uses > 0 && Math.abs(w.y - z.y) < 0.8 && inWire(w, z.x, z.z, z.r + reach)) { w.uses = 0; shake = Math.max(shake, 0.1); }
 }

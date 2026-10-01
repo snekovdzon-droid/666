@@ -105,11 +105,6 @@ function tree(x, z) {
   solids.push({ x1: x - 1, y1: 1.6, z1: z - 1, x2: x + 1, y2: 3.2, z2: z + 1, mat: 'wood', leaves: true });   // крона ловит пули
 }
 
-/* ---------- Карта тюрьмы 96×96 (батч 9, без редактора) ----------
-   Север — главный корпус (2 этажа, в середине башня в 3 этажа; крыши ходовые, наверх только по красным пожарным лестницам).
-   Запад — лазарет и столовая (на крышу столовой — лестница), восток — водонапорная башня и спортплощадка,
-   юг за внутренней сеткой — КПП с воротами, стоянка и брошенные машины. Периметр — стена с вышками, проломы на севере, западе и востоке. */
-const ROAD = { x1: 46, x2: 50, zFence: 64 };     // дорога от КПП к корпусу, внутренняя сетка по z = 64
 function tower(x, z) {                            // вышка на стене
   box(x - 0.6, 0, z - 0.6, x + 0.6, 6.5, z + 0.6, 0x686a68); box(x - 0.9, 6.5, z - 0.9, x + 0.9, 7.6, z + 0.9, 0x55585a);
   box(x - 1, 7.6, z - 1, x + 1, 7.8, z + 1, 0x3e4042, { solid: false });
@@ -138,54 +133,3 @@ function waterTower(x, z) {                        // водонапорная �
   box(x - 1.6, 6.2, z - 1.6, x + 1.6, 8.6, z + 1.6, 0x7a6450); box(x - 1.3, 8.6, z - 1.3, x + 1.3, 9.1, z + 1.3, 0x6a5444);
   for (let i = 0; i < 4; i++) box(x - 1.62, 6.6 + i * 0.55, z - 1.62, x + 1.62, 6.66 + i * 0.55, z + 1.62, 0x5e4c3c, { solid: false });
 }
-function buildMap() {
-  // ---- периметр: стена 0.5, проломы на севере (45.5–49.5), западе и востоке (z 55–59), КПП на юге (44–52) ----
-  wallSeg(0, 0, 45.5, 0.5); wallSeg(49.5, 0, MAP, 0.5);
-  wallSeg(0, MAP - 0.5, 44, MAP); wallSeg(52, MAP - 0.5, MAP, MAP);
-  wallSeg(0, 0.5, 0.5, 54.5); wallSeg(0, 59.5, 0.5, MAP - 0.5);
-  wallSeg(MAP - 0.5, 0.5, MAP, 54.5); wallSeg(MAP - 0.5, 59.5, MAP, MAP - 0.5);
-  for (const [x, z] of [[1, 1], [MAP - 1, 1], [1, MAP - 1], [MAP - 1, MAP - 1], [24, 1], [72, 1], [1, 30], [MAP - 1, 30], [1, 80], [MAP - 1, 80], [42.5, MAP - 1], [53.5, MAP - 1]]) tower(x, z);
-  // ---- главный корпус: крылья в 2 этажа, башня в 3; лестницы — земля → крыша крыльев → крыша башни ----
-  const main = building(28, 16, 68, 36, 2, { gap: [37.8, 39.4], col: 0xc8b8a0 });
-  fireEscape(28.3, 37.8, 36, 37.3, main.H, main.grp);                                   // пологий марш: зомби тоже поднимаются (по полю пути)
-  box(37.8, main.H - 0.1, 36, 39.4, main.H, 37.3, RED, { parent: main.grp, hit: 'metal' });
-  const top = building(42, 20, 54, 30, 3, { gap: [49.5, 51.1], col: 0xbcac94 });
-  fireEscape(44.4, 49.5, 30, 31.3, top.H - main.H, top.grp, main.H);
-  box(49.5, top.H - 0.1, 30, 51.1, top.H, 31.3, RED, { parent: top.grp, hit: 'metal' });
-  const main2 = building(58, 36, 66, 44, 1, { col: 0xc0b098 });                          // пристройка (прачечная)
-  // ---- запад: лазарет и столовая ----
-  const inf = building(8, 18, 20, 28, 1, { col: 0xd8d2c4 });
-  box(13.4, 1.6, 28, 14.6, 1.9, 28.08, 0xc83030, { solid: false }); box(13.85, 1.15, 28, 14.15, 2.35, 28.08, 0xc83030, { solid: false });   // красный крест
-  const can = building(8, 40, 24, 52, 1, { gap: [16.3, 17.9], col: 0xb4a48a });
-  fireEscape(11.2, 16.3, 52, 53.3, can.H, can.grp); box(16.3, can.H - 0.1, 52, 17.9, can.H, 53.3, RED, { parent: can.grp, hit: 'metal' });
-  // ---- восток: водонапорка и спортплощадка ----
-  waterTower(84, 14);
-  for (const z of [44, 48, 52]) bench(68.4, z, 1);                                       // скамейки смотрят на площадку
-  // ---- юг: внутренняя сетка с воротами, КПП, стоянка ----
-  fenceX(0.5, ROAD.x1 - 1, ROAD.zFence); fenceX(ROAD.x2 + 1, MAP - 0.5, ROAD.zFence);
-  box(ROAD.x1 - 1.1, 0, ROAD.zFence - 0.15, ROAD.x1 - 0.8, 2.6, ROAD.zFence + 0.15, 0x5a5e5e); box(ROAD.x2 + 0.8, 0, ROAD.zFence - 0.15, ROAD.x2 + 1.1, 2.6, ROAD.zFence + 0.15, 0x5a5e5e);
-  const kpp = building(36, 84, 44, 92, 1, { col: 0xa8a294 });
-  box(44.6, 0, MAP - 3.5, 45.6, 2.6, MAP - 1.5, 0x8a8a84);                               // будка
-  box(50.4, 0.9, MAP - 2.6, 54, 1.0, MAP - 2.5, 0xc84a2a, { solid: false });            // шлагбаум (поднят)
-  for (const z of [70, 74, 78]) { bench(44.6, z, 1); bench(51.4, z, -1); }               // вдоль дороги, лицом к ней
-  const CC = [0xc8c4ba, 0x60707e, 0x6e7a50, 0x8c3a30, 0x3e5270, 0xd8b030];
-  car(60, 74, true, CC[0]); car(60, 77.2, true, CC[1], true, true); car(66, 74, true, CC[2]); car(66, 77.2, true, CC[3], true);
-  car(72, 80.5, true, CC[5], true); car(62, 86, false, CC[4]); car(28, 80, false, CC[3], true, true); car(56, 92, true, CC[1], true);
-  // ---- двор: бочки, фонари, немного зелени ----
-  barrel(26, 40, true); barrel(70, 30, true); barrel(40, 56, true); barrel(56, 58, false); barrel(30, 70, true); barrel(80, 70, false); barrel(14, 60, true); barrel(88, 40, false);
-  for (const [x, z] of [[44, 40], [52, 40], [44, 50], [52, 50], [44, 60], [52, 60], [44, 70], [52, 80], [24, 36], [72, 36], [16, 34], [62, 70]]) lamp(x, z);
-  const has = n => !!MODELS[n];
-  for (const [x, z] of [[4, 6], [90, 6], [4, 90], [92, 92], [26, 58], [88, 60], [6, 66], [34, 92], [78, 92], [90, 28]]) has('tree') ? model('tree', x, z, x * 1.7) : tree(x, z);
-  if (has('bush')) for (const [x, z] of [[6, 10], [86, 10], [6, 88], [90, 88], [24, 60], [86, 62], [30, 90], [80, 90], [92, 50]]) model('bush', x, z, x * 2.3, 0.9 + (x % 1) * 0.3);
-  if (has('cone')) for (const [x, z] of [[45.2, 66], [50.8, 66], [46, 90], [50, 90], [47, 82]]) model('cone', x, z, x);
-  for (const B of buildings) B.finish();
-  indexSolids();
-}
-// Точки выхода зомби: проломы, ворота, двери корпусов и пустыри по сетке
-function mapSpawns() {
-  const S = [{ x: 47.5, z: 1.4, kind: 'breach' }, { x: 1.4, z: 57, kind: 'gate' }, { x: MAP - 1.4, z: 57, kind: 'gate' }, { x: 48, z: MAP - 1.4, kind: 'gate' },
-    { x: 48, z: 36.8, kind: 'bld' }, { x: 62, z: 44.8, kind: 'bld' }, { x: 14, z: 28.8, kind: 'bld' }, { x: 16, z: 52.8, kind: 'bld' }, { x: 40, z: 92.8, kind: 'bld' }];
-  for (let x = 8; x < MAP; x += 16) for (let z = 8; z < MAP; z += 16) if (!blocked(x, z, 0, 0.6) && floorAt(x, z, 0) === 0) S.push({ x, z, kind: 'field' });
-  return S;
-}
-
