@@ -140,9 +140,11 @@ function updateFireStrips(dt) {
 function shotFeel(p, ang, use) {
   const F = FEEL[p.gun], mz = muzzleOf(p), dx = Math.sin(ang), dz = Math.cos(ang);
   SFX.shot(p.gun);
-  p.kick = F.kick / 3;
-  const KV = (SPLIT.on && viewFor(p)) || CAM; KV.kx -= dx * F.cam * 0.02; KV.kz -= dz * F.cam * 0.02;
-  shake = Math.max(shake, F.cam * 0.012);
+  p.kick = Math.min(3, p.kick * 0.6 + F.kick * 0.55);                 // откат ствола в руках; в очереди копится
+  p.kx -= dx * F.push; p.kz -= dz * F.push;                            // героя слегка сдвигает назад
+  p.leadT = 0.45;                                                     // камера уходит вперёд, куда смотрит ствол, пока идёт стрельба
+  const KV = (SPLIT.on && viewFor(p)) || CAM; KV.kx -= dx * F.cam * 0.08; KV.kz -= dz * F.cam * 0.08;   // короткий толчок камеры назад
+  shake = Math.max(shake, F.shake);
   rumble(p, F.rumble[0] * (p.gun === 'mg' ? 0.5 + 0.5 * p.spin : 1), F.rumble[1]);
   const W = p.gun;
   // дым у каждого оружия свой: дробовики — густое облако веером, винтовка — тонкая струйка, пулемёт — короткие клубки, ПП — лёгкая дымка, револьвер — круглый клуб

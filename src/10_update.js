@@ -298,13 +298,20 @@ function placeCam(cx, cy, cz, sx, sz, aspect, h, shift) {
   cam.left = -h * aspect - shift; cam.right = h * aspect - shift; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
   sun.position.set(cx - 14, 26, cz - 10); sun.target.position.set(cx, 0, cz);
 }
+// Увод камеры вперёд: пока герой стреляет, камера плавно смещается на ~1 м туда, куда смотрит ствол, потом возвращается
+function leadStep(p, dt) {
+  if (p.leadT > 0) p.leadT -= dt;
+  const on = p.leadT > 0 && !p.down, k = on ? 1.0 : 0, f = Math.min(1, dt * (on ? 3 : 2.2));
+  p.lx = (p.lx || 0) + (Math.sin(p.yaw) * k - (p.lx || 0)) * f; p.lz = (p.lz || 0) + (Math.cos(p.yaw) * k - (p.lz || 0)) * f;
+}
 function placeViewCam(v) {
-  let sx = v.kx, sz = v.kz; if (shake > 0) { sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
+  let sx = v.kx + (v.p.lx || 0), sz = v.kz + (v.p.lz || 0); if (shake > 0) { sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
   placeCam(v.x, v.y, v.z, sx, sz, v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs, 0); v.cp.copy(cam.position);
 }
 function updateSplitCams(dt) {
   CAM.zoom += (CAM.zoomT - CAM.zoom) * Math.min(1, dt * 4);
   if (shake > 0) shake -= dt;
+  for (const p of players) leadStep(p, dt);
   const kd = Math.exp(-16 * dt), k = Math.min(1, dt * 6); let ax = 0, az = 0, sd = 0;
   for (const v of SPLIT.views) {
     v.x += (v.p.x - v.x) * k; v.z += (v.p.z - v.z) * k; v.y += (v.p.y * 0.5 - v.y) * k; v.kx *= kd; v.kz *= kd; ax += v.p.x; az += v.p.z;
@@ -328,7 +335,9 @@ function updateCamera(dt) {
   const zt = MAIN ? MM.zoom : Math.max(CAM.zoomT, Math.min(CAM_MAX, need));
   CAM.zoom += (zt - CAM.zoom) * Math.min(1, dt * 4);
   CAM.x += (C.x - CAM.x) * Math.min(1, dt * 6); CAM.z += (C.z - CAM.z) * Math.min(1, dt * 6); CAM.y = (CAM.y || 0) + (C.y * 0.5 - (CAM.y || 0)) * Math.min(1, dt * 6);
-  let sx = CAM.kx, sz = CAM.kz; if (shake > 0) { shake -= dt; sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
+  let sx = CAM.kx, sz = CAM.kz;
+  if (!MAIN && players.length) { let lx = 0, lz = 0; for (const p of players) { leadStep(p, dt); lx += p.lx || 0; lz += p.lz || 0; } sx += lx / players.length; sz += lz / players.length; }
+  if (shake > 0) { shake -= dt; sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
   const kd = Math.exp(-16 * dt); CAM.kx *= kd; CAM.kz *= kd;
   const a = innerWidth / innerHeight, h = CAM.zoom; const sh = MAIN && a > 1.1 ? h * a * 0.34 : 0;   // главное меню: сцена смещена вправо, слева — кнопки
   placeCam(CAM.x, CAM.y, CAM.z, sx, sz, a, h, sh);

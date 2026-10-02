@@ -25,10 +25,10 @@ const WEAPONS = {
               dmg:7,  rate:9,   mag:30,  reload:2.0, pellets:1, spread:0.03, speed:16, life:0.6,  pierce:0,  knock:0.1,  fan:true, bloom:0.025, bloomMax:0.32 },
   // пулемёт: урон 5, раскрутка до 11, перезарядка 4 с. База (батч 2): нет рывка на Shift, ходьба −15%, при стрельбе ещё −30%
   mg:       { name:'Пулемёт',   desc:'Лента на 100, разгоняется. Без рывка, ходишь медленнее, при стрельбе ещё медленнее.',
-              dmg:5,  rate:4,   mag:100, reload:4.0, pellets:1, spread:0.11, speed:15, life:0.6,  pierce:0,  knock:0.1,  fan:true, rateMax:11, spinUp:2, fireSlow:0.7, noSprint:true, walk:0.85 },
+              dmg:5,  rate:4,   mag:100, reload:4.0, pellets:1, spread:0.11, speed:15, life:0.6,  pierce:0,  knock:0.1,  fan:true, rateMax:11, spinUp:2, fireSlow:0.7, noSprint:true, bloom:0.008, bloomMax:0.12, walk:0.85 },
   // револьвер (батч 2): новая база — 40 урона, 1,6 выстр./с, без пробития
   revolver: { name:'Револьвер', desc:'Тяжёлая пуля, 6 патронов. Без пробития — пробивать учат пути.',
-              dmg:40, rate:1.6, mag:6,   reload:2.2, pellets:1, spread:0,    speed:30, life:0.6,  pierce:0,  knock:0.3,  fan:true, heavy:true },
+              dmg:40, rate:1.6, mag:6,   reload:2.2, pellets:1, spread:0,    speed:30, life:0.6,  pierce:0,  knock:0.3,  fan:true, heavy:true, bloom:0.03, bloomMax:0.1 },
   // арбалет (батч 3): болт 55, пробивает одного, взвод 1,1 с после выстрела, колчан 12 — болты торчат в земле и подбираются
   crossbow: { name:'Арбалет',   desc:'Тихий болт, пробивает одного. Колчан 12 — выпущенные болты подбирай с земли.',
               dmg:55, rate:10,  mag:1,   reload:1.1, pellets:1, spread:0.01, speed:22, life:0.55, pierce:1,  knock:0.25, fan:true, bolt:true, quiver:12 },
@@ -71,14 +71,14 @@ const GEAR = {
 };
 // "Ощущение" каждого ствола: kick — отдача персонажа (px), cam — толчок камеры (px),
 // rumble — вибрация геймпада [сила, мс], flash — радиус вспышки (px), shell — какая гильза вылетает
-const FEEL = {
-  shotgun:  { kick:3,   cam:3,   rumble:[0.7, 110], flash:30, shell:'shell' },
-  sawnoff:  { kick:4,   cam:4.5, rumble:[1.0, 160], flash:36, shell:'shell' },
-  rifle:    { kick:1,   cam:1,   rumble:[0.25, 40], flash:18, shell:'brass' },
-  mg:       { kick:1.2, cam:1.2, rumble:[0.35, 45], flash:20, shell:'brass' },
-  revolver: { kick:4,   cam:4,   rumble:[0.8, 120], flash:30, shell:null },     // гильзы высыпаются при перезарядке
-  crossbow: { kick:2,   cam:1.5, rumble:[0.4, 70],  flash:0,  shell:null },     // без вспышки и дыма
-  smg:      { kick:0.6, cam:0.6, rumble:[0.2, 30],  flash:14, shell:'brass' },
+const FEEL = {                                                   // push — толчок героя назад (м/с затухающий: ~push/7 м), shake — тряска экрана
+  shotgun:  { kick:3,   cam:3,   push:1.2,  shake:0.06, rumble:[0.7, 110], flash:30, shell:'shell' },
+  sawnoff:  { kick:4,   cam:4.5, push:0.3,  shake:0.09, rumble:[1.0, 160], flash:36, shell:'shell' },   // ещё и своя отдача selfKnock
+  rifle:    { kick:1.4, cam:1.8, push:0.22, shake:0.03, rumble:[0.25, 40], flash:18, shell:'brass' },
+  mg:       { kick:1.6, cam:2,   push:0.2,  shake:0.035, rumble:[0.35, 45], flash:20, shell:'brass' },
+  revolver: { kick:4,   cam:4.5, push:1.1,  shake:0.07, rumble:[0.8, 120], flash:30, shell:null },     // гильзы высыпаются при перезарядке
+  crossbow: { kick:2,   cam:2,   push:0.3,  shake:0.02, rumble:[0.4, 70],  flash:0,  shell:null },     // без вспышки и дыма
+  smg:      { kick:1.0, cam:1.2, push:0.12, shake:0.025, rumble:[0.2, 30],  flash:14, shell:'brass' },
 };
 
 // Зомби. hp растёт со временем (см. spawnZombie). from — с какой секунды появляется
