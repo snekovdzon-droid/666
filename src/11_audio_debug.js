@@ -1,6 +1,24 @@
 'use strict';
 /* ---------- 15. Звук: синтез, перенесён из 2D v33 (свои звуки у каждого ствола) ---------- */
-const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true) };
+const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true), real: lsGet('realsnd', true), buf: {} };
+// Настоящие записи оружия (src/02b_sound_assets.js): декодируем один раз при старте звука
+function loadRealSounds() {
+  if (typeof SND_B64 === 'undefined') return;
+  for (const k in SND_B64) {
+    const bin = atob(SND_B64[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    try { Sound.ctx.decodeAudioData(u.buffer, b => { Sound.buf[k] = b; }, () => {}); } catch (e) {}
+  }
+}
+// Играет запись: vol — громкость, rate — высота тона (1 = как есть), у вариантов name_1..name_n берётся случайный
+function playReal(name, vol = 1, rate = 1, vary = 0.05) {
+  if (!Sound.real || !Sound.ctx) return false;
+  let b = Sound.buf[name];
+  if (!b) { const n = []; for (let i = 1; Sound.buf[name + '_' + i]; i++) n.push(name + '_' + i); if (n.length) b = Sound.buf[n[Math.floor(Math.random() * n.length)]]; }
+  if (!b) return false;
+  const c = Sound.ctx, src = c.createBufferSource(), g = c.createGain();
+  src.buffer = b; src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * vary); g.gain.value = vol;
+  src.connect(g); g.connect(Sound.master); src.start(); return true;
+}
 function audioInit() {
   if (Sound.ctx) { if (Sound.ctx.state === 'suspended') Sound.ctx.resume(); return; }
   try {
@@ -9,7 +27,7 @@ function audioInit() {
     Sound.master = c.createGain(); Sound.master.gain.value = Sound.on ? 0.5 : 0; Sound.master.connect(c.destination);
     const buf = c.createBuffer(1, c.sampleRate, c.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    Sound.noise = buf;
+    Sound.noise = buf; loadRealSounds();
   } catch (e) { Sound.ctx = null; }
 }
 addEventListener('pointerdown', audioInit, true); addEventListener('keydown', audioInit, true);
@@ -62,11 +80,13 @@ function ring(base, vol, dur = 0.12, delay = 0) {
 function canPlay(key, gapMs) { const now = performance.now(); if ((Sound.last[key] || 0) + gapMs > now) return false; Sound.last[key] = now; return true; }
 const SFX = {
   ok: canPlay,
-  dry() { if (!soundOn()) return; click(2400, 0.22, 0, 7, 0.02); click(1500, 0.12, 0.03, 6, 0.02); },
+  dry() { if (!soundOn()) return; if (playReal('dry', 0.7)) return; click(2400, 0.22, 0, 7, 0.02); click(1500, 0.12, 0.03, 6, 0.02); },
   breath() { if (!soundOn()) return; noiseHit({ dur: 0.32, type: 'bandpass', freq: 1100, q: 0.8, vol: 0.07, attack: 0.09, sweep: 700 });
     setTimeout(() => { if (soundOn()) noiseHit({ dur: 0.28, type: 'bandpass', freq: 1600, q: 1, vol: 0.045, attack: 0.12, sweep: 1900 }); }, 380); },
   shot(id) {
     if (!soundOn()) return;
+    const RS = { rifle: [30, 0.8, 1], mg: [25, 0.75, 1], smg: [30, 0.7, 1], pistol: [0, 0.7, 1.1, 'smg'], revolver: [0, 1, 1], shotgun: [0, 1, 1], sawnoff: [0, 1, 0.92] }[id];
+    if (RS && Sound.real && (RS[3] || id) && (Sound.buf[(RS[3] || id) + '_1'])) { if (RS[0] && !canPlay(id, RS[0])) return; playReal(RS[3] || id, RS[1], RS[2]); return; }
     switch (id) {
       case 'shotgun': noiseHit({ dur: 0.28, freq: 2200, sweep: 400, vol: 0.7 }); tone({ f0: 110, f1: 40, dur: 0.18, vol: 0.6 }); break;
       case 'sawnoff': noiseHit({ dur: 0.38, freq: 2600, sweep: 300, vol: 0.85 }); tone({ f0: 90, f1: 35, dur: 0.25, vol: 0.8 }); break;
@@ -89,6 +109,7 @@ const SFX = {
   },
   reload(start, id) {
     if (!soundOn()) return;
+    if (Sound.buf[id + (start ? '_start' : '_end')] && playReal(id + (start ? '_start' : '_end'), 0.8, 1, 0.02)) return;
     if (start) {
       if (id === 'sawnoff') { click(2200, 0.25, 0, 6, 0.04); thud(180, 0.12, 0.02, 0.06); }
       else if (id === 'revolver') { click(3000, 0.18, 0); noiseHit({ dur: 0.18, type: 'bandpass', freq: 2500, q: 3, vol: 0.05 }); }
@@ -112,6 +133,7 @@ const SFX = {
   thump() { if (!soundOn()) return; tone({ f0: 260, f1: 55, dur: 0.16, vol: 0.7 }); noiseHit({ dur: 0.12, type: 'lowpass', freq: 900, q: 0.7, vol: 0.45 }); click(1600, 0.2, 0.02, 6, 0.03); },   // подствольник
   rico() { if (!soundOn() || !canPlay('rico', 60)) return; tone({ f0: 2600, f1: 900, dur: 0.18, vol: 0.15 }); },                                            // рикошет
   shield() { if (!soundOn()) return; click(900, 0.25, 0, 5, 0.05); tone({ f0: 500, f1: 300, dur: 0.2, vol: 0.25 }); },                                   // щит стойки
+  shellLoad() { if (!soundOn()) return; if (!playReal('shotgun_start', 0.8, 1, 0.04)) click(2200, 0.12, 0, 6, 0.02); },
   click() { if (!soundOn()) return; click(2200, 0.12, 0, 6, 0.02); },
   casing(type) {
     if (!soundOn() || !canPlay('casing', 45)) return;
@@ -119,6 +141,7 @@ const SFX = {
     else ring(2600 + Math.random() * 600, 0.03, 0.1);
   },
 };
+function setRealSnd(on) { Sound.real = on; lsSet('realsnd', on); }
 function setSound(on) { Sound.on = on; lsSet('sound', on); if (Sound.master) Sound.master.gain.value = on ? 0.5 : 0; }
 
 /* ---------- Отладочная панель: F3 или ` (на телефоне — кнопка «dbg») ---------- */

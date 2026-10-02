@@ -123,12 +123,14 @@ const MAX_P = 2400;
 const pLit = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial(), MAX_P);
 const pGlow = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), MAX_P);
 for (const m of [pLit, pGlow]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_P * 3), 3); m.frustumCulled = false; scene.add(m); }
+const pSoft = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.3, depthWrite: false }), MAX_P);   // полупрозрачный дым выстрелов
+pSoft.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pSoft.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_P * 3), 3); pSoft.frustumCulled = false; pSoft.castShadow = false; pSoft.renderOrder = 2; scene.add(pSoft);
 pLit.castShadow = false;                              // тени от дыма и крошек дорогие, почти не видны
 const parts = [], _c2 = new THREE.Color();
 let pOvf = 0;
 function spawnP(o) { if (QS.fx < 1 && Math.random() > QS.fx) return; if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
 function updateParts(dt) {
-  let nl = 0, ng = 0;
+  let nl = 0, ng = 0, ns = 0;
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i]; p.t += dt;
     if (p.t >= p.life) { if (p.stay && !p.baked) { bakeP(p); } parts[i] = parts[parts.length - 1]; parts.pop(); continue; }
@@ -140,14 +142,14 @@ function updateParts(dt) {
         if (Math.abs(p.vy) > 1.2 && p.bounce) { p.vy = -p.vy * 0.35; p.vx *= 0.5; p.vz *= 0.5; } else { p.rest = true; if (p.stay && fl < 0.05) { bakeP(p); p.baked = true; p.life = 0; } } } }
     }
     const k = p.t / p.life, s = p.s1 !== null ? p.s + (p.s1 - p.s) * k : p.s;
-    const mesh = p.glow ? pGlow : pLit, n = p.glow ? ng++ : nl++;
+    const mesh = p.glow ? pGlow : p.soft ? pSoft : pLit, n = p.glow ? ng++ : p.soft ? ns++ : nl++;
     if (n >= MAX_P) continue;
     _q.setFromEuler(_e.set(p.rx || 0, p.ry || 0, 0));
     _m.compose(_v.set(p.x, p.y, p.z), _q, _s.set(s * (p.sx || 1), s * (p.sy || 1), s * (p.sz || 1)));
     mesh.setMatrixAt(n, _m);
     _c.setHex(p.col); if (p.col1 !== undefined) _c.lerp(_c2.setHex(p.col1), k); mesh.setColorAt(n, _c);
   }
-  pLit.count = Math.min(nl, MAX_P); pGlow.count = Math.min(ng, MAX_P);
+  pLit.count = Math.min(nl, MAX_P); pGlow.count = Math.min(ng, MAX_P); pSoft.count = Math.min(ns, MAX_P); pSoft.instanceMatrix.needsUpdate = true; if (pSoft.instanceColor) pSoft.instanceColor.needsUpdate = true;
   pLit.instanceMatrix.needsUpdate = pGlow.instanceMatrix.needsUpdate = true;
   if (pLit.instanceColor) pLit.instanceColor.needsUpdate = true; if (pGlow.instanceColor) pGlow.instanceColor.needsUpdate = true;
 }

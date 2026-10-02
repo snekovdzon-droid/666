@@ -27,3 +27,6 @@
 ## Карта «Тюрьма»
 Описана данными в `src/04c_map_prison.js` (`MAP_PRISON`: зоны земли, список операций, точки выхода зомби, фиксированные места ящиков). Ворота (F / Y, зомби ломают), прожекторы на вышках, полуоткрытые здания (`shed`).
 Проверки: `node tools/map_check.js` (проходимость), `node tools/map_view.js` (вид всей карты), `node tools/map_tour.js` (экскурсия), `node tools/gate_test.js`.
+
+## Звуки оружия
+Записи выстрелов и перезарядок — Snake's Authentic Gun Sounds (1 и 2), автор Snake / F8 Studios, itch.io (https://f8studios.itch.io/snakes-authentic-gun-sounds), свободная лицензия. Нарезаны и сжаты скриптом `tools/gen_sounds.py` (`assets/sounds/*.mp3` → `src/02b_sound_assets.js`). В настройках можно вернуться к синтезированным звукам.

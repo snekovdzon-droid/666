@@ -31,7 +31,7 @@ function updatePlayerWeapon(p, c, dt) {
   if (p.reloadT > 0) {
     if (p.shellMode) {                                 // «Поштучная зарядка»: по патрону, стрелять можно в любой момент
       p.reloadT -= dt;
-      if (p.reloadT <= 0) { p.ammo++; SFX.click(); if (p.ammo < ws.mag) p.reloadT = p.reloadMax; else { p.reloadT = 0; p.shellMode = false; SFX.reload(false, id); } }
+      if (p.reloadT <= 0) { p.ammo++; SFX.shellLoad(); if (p.ammo < ws.mag) p.reloadT = p.reloadMax; else { p.reloadT = 0; p.shellMode = false; SFX.reload(false, id); } }
       if (fire && p.ammo > 0 && p.cool <= 0) { p.reloadT = 0; p.shellMode = false; } else return;
     } else {
       p.reloadT -= dt;
@@ -144,24 +144,15 @@ function shotFeel(p, ang, use) {
   const KV = (SPLIT.on && viewFor(p)) || CAM; KV.kx -= dx * F.cam * 0.02; KV.kz -= dz * F.cam * 0.02;
   shake = Math.max(shake, F.cam * 0.012);
   rumble(p, F.rumble[0] * (p.gun === 'mg' ? 0.5 + 0.5 * p.spin : 1), F.rumble[1]);
-  muzzleT = 0.05; muzzleLight.position.set(mz.x, mz.y, mz.z); muzzleLight.intensity = 7 * F.flash / 26;
-  const fs = F.flash / 26, W = p.gun;
-  if (F.flash > 0) {                                  // яркая вспышка: вытянутый луч вперёд, звезда, искры и тёплое ядро
-    const L = 0.9 + fs * 1.5;
-    spawnP({ x: mz.x + dx * L * 0.3, y: mz.y, z: mz.z + dz * L * 0.3, s: 0.2 * fs + 0.08, sz: L / (0.2 * fs + 0.08), ry: ang, col: 0xffffff, col1: 0xffa030, glow: true, life: 0.07 });
-    spawnP({ x: mz.x + dx * L * 0.2, y: mz.y, z: mz.z + dz * L * 0.2, s: 0.34 * fs + 0.1, sz: L * 0.6 / (0.34 * fs + 0.1), ry: ang, col: 0xffe070, col1: 0xff5010, glow: true, life: 0.09 });
-    for (const da of [0.7, -0.7]) spawnP({ x: mz.x + dx * 0.12, y: mz.y, z: mz.z + dz * 0.12, s: 0.12 * fs + 0.04, sz: 2.5 + fs * 2.5, ry: ang + da, col: 0xfff0b0, col1: 0xff8020, glow: true, life: 0.06 });
-    spawnP({ x: mz.x + dx * 0.1, y: mz.y, z: mz.z + dz * 0.1, s: 0.3 * fs + 0.14, s1: 0.04, col: 0xffffff, col1: 0xffc050, glow: true, life: 0.08 });
-    for (let i = 0, n = 3 + Math.round(fs * 4); i < n; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: dx * rnd(4, 11) + rnd(-2, 2), vy: rnd(-0.5, 1.5), vz: dz * rnd(4, 11) + rnd(-2, 2), g: 6, s: rnd(0.03, 0.06), col: 0xffd870, glow: true, life: rnd(0.12, 0.3), drag: 0.9 });
-  }
+  const W = p.gun;
   // дым у каждого оружия свой: дробовики — густое облако веером, винтовка — тонкая струйка, пулемёт — короткие клубки, ПП — лёгкая дымка, револьвер — круглый клуб
   const SM = { shotgun: [7, 0.12, 0.8, 1.3, 2.6, 0.5, 0xd8d4cc, 0x8e8a84], sawnoff: [9, 0.14, 0.95, 1.5, 2.8, 0.7, 0xdcd8d0, 0x8a8680], rifle: [3, 0.07, 0.35, 1.5, 1.6, 0.1, 0xb4bcc4, 0x7c848c],
     mg: [1, 0.09, 0.4, 0.7, 1.3, 0.35, 0xc0bcb4, 0x7a7670], smg: [1, 0.07, 0.3, 0.55, 1.0, 0.3, 0xc4c0b8, 0x84807a], revolver: [5, 0.16, 0.75, 1.1, 1.2, 0.2, 0xe0dcd4, 0x908c86] }[W];
   if (SM && !(W === 'smg' && Math.random() < 0.5) && !(W === 'mg' && Math.random() < 0.4)) {
-    const [n, s0, s1, life, spd, spread, c0, c1] = SM;
+    const [n, s0, s1, life, spd, spread, c0, c1] = SM;   // soft — полупрозрачный дым (~30%)
     for (let i = 0; i < n; i++) { const a = ang + rnd(-spread, spread), v = spd * rnd(0.4, 1) * (W === 'rifle' ? 1 + i * 0.5 : 1);
-      spawnP({ x: mz.x + dx * 0.15, y: mz.y, z: mz.z + dz * 0.15, vx: Math.sin(a) * v, vy: rnd(0.2, 0.8), vz: Math.cos(a) * v, s: s0, s1: s1 * rnd(0.7, 1.1), col: c0, col1: c1, life: life * rnd(0.8, 1.15), drag: 0.9 }); }
-    if (W === 'shotgun' || W === 'sawnoff') for (let i = 0; i < 4; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: rnd(-0.2, 0.2), vy: rnd(0.4, 0.9), vz: rnd(-0.2, 0.2), s: 0.1, s1: 0.5, col: 0xb8b4ac, col1: 0x7a7670, life: 1.6, drag: 0.96 });   // стелется у ствола
+      spawnP({ x: mz.x + dx * 0.15, y: mz.y, z: mz.z + dz * 0.15, vx: Math.sin(a) * v, vy: rnd(0.2, 0.8), vz: Math.cos(a) * v, s: s0, s1: s1 * rnd(0.7, 1.1), col: c0, col1: c1, life: life * rnd(0.8, 1.15), drag: 0.9, soft: true }); }
+    if (W === 'shotgun' || W === 'sawnoff') for (let i = 0; i < 4; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: rnd(-0.2, 0.2), vy: rnd(0.4, 0.9), vz: rnd(-0.2, 0.2), s: 0.1, s1: 0.5, col: 0xb8b4ac, col1: 0x7a7670, life: 1.6, drag: 0.96, soft: true });   // стелется у ствола
   }
   if (F.shell) for (let i = 0; i < use; i++) spawnCasing(p, F.shell, 1);
 }
