@@ -1,9 +1,26 @@
 'use strict';
 /* ---------- 1. Рендер, камера, свет ---------- */
-const renderer = new THREE.WebGLRenderer({ antialias: !IS_TOUCH, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, IS_TOUCH ? 1.5 : 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Качество графики (меню → Настройки → Графика; смена перезапускает страницу — сглаживание задаётся при создании контекста)
+const QPRE = {
+  high:   { name: 'Высокая', pr: 2,    scale: 1,    shadow: 2048, soft: true,  aa: true,  lamps: 3, search: 2, fire: 4, fx: 1,   cap: 1 },
+  medium: { name: 'Средняя', pr: 1.25, scale: 0.85, shadow: 1024, soft: false, aa: true,  lamps: 2, search: 1, fire: 3, fx: 0.7, cap: 0.66 },
+  low:    { name: 'Низкая',  pr: 1,    scale: 0.6,  shadow: 0,    soft: false, aa: false, lamps: 1, search: 1, fire: 2, fx: 0.4, cap: 0.4 },
+};
+QPRE.auto = Object.assign({}, QPRE.high, { name: 'Авто' });
+const QDESC = {
+  high: 'Полное разрешение, мягкие тени, сглаживание, до 900 зомби. Для мощных компьютеров.',
+  medium: 'Около 85% разрешения, тени попроще, меньше света и частиц, до 600 зомби.',
+  low: '60% разрешения, без теней и сглаживания, минимум света и частиц, до 360 зомби. Для слабых ноутбуков.',
+  auto: 'Старт как «Высокая»; если FPS падает ниже 40 — игра сама снижает разрешение до 50%, затем отключает тени.',
+};
+document.body.classList.toggle('touch', IS_TOUCH);
+const QID = (() => { const v = lsGet('quality', 'high'); return QPRE[v] ? v : 'high'; })();
+const QS = Object.assign({}, QPRE[QID], { auto: QID === 'auto' });      // живые значения: у «Авто» разрешение подстраивается на ходу
+const qPixelRatio = () => Math.min(devicePixelRatio, IS_TOUCH ? Math.min(1.5, QS.pr) : QS.pr) * QS.scale;
+const renderer = new THREE.WebGLRenderer({ antialias: !IS_TOUCH && QS.aa, powerPreference: 'high-performance' });
+renderer.setPixelRatio(qPixelRatio());
+renderer.shadowMap.enabled = QS.shadow > 0;
+renderer.shadowMap.type = QS.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
 document.body.appendChild(renderer.domElement);
@@ -22,10 +39,32 @@ addEventListener('resize', resize);
 
 const hemi = new THREE.HemisphereLight(0xffe2c0, 0x3a3028, 0.5); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffc890, 1.1);
-sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+sun.castShadow = QS.shadow > 0; sun.shadow.mapSize.set(QS.shadow || 1024, QS.shadow || 1024);
 Object.assign(sun.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 120 });
 sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
 scene.add(sun); scene.add(sun.target);
+// Замеры кадра и автоподстройка разрешения («Авто»): логика и отправка отрисовки в мс, при FPS < 40 разрешение падает до 50%, затем гаснут тени
+const PERF = { tick: 0, render: 0 }, QA = { age: 0, low: 0, high: 0 };
+const qualityTag = () => QS.name + ' ' + Math.round(QS.scale * 100) + '%' + (QS.shadow > 0 && !renderer.shadowMap.enabled ? ' · без теней' : '');
+function setShadows(on) {
+  if (renderer.shadowMap.enabled === on) return;
+  renderer.shadowMap.enabled = on; sun.castShadow = on;
+  scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); });
+}
+function qApplyScale() { renderer.setPixelRatio(qPixelRatio()); resize(); }
+function perfSample(tickMs, renderMs, dt) {
+  PERF.tick += (tickMs - PERF.tick) * 0.05; PERF.render += (renderMs - PERF.render) * 0.05;
+  if (!QS.auto) return;
+  if (G.state !== 'play' || G.paused || document.hidden) { QA.low = QA.high = 0; if (G.state === 'main' || G.state === 'menu') QA.age = 0; return; }
+  QA.age += dt; if (QA.age < 6) return;                                  // прогрев: первые кадры после старта не считаем
+  const fps = G.fps;
+  if (fps < 40) { QA.low += dt; QA.high = 0; } else if (fps > 100) { QA.high += dt; QA.low = 0; } else { QA.low = Math.max(0, QA.low - dt); QA.high = 0; }
+  if (QA.low > 2.5) {
+    QA.low = 0;
+    if (QS.scale > 0.5) { QS.scale = Math.max(0.5, +(QS.scale - 0.1).toFixed(2)); qApplyScale(); }
+    else if (renderer.shadowMap.enabled) { setShadows(false); QS.fx = 0.5; MAX_ENEMIES = Math.max(300, Math.round(MAX_ENEMIES * 0.7)); }
+  } else if (QA.high > 12 && QS.scale < 1) { QA.high = 0; QS.scale = Math.min(1, +(QS.scale + 0.05).toFixed(2)); qApplyScale(); }
+}
 
 
 /* ---------- 2. Мир: твёрдые коробки (AABB) + их отрисовка ---------- */
@@ -38,11 +77,12 @@ function mat(col, o = {}) {
   return lamb[k] || (lamb[k] = new THREE.MeshLambertMaterial(Object.assign({ color: col }, o)));
 }
 // Коробка: x1..x2, y1..y2 (высота), z1..z2. solid — участвует в столкновениях
+let BOX_PARENT = null;                // куда складывать коробки (группа для полупрозрачности), иначе staticGroup
 function box(x1, y1, z1, x2, y2, z2, col, o = {}) {
   const m = new THREE.Mesh(boxGeo, o.material || mat(col, o.m || {}));
   m.scale.set(x2 - x1, y2 - y1, z2 - z1); m.position.set((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);
   m.castShadow = o.cast !== false; m.receiveShadow = true;
-  (o.parent || staticGroup).add(m);
+  (o.parent || BOX_PARENT || staticGroup).add(m);
   if (o.solid !== false) solids.push({ x1, y1, z1, x2, y2, z2, mat: o.hit || 'concrete', group: o.parent || null });
   return m;
 }
@@ -160,7 +200,6 @@ const MODEL_DEF = {
   tree:         { scale: 1.7, oy: 0.95, solid: { r: 0.2, h: 1.7 }, leaves: { r: 0.8, y1: 1.6, y2: 3.2 } },
   bush:         { scale: 1.0, oy: 0,    solid: null },
   cone:         { scale: 1.0, oy: 0,    solid: { r: 0.12, h: 0.35 }, hit: 'wood' },
-  pallet_cargo: { scale: 1.0, oy: 0,    solid: 'bbox', hit: 'wood' },
 };
 const MODELS = {};
 function loadModels() {
@@ -180,7 +219,7 @@ function model(name, x, z, rot = 0, sc = 1) {
   const src = MODELS[name], D = MODEL_DEF[name] || { scale: 1, oy: 0 }; if (!src) return null;
   const m = src.clone(), s = D.scale * sc;
   m.scale.setScalar(s); m.rotation.y = rot; m.position.set(x, D.oy * s, z);
-  staticGroup.add(m);
+  (BOX_PARENT || staticGroup).add(m);
   if (D.solid === 'bbox') {
     const b = new THREE.Box3().setFromObject(m);
     solids.push({ x1: b.min.x, y1: 0, z1: b.min.z, x2: b.max.x, y2: b.max.y, z2: b.max.z, mat: D.hit || 'wood' });
@@ -296,4 +335,3 @@ function buildVoxModel(src, recolor) {               // src — base64 .vox ил
   }
   return { parts: out, tex, tris, size: S };
 }
-

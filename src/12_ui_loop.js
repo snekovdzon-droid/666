@@ -41,7 +41,7 @@ function menuMark() {
   $('splitBtn').style.display = G.nPlayers > 1 && !IS_TOUCH ? '' : 'none'; $('splitBtn').textContent = 'Экран: ' + (G.split ? 'раздельный' : 'общий');
   const ctr = assignControls(G.nPlayers);
   $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
-  $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'В бой';
+  $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
   lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
@@ -49,7 +49,7 @@ function toggleSplit() { G.split = !G.split; lsSet('split', G.split); SFX.click(
 function menuConfirm() {
   SFX.click();
   if (G.pick < G.nPlayers - 1) { G.pick++; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); menuMark(); return; }
-  startRun();
+  openMapPick();                                                       // режим → класс → карта списком
 }
 function menuKey(code) {
   const cols = Math.max(1, Math.round($('cards').clientWidth / 170));
@@ -72,15 +72,15 @@ function showScreen(id) { document.body.classList.toggle('mainScr', id === 'main
 let tItemsKey = '';
 function touchItems(p, sl) {
   const near = GITEMS.some(g => Math.hypot(g.x - p.x, g.z - p.z) < 0.8) || (L(p, 'tu_port') && TURRETS.some(t => t.owner === p && Math.hypot(t.x - p.x, t.z - p.z) < 1.5));
-  const key = sl.map(id => id + p.pouch[id]).join() + '|' + p.hand + '|' + near + '|' + devLv(p, 'hook') + '|' + (L(p, 'ri_ubgl') ? p.ubglC || 0 : -1);
+  const key = sl.map(id => id + p.pouch[id]).join() + '|' + p.hand + '|' + near + '|' + devLv(p, 'hook') + '|' + (L(p, 'ri_ubgl') ? p.ubglC || 0 : -1) + '|' + (p.melee ? Math.ceil(Math.max(0, p.meleeCd)) : '-');
   if (key === tItemsKey) return; tItemsKey = key;
   const el = $('tItems'); if (!el) return;
-  el.innerHTML = sl.slice(0, 6).map((id, i) => `<button data-s="${i}" class="${p.hand === id ? 'on' : ''}">${ITEM_SHORT[id]}<br>×${p.pouch[id]}</button>`).join('') + (near ? '<button data-s="swap">⇄</button>' : '') + (devLv(p, 'hook') ? '<button data-s="hook">КРЮК</button>' : '') + (L(p, 'ri_ubgl') && p.gun === 'rifle' ? `<button data-s="alt">ГРАН ${p.ubglC || 0}</button>` : '');
-  el.querySelectorAll('button').forEach(b => b.addEventListener('touchstart', ev => { ev.preventDefault(); ev.stopPropagation(); if (b.dataset.s === 'swap') act.swapT = true; else if (b.dataset.s === 'hook') act.hookT = true; else if (b.dataset.s === 'alt') act.altT = true; else act.slotT = +b.dataset.s; }, { passive: false }));
+  el.innerHTML = sl.slice(0, 6).map((id, i) => `<button data-s="${i}" class="${p.hand === id ? 'on' : ''}">${ITEM_SHORT[id]}<br>×${p.pouch[id]}</button>`).join('') + (near ? '<button data-s="swap">⇄</button>' : '') + (devLv(p, 'hook') ? '<button data-s="hook">КРЮК</button>' : '') + (p.melee ? `<button data-s="melee">${MELEE[p.melee].name.toUpperCase()}${p.meleeCd > 0 ? '<br>' + Math.ceil(p.meleeCd) : ''}</button>` : '') + (L(p, 'ri_ubgl') && p.gun === 'rifle' ? `<button data-s="alt">ГРАН ${p.ubglC || 0}</button>` : '');
+  el.querySelectorAll('button').forEach(b => b.addEventListener('touchstart', ev => { ev.preventDefault(); ev.stopPropagation(); if (b.dataset.s === 'swap') act.swapT = true; else if (b.dataset.s === 'hook') act.hookT = true; else if (b.dataset.s === 'melee') act.meleeT = true; else if (b.dataset.s === 'alt') act.altT = true; else act.slotT = +b.dataset.s; }, { passive: false }));
 }
 function hudBuild() {
   tItemsKey = ''; if ($('tItems')) $('tItems').innerHTML = '';
-  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate">${players.length > 1 ? `<div class="ph"><span class="pn">ИГРОК ${i + 1}</span></div>` : ''}<div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div></div>`).join('');
+  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate">${players.length > 1 ? `<div class="ph"><span class="pn">ИГРОК ${i + 1}</span></div>` : ''}<div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="mel"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div></div>`).join('');
   hudLast = {}; hudApplyLayout();
 }
 let hudLast = {};
@@ -93,7 +93,7 @@ function hud() {
     hudSet(q('.hp'), K + 'hp', heartsHtml(p), 'innerHTML');
     hudSet(q('.stam'), K + 'st', (p.stam * 100).toFixed(0) + '%', 'width'); q('.stam').classList.toggle('lock', p.stamLock);
     hudSet(q('.cls'), K + 'cls', `${CLASSES[p.gun].name}<small>${WEAPONS[p.gun].name}</small>`, 'innerHTML');
-    hudSet(q('.gun'), K + 'gun', [p.gun === 'mg' && p.spin > 0.05 ? `раскрутка ${Math.round(p.spin * 100)}%` : '', L(p, 'ri_ubgl') ? `подствольник ${'●'.repeat(p.ubglC || 0)}${'○'.repeat(ubglMax(p) - (p.ubglC || 0))}` : '', p.handN > 0 ? `ловкость ×${p.handN}` : '',
+    hudSet(q('.gun'), K + 'gun', [p.gun === 'mg' && p.spin > 0.05 ? `раскрутка ${Math.round(p.spin * 100)}%` : '', L(p, 'ri_ubgl') ? `подствольник ${'●'.repeat(p.ubglC || 0)}${'○'.repeat(ubglMax(p) - (p.ubglC || 0))}` : '', p.handN > 0 ? `ловкость ×${p.handN}` : '', p.curse ? '☠ ' + CURSES[p.curse].name : '',
       p.gun === 'crossbow' ? `колчан ${p.quiver}${p.quiver <= 0 && p.ammo <= 0 ? ' (болт через ' + Math.ceil(3 - p.boltT) + ' с)' : ''}` : ''].filter(Boolean).join(' · '));
     const key = p.ammo + '/' + ws.mag;
     if (hudLast[K + 'am'] !== key) { hudLast[K + 'am'] = key; const el = q('.ammo'); el.classList.toggle('many', ws.mag > 40); q('.am').textContent = key;
@@ -103,19 +103,24 @@ function hud() {
     // подсумок: слоты 1–4 (у игрока на стрелках — 7–0), в руке — подсвечен; сообщения о находках и обмене
     const keysOf = p.ctrl === 'keys2' ? ['7', '8', '9', '0', '-', '='] : p.ctrl === 'pad' || (p.ctrl === 'all' && PAD.active) ? ['↑', '→', '↓', '←', 'Y', 'Y'] : ['1', '2', '3', '4', '5', '6'];
     const sl = slotTypes(p);
-    const itemsHtml = sl.length || pouchN(p) || p.fuel != null ? sl.slice(0, 6).map((id, i) => `<div class="slot${p.hand === id ? ' on' : ''}" title="${ITEMS[id].name}">${IS_TOUCH ? '' : `<u>${keysOf[i]}</u>`}${pixIcon(id, 26)}<b>×${p.pouch[id]}</b>${pips(itemLv(p, id), 5)}</div>`).join('')
+    const itemsHtml = sl.length || pouchN(p) || p.fuel != null ? sl.slice(0, 6).map((id, i) => `<div class="slot${p.hand === id ? ' on' : ''}" title="${ITEMS[id].name}">${IS_TOUCH ? '' : `<u>${keysOf[i]}</u>`}${pixIcon(id, IS_TOUCH ? 26 : 32)}${IS_TOUCH ? `<b>×${p.pouch[id]}</b>${pips(itemLv(p, id), 5)}` : `<span class="nm"><em>${ITEMS[id].name}</em>${pips(itemLv(p, id), 5)}</span><b>×${p.pouch[id]}</b>`}</div>`).join('')
       + (p.fuel != null ? `<div class="chip">${pixIcon('canister', 16)} ${p.fuel.toFixed(1)} с</div>` : '') + `<span class="cap">${pouchN(p)}/${pouchCap(p)}</span>` : '';
     hudSet(q('.items'), K + 'it', itemsHtml, 'innerHTML');
-    const devHtml = Object.keys(p.dev || {}).map(id => { const st = devState(p, id); return `<div class="dev" title="${DEVICES[id].name} ур.${p.dev[id]}">${pixIcon(id, 22)}${pips(p.dev[id], 3)}${st ? `<em>${st}</em>` : ''}</div>`; }).join('')
+    const devHtml = Object.keys(p.dev || {}).map(id => { const st = devState(p, id); return `<div class="dev" title="${DEVICES[id].name} ур.${p.dev[id]}">${pixIcon(id, 22)}${pips(p.dev[id], devMaxOf(id))}${st ? `<em>${st}</em>` : ''}</div>`; }).join('')
       + Object.keys(p.att || {}).map(id => `<div class="dev att" title="${ATTACH[id].name}">${pixIcon(id, 20)}</div>`).join('');
     hudSet(q('.devs'), K + 'dv', devHtml, 'innerHTML');
+    { const mel = q('.mel');                                                                    // ближний бой: иконка, клавиша, кольцо перезарядки
+      if (p.melee) { const st = meleeStat(p), cd = Math.max(0, p.meleeCd);
+        hudSet(mel, K + 'ml', `<div class="meli${cd > 0 ? ' cool' : ' ready'}"><i class="kc"></i>${pixIcon(p.melee, 28)}<span class="nm"><em>${MELEE[p.melee].name}</em><small>${cd > 0 ? Math.ceil(cd) + ' с' : 'готов'}</small></span><u>${meleeKey(p)}</u></div>`, 'innerHTML');
+        mel.style.setProperty('--k', cd > 0 ? ((1 - cd / st.cd) * 360).toFixed(0) + 'deg' : '360deg'); }
+      else hudSet(mel, K + 'ml', '', 'innerHTML'); }
     hudSet(q('.msg'), K + 'ms', p.msgT > 0 ? `<span style="color:${p.msgCol}">${p.msg}</span>` : '', 'innerHTML');
     if (IS_TOUCH && p.idx === 0) touchItems(p, sl);
     hudSet(q('.down'), K + 'dn', p.down ? (players.length > 1 ? `ЛЕЖИТ — отстреливается, подними! ${Math.round(p.reviveT / CFG.REVIVE_TIME * 100)}%` : '') : '');
   }
   hudSet($('xpbar'), 'xp', (G.xp / xpNeed(G.level) * 100).toFixed(1) + '%', 'width');
   hudSet($('timer'), 'tm', fmtT(Math.max(0, RUN_TIME - G.t))); hudSet($('lvl'), 'lv', String(G.level)); hudSet($('kills'), 'k', String(G.kills));
-  $('fps').textContent = G.fps + ' FPS' + (G.night > 0.5 ? ' · ночь' : ' · закат');
+  $('fps').textContent = G.fps + ' FPS' + (G.night > 0.5 ? ' · ночь' : ' · закат') + (QID !== 'high' ? ' · ' + qualityTag() : '');
   const low = players.some(p => !p.down && p.hp === 1);
   if ($('flashFx')) $('flashFx').style.opacity = (G.flashFx || 0).toFixed(2);   // вспышка светошумовой
   $('hurt').style.opacity = Math.max(G.hurtFx, low ? 0.35 + Math.sin(G.t * 6) * 0.1 : 0).toFixed(2);
@@ -125,14 +130,14 @@ function hud() {
 
 /* ---------- 17. Забег и главный цикл ---------- */
 let lastT = performance.now(), fpsAcc = 0, fpsN = 0;
-const START = MAP_PRISON.start;                   // двор перед главным корпусом
+const START = MAPDEF.start;                   // двор перед главным корпусом
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
-  dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll();
+  dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll(); moodStart();
   clearMobs(); splitEnd();
   Object.assign(G, { killsBy: {}, bossKills: 0, nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
-  CAM.x = START.x; CAM.z = START.z;
+  CAM.x = START.x; CAM.z = START.z; eventsReset();
 }
 // Игроки забега: стволы из меню, пульты по геймпадам, стартуют рядом друг с другом
 function makePlayers() {
@@ -151,7 +156,7 @@ function restartRun() { startRun(); }
 function toMenu() { $('lvlUp').style.display = 'none'; clearRun(); G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); hudBuild(); updateMarkers(); G.state = 'menu'; showScreen('menu'); menuMark(); }
 function endRun(win) {
   if (G.state !== 'play') return;
-  G.state = 'end'; G.win = win; mouse.down = false;
+  G.state = 'end'; G.win = win; mouse.down = false; { const eb = document.getElementById('evBanner'); if (eb) eb.style.opacity = 0; }      // баннер события не лезет на экран итогов
   $('over').classList.toggle('win', win);
   const co = players.length > 1;
   $('overTitle').textContent = win ? (co ? 'Вы пережили эту ночь!' : 'Ты пережил эту ночь!') : (co ? 'Вас съели' : 'Тебя съели');
@@ -184,11 +189,11 @@ function spawnHorde() {
   for (let i = 0; i < n; i++) { const w = i % 2 ? w2 : w1; spawnZombie('walker', w || undefined); }
 }
 function frame(now) {
-  let dt = Math.min(0.05, (now - lastT) / 1000) * (G.timeScale || 1); lastT = now;
+  const raw = Math.min(1, (now - lastT) / 1000); let dt = Math.min(0.05, raw) * (G.timeScale || 1); lastT = now;
   pollPad(dt);
-  fpsAcc += dt; fpsN++; if (fpsAcc > 0.5) { G.fps = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
-  tick(dt, now / 1000);
-  render(now / 1000);
+  if (G.state === 'mapedit') { requestAnimationFrame(frame); return; }                // редактор карты рисует сам
+  fpsAcc += raw; fpsN++; if (fpsAcc > 0.5) { G.fps = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; }
+  const t0 = performance.now(); tick(dt, now / 1000); const t1 = performance.now(); render(now / 1000); perfSample(t1 - t0, performance.now() - t1, raw);
   requestAnimationFrame(frame);
 }
 function tick(dt, T) {
@@ -196,7 +201,7 @@ function tick(dt, T) {
   const run = G.state === 'play' && !G.paused, live = (G.state === 'play' || G.state === 'end') && !G.paused;
   if (run) {
     G.t += dt;
-    if (G.t >= RUN_TIME) endRun(true);
+    // конец забега теперь — эвакуация вертолётом (events): победа, когда все на площадке
     if (!G.noSpawn) {
       G.spawnAcc += (0.9 + G.t * 0.045) * SPAWN_MUL * coopMul() * dt;
       while (G.spawnAcc >= 1) { G.spawnAcc -= 1; spawnZombie(); }
@@ -208,11 +213,11 @@ function tick(dt, T) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); if (!SPLIT.on) tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); eventsTick(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }
-  act.reload = false; act.reload2 = false; act.slot = act.slot2 = act.slotT = -1; act.swap = act.swap2 = act.swapT = false; act.hook = act.hook2 = act.hookT = false; act.alt = act.alt2 = act.altT = false;
+  act.reload = false; act.reload2 = false; act.slot = act.slot2 = act.slotT = -1; act.swap = act.swap2 = act.swapT = false; act.hook = act.hook2 = act.hookT = false; act.melee = act.melee2 = act.meleeT = false; act.alt = act.alt2 = act.altT = false;
   if (G.state === 'play' && G.pickQueue.length) openLevelUp();
   G.hurtFx = Math.max(0, G.hurtFx - dt * 2.5); if (G.lvlFx > 0) G.lvlFx -= dt;
   if (!G.paused) { updateFires(dt, T); updateParts(dt); updateGems(dt, T); }
@@ -242,9 +247,8 @@ function render(T) {
 // старт: сначала модели Meshy, потом карта (коллизии моделей нужны навигации)
 loadModels().then(() => {
   buildMap(); SPAWNS = mapSpawns(); buildNav(); resize(); debugInit(); menuBuild(); mmBuild();
-  toMenu(); mmEnter();
+  toMenu(); mmEnter(); bootPending();                                    // после смены карты — сразу забег или редактор
   $('loading') && $('loading').remove();
   requestAnimationFrame(frame);
 });
 window.__cam = cam; window.__hurt = hurtPlayer; window.__renderer = renderer; window.THREE = THREE; window.__G = { G, get player() { return player; }, players, zombies, bullets, gems, CAM, parts, keys, mouse, moveEntity, blocked, floorAt, solids, solidsNear, spawnZombie, damageZombie, startRun, endRun, debugGun, spawnHorde, tick, act };
-

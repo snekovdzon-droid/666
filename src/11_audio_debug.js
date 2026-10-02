@@ -179,8 +179,7 @@ function debugUpdate() {
   if (!DBG.on) return;
   const r = renderer.info.render, alive = zombies.filter(z => !z.dead);
   const by = {}; for (const z of alive) by[z.form] = (by[z.form] || 0) + 1;
-  $('dbgStats').textContent = `${G.fps} FPS · вызовов ${r.calls} · треуг. ${(r.triangles / 1000).toFixed(0)}k · пак ${VZ.on ? 'вкл' : 'выкл'} (${VOXMS.length} моделей, ${VOXMS.map(M => M.tris).join('/')} треуг., тени ${VZ.fullShadow ? 'точные' : 'простые'}, рост ${VZ.H}, ширина ×${VZ.W}) · зомби ${alive.length} (${Object.entries(by).map(([k, v]) => k + ' ' + v).join(', ')}) · трупов ${zombies.length - alive.length}` +
+  $('dbgStats').textContent = `${G.fps} FPS · логика ${PERF.tick.toFixed(1)} мс · отрисовка ${PERF.render.toFixed(1)} мс · ${qualityTag()} · зомби до ${MAX_ENEMIES} · вызовов ${r.calls} · треуг. ${(r.triangles / 1000).toFixed(0)}k · пак ${VZ.on ? 'вкл' : 'выкл'} (${VOXMS.length} моделей, ${VOXMS.map(M => M.tris).join('/')} треуг., тени ${VZ.fullShadow ? 'точные' : 'простые'}, рост ${VZ.H}, ширина ×${VZ.W}) · зомби ${alive.length} (${Object.entries(by).map(([k, v]) => k + ' ' + v).join(', ')}) · трупов ${zombies.length - alive.length}` +
     ` · пуль ${bullets.length} · частиц ${parts.length} · опыта ${gems.length} · игрок ${player.x.toFixed(1)}, ${player.z.toFixed(1)}, h ${player.y.toFixed(2)}${PAD.active ? ' · геймпад' : ''} · геймпадов ${PADS.size} · игроков ${players.length}`;
 }
 function p1Finale(b) { player.evo[b.fin.id] = true; }
-

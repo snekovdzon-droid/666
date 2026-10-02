@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const p = await b.newPage({ viewport: { width: 1700, height: 1100 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await p.goto('file://' + path.resolve('index.html')); await p.waitForTimeout(3500);
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(1200);
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1200);
   await p.evaluate(([yaw, night]) => {
     G.god = true; G.noSpawn = true; zombies.length = 0; scene.fog.near = 1000; scene.fog.far = 2000;
     for (const id of ['huds', 'top', 'help', 'btns', 'fps', 'ver']) { const e = document.getElementById(id); if (e) e.style.display = 'none'; }

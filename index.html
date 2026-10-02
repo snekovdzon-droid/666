@@ -178,6 +178,31 @@ body.hudEdit #bossBar{width:min(520px,62vw)}
 #splitLines.three i:nth-child(1){bottom:50%}
 body.split .hud.c1{top:30px}
 body.split #radarBox{right:auto;left:50%;top:auto;bottom:12px;margin-left:-59px}
+
+/* подсумок списком под основным HUD: клавиша, крупная иконка, название, количество, уровень (на телефоне — как было) */
+body:not(.touch) .items{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:3px;margin-top:8px}
+body:not(.touch) .slot{width:auto;height:40px;padding:0 8px 0 0;justify-content:flex-start;gap:7px;background:rgba(18,14,10,.9)}
+body:not(.touch) .slot u{position:static;display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:28px;background:#2e2416;border-right:1px solid #5a4a30;font-size:15px;color:#ffd890;font-weight:800;text-shadow:0 1px 2px #000}
+body:not(.touch) .slot .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;justify-content:center}
+body:not(.touch) .slot .nm em{font-style:normal;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#f2ead6}
+body:not(.touch) .slot b{position:static;font-size:14px;color:#ffe9b0}
+body:not(.touch) .slot .pips{position:static}
+body:not(.touch) .items .cap{align-self:flex-end}
+.mel:empty{display:none}.mel{margin-top:6px}
+.meli{position:relative;display:flex;align-items:center;gap:7px;height:40px;padding:0 8px 0 0;background:rgba(18,14,10,.9);border:1px solid #6a4a30;overflow:hidden}
+.meli .kc{position:absolute;inset:0;pointer-events:none;background:conic-gradient(transparent var(--k,360deg),rgba(0,0,0,.62) 0)}
+.meli.ready{border-color:#ffd890;box-shadow:0 0 8px rgba(255,216,144,.35)}
+.meli u{order:-1;align-self:stretch;display:flex;align-items:center;justify-content:center;min-width:46px;padding:0 4px;background:#2e2416;border-right:1px solid #5a4a30;font-size:13px;color:#ffd890;font-weight:800;text-decoration:none}
+.meli .nm{display:flex;flex-direction:column;gap:2px}.meli .nm em{font-style:normal;font-size:12.5px;color:#f2ead6}.meli .nm small{font-size:11px;color:#ffb878}.meli.ready .nm small{color:#9fe890}
+body.touch .mel{display:none}
+.pcard.curse{--cc:#ff3030;background:linear-gradient(180deg,rgba(40,8,8,.96),rgba(14,6,6,.96));border-color:#7a1c1c;box-shadow:0 0 16px rgba(255,40,40,.35)}
+.pcard.curse .tag{color:#ff6a5a}.pcard.curse .pl{color:#9fe890}.pcard.curse .mi{color:#ff7a68}
+.rs-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}.rs-tbl th{font-size:10.5px;letter-spacing:1px;color:#8a806c;font-weight:400;text-align:right;padding:2px 6px}.rs-tbl th:first-child,.rs-tbl td:first-child{text-align:left}
+.rs-tbl td{padding:5px 6px;text-align:right;color:#f2ead6;border-top:1px solid rgba(255,255,255,.07)}.rs-tbl .cs{font-style:normal;font-size:11px;color:#ff7a68}
+.rs-awards{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.rs-aw{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.32);border-left:3px solid #ecd060;padding:6px 10px;font-size:12.5px;color:#cfc4ac}
+.rs-aw span{font-size:16px;color:#ecd060}.rs-aw b{color:#f2ead6;font-weight:600}.rs-aw em{font-style:normal}.rs-aw i{font-style:normal;font-weight:700}
+.rs-graph{width:100%;max-width:520px;height:auto;display:block;margin-top:4px;background:rgba(0,0,0,.25)}.rs-graph text{fill:#8a806c;font-size:9px}
+.rs-leg{display:flex;gap:14px;font-size:12px;margin-top:4px}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -188,9 +213,9 @@ body.split #radarBox{right:auto;left:50%;top:auto;bottom:12px;margin-left:-59px}
 <div id="bossArrow"><i></i><b></b></div>
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
-<div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, X перезарядка, L3 бег, LB/RB камера</div>
+<div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.19</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.30</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Тюрьма. Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div></div></div>
@@ -222,6 +247,7 @@ body.split #radarBox{right:auto;left:50%;top:auto;bottom:12px;margin-left:-59px}
 <script src="src/04_buildings_map.js"></script>
 <script src="assets/parts.js"></script>
 <script src="src/04c_map_prison.js"></script>
+<script src="src/04d_map_city.js"></script>
 <script src="src/04b_hero_gen.js"></script>
 <script src="src/05_characters_fx.js"></script>
 <script src="src/06_state.js"></script>
@@ -237,4 +263,9 @@ body.split #radarBox{right:auto;left:50%;top:auto;bottom:12px;margin-left:-59px}
 <script src="src/11f_screens.js"></script>
 <script src="src/11g_hud_layout.js"></script>
 <script src="src/12_ui_loop.js"></script>
+<script src="src/12b_events.js"></script>
+<script src="src/12c_prison_v27.js"></script>
+<script src="src/12d_melee.js"></script>
+<script src="src/12e_runstats.js"></script>
+<script src="src/12f_map_select.js"></script>
 </body></html>

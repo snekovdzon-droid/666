@@ -8,7 +8,7 @@ const { chromium } = require('playwright'); const path = require('path');
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   await p.goto('file://' + file); await p.waitForTimeout(2500);
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(1500);
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1500);
   await p.keyboard.down('d'); await p.mouse.move(800, 300); await p.mouse.down();
   await p.waitForTimeout(6000); await p.mouse.up(); await p.keyboard.up('d');
   await p.screenshot({ path: process.env.SHOT || 'play.png' });

@@ -53,6 +53,7 @@ function updatePlayerWeapon(p, c, dt) {
   if (id === 'smg' && L(p, 'smg_burst')) { p.burstN = (p.burstN + 1) % 2; if (p.burstN === 0) mul = 1.5; }   // «Отсечка по 2»: вторая ×1,5
   p.cocked = id === 'revolver' && L(p, 'rv_cock') > 0 && G.t - p.lastShot >= 1;   // «Взвод курка»
   const dir = shoot(p, ws, ap, mul, pelletMul);
+  if (id === 'sawnoff') sawBlast(p, dir, use);                         // ударная волна обреза
   shotFeel(p, dir, use);
   if (B.selfKnock) {                                   // отдача обреза отбрасывает стрелка
     const k = B.selfKnock * (1 + 0.4 * L(p, 'so_jet')) * (p.evo.so_liveram ? 2 : 1) * (use === 2 ? 1.4 : 1) * (L(p, 'so_grip') ? 0.4 : 1);
@@ -190,7 +191,7 @@ function updateBullets(dt) {
       if (so && b.thin && (so.y2 - so.y1 < 1.4 || Math.min(so.x2 - so.x1, so.z2 - so.z1) < 0.3)) so = null;   // «Слонобой» проходит тонкие преграды
       if (so) { const bx = b.x - b.vx / sp * 0.06, bz = b.z - b.vz / sp * 0.06;
         if (so.mat === 'metal') sparks(bx, b.y, bz); else dust(bx, b.y, bz, so.mat === 'wood' ? 0x7a5a36 : 0xb0a690, so.leaves ? 2 : 5);
-        SFX.impact(so.mat); dead = true; b.x = bx; b.z = bz; b.wallHit = true; break; }
+        SFX.impact(so.mat); if (so.expl) { const pv = ATTR; ATTR = b.owner || b.src || null; explDamage(so.expl, b.dmg || 8); ATTR = pv; } dead = true; b.x = bx; b.z = bz; b.wallHit = true; break; }
       forNear(b.x, b.z, z => {
         if (z.dead || b.hits.includes(z.id)) return;
         const r = z.r + 0.08; if ((z.x - b.x) ** 2 + (z.z - b.z) ** 2 > r * r || b.y < z.y - 0.05 || b.y > z.y + zHeight(z)) return;
@@ -216,7 +217,7 @@ function hitByBullet(z, b) {
   if (b.pop && z.type === 'fat') { z.safeBoom = true; z.popNow = true; }              // «12.7»: толстяк лопается на месте
   if (b.thin && z.type === 'fat') z.safeBoom = true;                                   // «Слонобой»: толстяк лопается, не раня игроков
   if (z.form === 'armored' && b.y > z.y + 0.95) sparks(b.x, b.y, b.z);               // пуля звякнула о каску
-  damageZombie(z, d, b.vx / s, b.vz / s, b.knock, b.y, b.slug || b.boom);
+  dzBy(b.owner || b.src, z, d, b.vx / s, b.vz / s, b.knock, b.y, b.slug || b.boom);
   SFX.hit();
   if (b.ignite) { const f = b.burn || { t: 2.5, dps: 6 * (b.owner ? b.owner.st.dmg : 1) }; setBurn(z, f.t, f.dps, f.spread, 0, f.slow); }
   if (z.dead && b.owner && close) onCloseKill(b.owner);
@@ -234,7 +235,7 @@ function hitByBullet(z, b) {
     if (b.trick) b.dmg *= 1.2;                                                          // «Трюкач»: +20% за отскок
     return;                                                                              // отскок не тратит пробитие
   }
-  if (b.wall) { z.wallT = 0.45; z.wallDmg = d * b.wall; }                               // «В стену»
+  if (b.wall) { z.wallT = 0.45; z.wallDmg = d * b.wall; z.wallOwner = b.owner || b.src || null; }                               // «В стену»
   if (b.grow) b.dmg *= 1 + 0.1 * b.grow;
   if (b.pierce-- <= 0) return false;
 }
@@ -247,18 +248,19 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   }
   if (z.kres) knock *= z.kres;
   if (z.markT > 0) dmg *= 1.15;                                                         // метка трассера
+  const _rs = ATTR && ATTR.rs; if (_rs) _rs.dmg += Math.min(dmg, Math.max(0, z.hp));           // нанесённый урон — реально снятое здоровье
   z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
   z.kx += dx * knock * 8; z.kz += dz * knock * 8;
   const by = hy !== undefined ? hy : z.y + 0.6;
   if (dx || dz) { blood(z.x, by, z.z, dx, dz, 4); if (Math.random() < 0.5) bloodDecal(z.x + dx * 0.3, z.z + dz * 0.3, 0.2, dx, dz); }
   if (z.hp > 0) return;
-  z.dead = true; z.deadT = 0; G.kills++; (G.killsBy || (G.killsBy = {}))[z.type] = (G.killsBy[z.type] || 0) + 1;
+  z.dead = true; z.deadT = 0; G.kills++; if (_rs) { _rs.kills++; const _m = Math.floor(G.t / 60); _rs.kpm[_m] = (_rs.kpm[_m] || 0) + 1; } (G.killsBy || (G.killsBy = {}))[z.type] = (G.killsBy[z.type] || 0) + 1;
   if (z.bolts) dropBolts(z);                                                              // болты, застрявшие в зомби, остаются в трупе
   SFX.death(); dropFromZombie(z);                                                          // редкий малый ящик
   const T = ZOMBIES[z.type];
   bloodDecal(z.x + dx * 0.35, z.z + dz * 0.35, 0.3 + Math.random() * 0.1, dx, dz);          // лужа меньше, чем была (правка из плейтеста)
   blood(z.x, z.y + 0.6, z.z, dx, dz, 12);
-  gems.push({ x: z.x, y: z.y, z: z.z, v: T.xp, pull: false, t: Math.random() * 6, vy: 2.5 });
+  gems.push({ x: z.x, y: z.y, z: z.z, v: T.xp * backMul(), pull: false, t: Math.random() * 6, vy: 2.5 });
   if (z.type === 'warden') wardenDown(z);
   if (T.fat) { z.swell = z.popNow ? 0.999 : 0.001; z.flash = 0; return; }                                    // толстяк раздувается и взрывается
   const sp = Math.min(7, 1.5 + knock * 10) * rnd(0.8, 1.2) * 0.35;                        // труп отлетает по направлению удара
@@ -275,7 +277,9 @@ function updateSwells(dt) {
   }
 }
 // Взрыв: ранит зомби рядом (и игроков, если hurts), на той же высоте ±1.5
-function explode(x, y, z, dmg, R, o = {}) {
+function explode(x, y, z, dmg, R, o = {}) { const pv = ATTR; if (o.owner) ATTR = o.owner; try { explodeBase(x, y, z, dmg, R, o); } finally { ATTR = pv; } }
+function explodeBase(x, y, z, dmg, R, o = {}) {
+  explHit(x, z, R);                                                                        // рядом бочки и баки — цепная реакция
   if (GAS.length) igniteGasAt(x, z, R);                                                    // взрыв поджигает бензин
   boomFx(x, y, z, R, o.gore); SFX.boom(R / 1.5);
   if (o.hurts) for (const p of players) if (p !== o.skip && !p.down && p.inv <= 0 && Math.abs(p.y - y) < 1.5 && Math.hypot(p.x - x, p.z - z) < R && !(o.owner && L(p, 'fireproof'))) hurtPlayer(p);   // костюм спасает и от снаряжения напарника
@@ -301,12 +305,12 @@ function hurtPlayer(p, src) {
     return;
   }
   SFX.hurt();
-  p.hp--; p.inv = CFG.INVULN * (1 + 0.5 * L(p, 'skin')); G.hurtFx = 1; shake = Math.max(shake, 0.25); rumble(p, 0.9, 200);
+  p.hp--; if (p.rs) p.rs.taken++; p.inv = CFG.INVULN * (1 + 0.5 * L(p, 'skin')); G.hurtFx = 1; shake = Math.max(shake, 0.25); rumble(p, 0.9, 200);
   blood(p.x, p.y + 0.7, p.z, 0, 0, 6);
   if (src && p.cls === 'bouncer') { const dx = src.x - p.x, dz = src.z - p.z, d = Math.hypot(dx, dz) || 1; src.kx += dx / d * 7; src.kz += dz / d * 7; src.stunT = Math.max(src.stunT || 0, 0.4); }   // Вышибала: укусивший отлетает
   if (p.hp > 0) return;
   if (tryInject(p)) return;                                                                // «Автоинжектор»
-  p.hp = 0; p.down = true; p.reloadT = 0; p.fall = 0; rumble(p, 1, 400);
+  p.hp = 0; p.down = true; p.reloadT = 0; p.fall = 0; if (p.rs) p.rs.downs++; rumble(p, 1, 400);
   if (!alivePlayers().length) endRun(false);
 }
 /* ---- Кооп: упавший игрок отстреливается из пистолета лёжа, пока его поднимают ---- */
@@ -509,4 +513,3 @@ function addXp(v) {
   G.xp += v;
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; for (const p of players) G.pickQueue.push(p.idx); }   // каждый игрок выбирает свою карточку
 }
-

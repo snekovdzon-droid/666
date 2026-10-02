@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 9. Состояние игры: игроки, стволы, зомби, появление ---------- */
-const MAX_ENEMIES = IS_TOUCH ? CFG.MAX_ENEMIES_MOBILE : CFG.MAX_ENEMIES_PC;
+let MAX_ENEMIES = Math.round((IS_TOUCH ? CFG.MAX_ENEMIES_MOBILE : CFG.MAX_ENEMIES_PC) * QS.cap);   // потолок врагов зависит от качества графики
 const HERO_LOOK = [0xd8a880, 0x3c6a8a, 0x3a3630, 0x4a3020];
 const players = [];                                  // закладка под кооп (этап 3): пока один игрок
 let player = null;
@@ -19,12 +19,12 @@ function makePlayer(idx, gun, x, z, ctl = { ctrl: 'all' }) {
 }
 // Пассивки классов (класс = ствол)
 function applyClass(p) {
-  p.cls = CLS(p); p.devSlots = 1; p.pouchBonus = 0;
+  p.cls = CLS(p); p.devSlots = 1; p.pouchBonus = 0; p.melee = null; p.meleeLv = {}; p.meleeCd = 0; p.meleeSw = null; p.curse = null; if (!p.rs) p.rs = newRunStats();
   if (p.cls === 'soldier') p.st.reload *= 0.85;
   if (p.cls === 'gunner') p.maxHp = p.hp = CFG.PLAYER_HP + 1;
   if (p.cls === 'biker') { p.st.speed *= 1.1; p.st.stamRegen *= 1.35; p.maxHp = p.hp = CFG.PLAYER_HP - 1; }
   if (p.cls === 'hunter') p.st.pickup *= 1.6;
-  if (p.cls === 'tech') { p.devSlots = 2; p.pouchBonus = 2; }
+  if (p.cls === 'tech') { p.devSlots = 2; p.pouchBonus = 1; }
 }
 // Характеристики ствола с учётом перков (перки подключатся на этапе 4 — формулы уже как в 2D v33)
 function wStat(p) {
@@ -50,6 +50,7 @@ function wStat(p) {
   if (id === 'sawnoff') {
     reload *= 1 - 0.25 * L(p, 'so_break');
     if (L(p, 'so_grip')) knock *= 0.5;
+    knock *= Math.pow(1.4, L(p, 'so_charge'));                                   // «Мощный заряд»: +40% за уровень (сложением множителей)
     if (p.evo.so_berserk && p.hp === 1) dmg *= 2;
   }
   if (id === 'rifle') {
@@ -97,6 +98,7 @@ function wStat(p) {
   if (p.cls === 'bouncer') spread *= 1.1;                                 // Вышибала: разброс +10%
   if (p.cls === 'tech') dmg *= 0.9;                                      // Техник: урон ПП −10%
   if (L(p, 'shoulder') && players.some(q => q !== p && !q.down && Math.hypot(q.x - p.x, q.z - p.z) < 3)) dmg *= 1 + 0.15 * L(p, 'shoulder');
+  dmg *= rageMul(p);                                                      // «Ярость»
   if (p.y >= 2) life *= 1.3;                         // с крыши видно дальше: дальность +30%
   if (p.att && p.att.laser) spread *= 0.7;                                // ЛЦУ
   if (p.att && p.att.barrel) { life *= 1.3; speed *= 1.15; dmg *= 1.1; }  // удлинённый ствол
@@ -178,7 +180,7 @@ function spawnZombie(forceType, at, crawl, ignoreCap) {
   let form = FORM[type];
   if (type === 'walker' && (crawl || (crawl === undefined && Math.random() < 0.2))) form = 'crawl';   // 1 из 5 ходоков — ползун
   const z = { id: G.zId++, zombie: true, type, form, x: pos.x, y: floorAt(pos.x, pos.z, 0), z: pos.z, vy: 0, yaw: Math.random() * TAU, look: lookFor(type),
-    hp: T.hp * (1 + t / 150), r: T.r, speed: T.speed * rnd(0.92, 1.08), scale: type === 'runner' ? 0.9 : 1,
+    hp: T.hp * (1 + t / HP_GROWTH), r: T.r, speed: T.speed * rnd(0.92, 1.08), scale: type === 'runner' ? 0.9 : 1,
     phase: Math.random() * 6, moving: true, flash: 0, kx: 0, kz: 0, dead: false, deadT: 0, fall: 0, atkT: 0, hurtT: 0, nod: 0,
     slideT: 0, side: 1, slowT: 0, slowMul: 1, stunT: 0, burnT: 0, bleedT: 0, dotT: 0 };
   if (MOB_INIT[type]) MOB_INIT[type](z);                                  // особые мобы: свои поля (щит, масть, запасы)
@@ -201,4 +203,3 @@ function nearestZombie(x, z, range, except) {
   for (const o of zombies) { if (o.dead || (except && except.includes(o.id))) continue; const d = (o.x - x) ** 2 + (o.z - z) ** 2; if (d < bd) { bd = d; best = o; } }
   return best;
 }
-

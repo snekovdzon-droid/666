@@ -73,6 +73,7 @@ function radarDraw(T) {
   const B = G.boss;
   if (B && !B.dead) { const [px, py] = pt(B.x, B.z), pu = 5.5 + Math.sin(T * 6) * 1.5; g.strokeStyle = 'rgba(255,50,40,0.9)'; g.lineWidth = 1.5; g.beginPath(); g.arc(px, py, pu, 0, TAU); g.stroke(); }
   for (const p of players) { const [px, py] = pt(p.x, p.z); if (p.down && Math.floor(T * 3) % 2) continue; g.fillStyle = PLAYER_CSS[p.idx]; g.strokeStyle = '#000'; g.lineWidth = 1.5; g.beginPath(); g.arc(px, py, 3.2, 0, TAU); g.stroke(); g.fill(); }
+  evRadar(g, pt, dot, T, rad, c);
   g.restore();
   g.strokeStyle = '#4a4032'; g.lineWidth = 3; g.beginPath(); g.arc(c, c, rad, 0, TAU); g.stroke();
   g.strokeStyle = '#e8a050'; g.lineWidth = 1; g.beginPath(); g.arc(c, c, rad + 1.5, 0, TAU); g.stroke();
@@ -101,24 +102,39 @@ function hintsUpdate() {
   const live = G.state === 'play' && !G.paused, list = [];
   if (live) for (const V of uiViews()) {
     const near = (x, z) => { let d = 99; for (const p of V.ps) d = Math.min(d, Math.hypot(p.x - x, p.z - z)); return d; }, mine = [];
-    for (const c of CRATES) { const d = near(c.x, c.z); if (d < HINT_RANGE) mine.push({ d, x: c.x, y: c.y + (c.big ? 0.85 : 0.65), z: c.z, ico: 'crate', tx: c.big ? 'Большой ящик' : 'Ящик', cls: 'crate' }); }
+    for (const c of CRATES) { const d = near(c.x, c.z); if (d < HINT_RANGE) mine.push({ d, x: c.x, y: c.y + (c.big ? 0.85 : 0.65), z: c.z, ico: 'crate', tx: c.label || (c.big ? 'Большой ящик' : 'Ящик'), cls: 'crate' }); }
     for (const g of GITEMS) {
       const d = near(g.x, g.z); if (d >= HINT_RANGE) continue;
       const on = V.ps.find(p => Math.hypot(p.x - g.x, p.z - g.z) < 0.8 && pouchN(p) >= pouchCap(p));
       mine.push({ d, x: g.x, y: g.y + 0.7, z: g.z, ico: g.id, tx: ITEMS[g.id].name, sub: on ? `${swapKey(on)} — обменять` : '', cls: 'item' });
     }
-    for (const Gt of GATES) { const d = near((Gt.x1 + Gt.x2) / 2, (Gt.z1 + Gt.z2) / 2); if (d < 4.5) { const p = V.ps[0]; mine.push({ d, x: (Gt.x1 + Gt.x2) / 2, y: 2.5, z: (Gt.z1 + Gt.z2) / 2, ico: 'gate', tx: Gt.open ? 'Ворота открыты' : 'Ворота закрыты', sub: d < 2.4 && p ? `${swapKey(p)} — ${Gt.open ? 'закрыть' : 'открыть'}` : '', cls: 'item' }); } }
+    for (const Gt of GATES) { const d = near((Gt.x1 + Gt.x2) / 2, (Gt.z1 + Gt.z2) / 2); if (d < 4.5) { const p = V.ps[0]; mine.push({ d, x: (Gt.x1 + Gt.x2) / 2, y: 2.5, z: (Gt.z1 + Gt.z2) / 2, ico: 'gate', tx: Gt.locked ? 'Оружейка заперта' : Gt.open ? 'Ворота открыты' : 'Ворота закрыты', sub: d < 2.4 && p ? (Gt.locked ? (EV.hasKey ? `${swapKey(p)} — открыть картой` : 'нужна ключ-карта') : `${swapKey(p)} — ${Gt.open ? 'закрыть' : 'открыть'}`) : '', cls: 'item' }); } }
     mine.sort((a, b) => a.d - b.d);
     for (const h of mine.slice(0, HINT_MAX)) { const pos = toView(V, h.x, h.y, h.z); if (pos) { h.px = pos; list.push(h); } }
   }
-  const n = Math.min(HINT_MAX * 4, list.length);
+  const merged = [];                                    // ящики рядом на экране — одна подсказка «Ящик ×N»
+  for (const h of list) {
+    const m = h.cls === 'crate' && merged.find(o => o.cls === 'crate' && o.tx === h.tx && Math.hypot(o.px[0] - h.px[0], o.px[1] - h.px[1]) < 80);
+    if (m) m.cnt = (m.cnt || 1) + 1; else merged.push(h);
+  }
+  const n = Math.min(HINT_MAX * 4, merged.length), placed = [];
   while (hintEls.length < n) { const e = document.createElement('div'); e.className = 'ghint'; box.appendChild(e); hintEls.push(e); }
   for (let i = 0; i < hintEls.length; i++) {
-    const e = hintEls[i], h = list[i];
+    const e = hintEls[i], h = merged[i];
     if (i >= n) { e.style.display = 'none'; continue; }
-    const html = `${pixIcon(h.ico, 20)}<span><b>${h.tx}</b>${h.sub ? `<em>${h.sub}</em>` : ''}</span>`, key = h.cls + h.tx + h.sub;
-    if (e._k !== key) { e._k = key; e.className = 'ghint ' + h.cls; e.innerHTML = html; }
-    e.style.display = 'flex'; e.style.transform = `translate(${h.px[0].toFixed(1)}px,${h.px[1].toFixed(1)}px) translate(-50%,-100%)`;
+    const tx = h.tx + (h.cnt > 1 ? ' ×' + h.cnt : '');
+    const html = `${pixIcon(h.ico, 20)}<span><b>${tx}</b>${h.sub ? `<em>${h.sub}</em>` : ''}</span>`, key = h.cls + tx + h.sub;
+    if (e._k !== key) { e._k = key; e.className = 'ghint ' + h.cls; e.innerHTML = html; e._w = 0; }
+    e.style.display = 'flex';
+    if (!e._w) { e._w = e.offsetWidth || 100; e._h = e.offsetHeight || 28; }
+    // ближние ставятся первыми на своё место, дальние поднимаются над ними, пока не перестанут налезать
+    const w = e._w + 6, hh = e._h + 4, x = h.px[0]; let y = h.px[1];
+    for (let k = 0; k < 8; k++) {
+      const r = placed.find(r => Math.abs(r.x - x) < (r.w + w) / 2 && y > r.y - r.h && y - hh < r.y);
+      if (!r) break; y = r.y - r.h;
+    }
+    placed.push({ x, y, w, h: hh });
+    e.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-100%)`;
   }
 }
 
@@ -146,5 +162,5 @@ function hudExtra(T) {
   const play = G.state === 'play' || G.state === 'levelup';
   const on = play || HUDL.on, rd = $('radarBox'); if (rd) rd.style.display = on ? 'block' : 'none';
   if (on && (RADAR.n++ & 1) === 0) radarDraw(T);
-  hintsUpdate(); bossArrowUpdate();
+  hintsUpdate(); bossArrowUpdate(); evHud(T);
 }

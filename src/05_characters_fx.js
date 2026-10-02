@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- 6. Персонажи: воксельные части, все сразу одним InstancedMesh ---------- */
-const MAX_CH = 420, PARTS = 11;
+const MAX_CH = Math.max(420, (IS_TOUCH ? CFG.MAX_ENEMIES_MOBILE : CFG.MAX_ENEMIES_PC) + 120), PARTS = 11;   // живые + трупы + игроки
 const charMesh = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial(), MAX_CH * PARTS);
 charMesh.castShadow = true; charMesh.receiveShadow = true; charMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 charMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_CH * PARTS * 3), 3); charMesh.frustumCulled = false;
@@ -126,7 +126,7 @@ for (const m of [pLit, pGlow]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsag
 pLit.castShadow = false;                              // тени от дыма и крошек дорогие, почти не видны
 const parts = [], _c2 = new THREE.Color();
 let pOvf = 0;
-function spawnP(o) { if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
+function spawnP(o) { if (QS.fx < 1 && Math.random() > QS.fx) return; if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
 function updateParts(dt) {
   let nl = 0, ng = 0;
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -242,7 +242,7 @@ function navDir(e) {
 /* ---------- Зомби из воксельного пака: части тела — InstancedMesh, тени — от простых коробок ---------- */
 const VOXMS = Object.values(VOX_ASSETS).map(b => buildVoxModel(b));          // все модели пака: Zed_1 … Zed_6
 const VOXM = VOXMS[0];
-const MAX_VZ = 420;
+const MAX_VZ = Math.max(420, (IS_TOUCH ? CFG.MAX_ENEMIES_MOBILE : CFG.MAX_ENEMIES_PC) + 120);
 const VZ = { on: lsGet('voxZ', true), fullShadow: false, H: lsGet('voxH', 1.35), W: lsGet('voxW', 1.5), pn: 0, hero: lsGet('voxHero', true) };
 // Цвет куртки игрока: синий, красный, зелёный, жёлтый (перекрашиваем синие цвета модели героя)
 const PLAYER_COL = [[56, 86, 112], [150, 62, 50], [66, 110, 58], [176, 140, 46]];
@@ -373,4 +373,3 @@ function drawGear(p, ang, yaw) {
     part(col, 0, 0, 0, 0, sx, sy, sz, oy, oz, 0, ox);
   }
 }
-

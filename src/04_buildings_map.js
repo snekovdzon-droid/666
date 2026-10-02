@@ -15,9 +15,9 @@ function building(x1, z1, x2, z2, floors, o = {}) {
   const gap = o.gap;                                   // [x1, x2] проём на южной стороне
   if (gap) { box(x1, H, z2 - 0.18, gap[0], H + PH, z2, 0, { material: pm, parent: grp }); box(gap[1], H, z2 - 0.18, x2, H + PH, z2, 0, { material: pm, parent: grp }); }
   else box(x1, H, z2 - 0.18, x2, H + PH, z2, 0, { material: pm, parent: grp });
-  box(x1, H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp });
-  box(x1, H, z1, x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp });
-  box(x2 - 0.18, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
+  if (o.gapN) { box(x1, H, z1, o.gapN[0], H + PH, z1 + 0.18, 0, { material: pm, parent: grp }); box(o.gapN[1], H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp }); } else box(x1, H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp });
+  if (o.gapW) { box(x1, H, z1, x1 + 0.18, H + PH, o.gapW[0], 0, { material: pm, parent: grp }); box(x1, H, o.gapW[1], x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp }); } else box(x1, H, z1, x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp });
+  if (o.gapE) { box(x2 - 0.18, H, z1, x2, H + PH, o.gapE[0], 0, { material: pm, parent: grp }); box(x2 - 0.18, H, o.gapE[1], x2, H + PH, z2, 0, { material: pm, parent: grp }); } else box(x2 - 0.18, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
   // окна с решётками на все стороны, часть горит светом
   const win = (cx, cy, cz, alongX) => {
     const w = 0.55, h = 0.8, t = 0.06, m = Math.random() < 0.25 ? winMat : mat(DARK);
@@ -84,7 +84,7 @@ function barrel(x, z, fire) {
   if (fire) { addFire(x, 0.92, z, 1); SCORCHES.push([x, z, 1.1]); scorch(x, z, 1.1); }
 }
 // Свет огней — пул из 4 ламп у ближайших к камере огней (раньше у каждого огня своя: на большой карте это десяток лишних источников)
-const FIRE_LIGHTS = Array.from({ length: 4 }, () => { const l = new THREE.PointLight(0xff8a3a, 0, 9, 1.6); scene.add(l); return l; });
+const FIRE_LIGHTS = Array.from({ length: QS.fire }, () => { const l = new THREE.PointLight(0xff8a3a, 0, 9, 1.6); scene.add(l); return l; });
 function addFire(x, y, z, s) {
   fires.push({ x, y, z, s, acc: 0, seed: Math.random() * 10 });
 }
@@ -96,7 +96,7 @@ function lamp(x, z) {
   lamps.push({ x, z, bulb });
 }
 // Фонари светят пулом из 3 прожекторов — у ближайших к камере
-const LAMP_LIGHTS = Array.from({ length: 3 }, () => { const sp = new THREE.SpotLight(0xffe2a8, 0, 14, 0.75, 0.5, 1.2); scene.add(sp); scene.add(sp.target); return sp; });
+const LAMP_LIGHTS = Array.from({ length: QS.lamps }, () => { const sp = new THREE.SpotLight(0xffe2a8, 0, 14, 0.75, 0.5, 1.2); scene.add(sp); scene.add(sp.target); return sp; });
 function tree(x, z) {
   box(x - 0.15, 0, z - 0.15, x + 0.15, 1.6, z + 0.15, 0x6a4a30, { hit: 'wood' });
   const G = [0x4c6a34, 0x587a3a, 0x3e5a2c];

@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const p = await b.newPage({ viewport: { width: 1000, height: 600 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('index.html')); await p.waitForTimeout(3500);
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(1200);
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1200);
   const out = await p.evaluate(async () => {
     G.god = true; G.noSpawn = true; G.timeScale = 3; zombies.length = 0; const o = {};
     const road = GATES.find(g => g.z1 > 63 && g.z1 < 65 && g.x1 === 46);

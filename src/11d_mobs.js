@@ -9,7 +9,7 @@
    Данные (здоровье, скорость, время появления) — в ZOMBIES в 01_data.js; поведение — в MOB_AI ниже. */
 const FORM_H = { brute: 1.15, screamer: 0.97, spitter: 1, riot: 1.02, warden: 1.28 };      // рост относительно обычного зомби
 const FORM_W = { brute: 1.5, screamer: 0.82, spitter: 1.05, riot: 1.12, warden: 1.3 };      // ширина
-const MOB_CAP = { brute: [2, 3], riot: [3, 4], spitter: [3, 4], screamer: [2, 3] };          // сколько таких одновременно (до 15-й минуты / позже)
+const MOB_CAP = { brute: [2, 3], riot: [3, 4], spitter: [2, 3], screamer: [2, 3] };          // сколько таких одновременно (до 15-й минуты / позже)
 const MOB_CHANCE = { brute: 0.03, riot: 0.035, spitter: 0.035, screamer: 0.025 };            // шанс на каждое появление зомби после их времени
 const BOSS_AT = [600, 1080];                                                                  // секунды забега
 const COATS = [0x6a5a48, 0x3a3430, 0x8a7a5a, 0x2e2c2a, 0x9a8a70];
@@ -29,7 +29,7 @@ const MOB_INIT = {
   riot: z => { z.shield = true; z.turn = 2.6; },
   brute: z => { z.kres = 0.3; z.chgCd = rnd(2, 4); },
   screamer: z => { z.scCd = rnd(3, 6); },
-  spitter: z => { z.spCd = rnd(1.5, 3); },
+  spitter: z => { z.spCd = rnd(3, 5); },
   warden: z => { z.kres = 0.15; z.boss = true; z.slamCd = 6; z.callCd = 12; },
 };
 const faceDir = (z, t) => { const dx = t.x - z.x, dz = t.z - z.z, l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; };
@@ -79,7 +79,7 @@ const MOB_AI = {
     if (z.spWind > 0) { z.spWind -= dt; z.raise = 0.8; if (z.spWind <= 0) spitAt(z, z.spRef); return [dx, dz, 0]; }
     z.spCd -= dt;
     if (!target) return null;
-    if (z.spCd <= 0 && dist > 3.5 && dist < 11 && Math.abs(target.y - z.y) < 1.5) { z.spWind = 0.55; z.spRef = target; return [dx, dz, 0]; }
+    if (z.spCd <= 0 && dist > 3.5 && dist < 8 && Math.abs(target.y - z.y) < 1.5 && onScreen(z.x, z.z, z.y)) { z.spWind = 0.55; z.spRef = target; return [dx, dz, 0]; }
     if (dist < 5) { const f = faceDir(z, target); return [-f[0], -f[1], 0.9]; }
     if (dist < 8) return [dx, dz, 0];
     return null;
@@ -127,15 +127,19 @@ function doScream(z) {
 
 /* ---------- Плевун: плевок дугой, кислотная лужа ---------- */
 function spitAt(z, tg) {
-  z.spCd = rnd(3.2, 4.6); if (!tg || tg.down) return;
-  const T = 0.9, g = 14, y0 = z.y + 1.1, y1 = floorAt(tg.x, tg.z, tg.y) + 0.05;
-  SPITS.push({ x: z.x, y: y0, z: z.z, vx: (tg.x - z.x) / T, vz: (tg.z - z.z) / T, vy: (y1 - y0) / T + 0.5 * g * T, g, t: 0, T, y1 });
+  z.spCd = rnd(5, 7); if (!tg || tg.down) return;
+  const T = 1.1, g = 14, y0 = z.y + 1.1, y1 = floorAt(tg.x, tg.z, tg.y) + 0.05;
+  SPITS.push({ x: z.x, y: y0, z: z.z, vx: (tg.x - z.x) / T, vz: (tg.z - z.z) / T, vy: (y1 - y0) / T + 0.5 * g * T, g, t: 0, T, y1, mark: spitMark(tg.x, tg.z, y1) });
   SFX.spit();
 }
+// Метка падения плевка: пульсирующее кольцо на земле с момента выстрела — видно, куда не надо вставать
+const MARK_RING = new THREE.RingGeometry(0.72, 0.9, 32).rotateX(-Math.PI / 2), MARK_DISC = new THREE.CircleGeometry(0.9, 24).rotateX(-Math.PI / 2);
+const MARK_M1 = new THREE.MeshBasicMaterial({ color: 0xb6ff3a, transparent: true, opacity: 0.8, depthWrite: false }), MARK_M2 = new THREE.MeshBasicMaterial({ color: 0x7be02a, transparent: true, opacity: 0.18, depthWrite: false });
+function spitMark(x, z, y) { const g = new THREE.Group(); g.add(new THREE.Mesh(MARK_RING, MARK_M1), new THREE.Mesh(MARK_DISC, MARK_M2)); g.position.set(x, y + 0.07, z); g.renderOrder = 3; scene.add(g); return g; }
 function addPuddle(x, z, y) {
   const m = new THREE.Mesh(PUD_GEO, PUD_MAT); m.position.set(x, y + 0.04, z); m.renderOrder = 2; scene.add(m);
-  PUDDLES.push({ x, z, y, R: 1.15, t: 7, max: 7, m });
-  if (PUDDLES.length > 14) { const o = PUDDLES.shift(); scene.remove(o.m); }
+  PUDDLES.push({ x, z, y, R: 0.9, t: 4, max: 4, m });
+  if (PUDDLES.length > 8) { const o = PUDDLES.shift(); scene.remove(o.m); }
 }
 const PUD_GEO = new THREE.CircleGeometry(1, 24); PUD_GEO.rotateX(-Math.PI / 2);
 const PUD_MAT = new THREE.MeshBasicMaterial({ color: 0x7be02a, transparent: true, opacity: 0.5, depthWrite: false });
@@ -191,7 +195,8 @@ function updateMobFx(dt) {
   for (let i = SPITS.length - 1; i >= 0; i--) {
     const s = SPITS[i]; s.t += dt; s.vy -= s.g * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt;
     spawnP({ x: s.x, y: s.y, z: s.z, s: 0.12, s1: 0.03, col: 0x9ae03a, glow: true, life: 0.3 });
-    if (s.t >= s.T) { addPuddle(s.x, s.z, floorAt(s.x, s.z, s.y1)); dust(s.x, s.y1 + 0.1, s.z, 0x7be02a, 6); SPITS.splice(i, 1); }
+    if (s.mark) { const k = 0.82 + 0.18 * Math.sin(s.t * 14); s.mark.scale.set(k, 1, k); }
+    if (s.t >= s.T) { if (s.mark) scene.remove(s.mark); addPuddle(s.x, s.z, floorAt(s.x, s.z, s.y1)); dust(s.x, s.y1 + 0.1, s.z, 0x7be02a, 6); SPITS.splice(i, 1); }
   }
   for (let i = PUDDLES.length - 1; i >= 0; i--) {
     const P = PUDDLES[i]; P.t -= dt;
@@ -204,15 +209,15 @@ function updateMobFx(dt) {
     let inside = false;
     for (const P of PUDDLES) if (!p.down && Math.abs(p.y - P.y) < 0.6 && Math.hypot(p.x - P.x, p.z - P.z) < P.R * 0.9) { inside = true; break; }
     if (inside) {
-      p.slowT = Math.max(p.slowT || 0, 0.35); p.acidT = (p.acidT || 0) + dt;
-      if (p.acidT >= 0.8 && p.inv <= 0 && G.state === 'play') { hurtPlayer(p, null); p.acidT = -0.7; }       // жжёт, если стоять в луже
+      p.slowAcid = 0.35; p.acidT = (p.acidT || 0) + dt;                                              // кислота: слабое замедление, жжёт после 1,2 с стояния
+      if (p.acidT >= 1.2 && p.inv <= 0 && G.state === 'play') { hurtPlayer(p, null); p.acidT = -0.8; }       // жжёт, если стоять в луже
     } else if (p.acidT > 0) p.acidT = Math.max(0, p.acidT - dt);
   }
   const bar = $('bossBar'), B = G.boss;
   if (bar) { const on = B && !B.dead && G.state === 'play'; bar.style.display = on ? 'block' : 'none'; if (on) bar.querySelector('i').style.width = Math.max(0, B.hp / B.maxHp * 100).toFixed(1) + '%'; }
 }
 function clearMobs() {
-  SPITS.length = 0; for (const P of PUDDLES) scene.remove(P.m); PUDDLES.length = 0;
+  for (const s of SPITS) if (s.mark) scene.remove(s.mark); SPITS.length = 0; for (const P of PUDDLES) scene.remove(P.m); PUDDLES.length = 0;
   G.boss = null; const bar = $('bossBar'); if (bar) bar.style.display = 'none';
 }
 

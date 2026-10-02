@@ -23,7 +23,7 @@ const { chromium } = require('playwright'); const path = require('path');
   await p.locator('.edView').screenshot({ path: dir + '/e_custom.png' });
   await p.click('#edDone'); await p.waitForTimeout(500);
   await p.screenshot({ path: dir + '/e2_menu_after.png' });
-  await p.click('#goBtn'); await p.waitForTimeout(2500);
+  await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(2500);
   await p.screenshot({ path: dir + '/e3_game.png' });
   console.log(errs.length ? errs.join('\n') : 'OK: редактор работает, ошибок нет');
   await b.close();

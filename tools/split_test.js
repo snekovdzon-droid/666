@@ -9,7 +9,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const E = f => p.evaluate(f);
   await p.click('[data-a=coop]'); await p.click('#splitBtn');
   console.log('кнопка:', await p.textContent('#splitBtn'));
-  await p.click('#goBtn'); await p.click('#goBtn'); await p.waitForTimeout(1500);
+  await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1500);
   await E(() => { G.god = true; G.noSpawn = true; zombies.length = 0; players[1].x += 12; players[1].z -= 8; for (let i = 0; i < 20; i++) spawnZombie('walker', { x: players[i % 2].x + rnd(-6, 6), z: players[i % 2].z + rnd(-6, 6) }); });
   await p.waitForTimeout(1500);
   console.log('split:', await E(() => SPLIT.on + ' views=' + SPLIT.views.length));

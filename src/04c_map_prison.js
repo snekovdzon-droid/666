@@ -17,7 +17,7 @@ const MAP_PRISON = {
     ['grass', 3, 3, 20.5, 30], ['gravel', 76, 3, 95.5, 32], ['dark', 77, 4, 91, 14], ['gravel', 0.5, 54.5, 22, 59.5], ['gravel', 74, 54.5, 95.5, 59.5],
     ['court', 76, 36, 92, 52], ['road', 46, 64, 50, 96], ['asphalt', 54, 68, 74, 92, { lines: true }], ['dark', 6, 70, 26, 84], ['dark', 74, 74, 86, 83],
   ],
-  noSpawn: [[3, 3, 20.5, 30], [76, 3, 95.5, 32], [76, 36, 92, 52], [23, 22, 43, 31], [53, 22, 73, 31], [6, 70, 26, 84], [74, 74, 86, 83]],
+  noSpawn: [[28, 66.5, 40.5, 76.5], [3, 3, 20.5, 30], [76, 3, 95.5, 32], [76, 36, 92, 52], [23, 22, 43, 31], [53, 22, 73, 31], [6, 70, 26, 84], [74, 74, 86, 83]],
   crates: [[15, 21], [84, 9], [13, 43.5], [80, 78], [14, 77], [48, 52], [84, 44], [30, 59], [68, 22], [40, 93.5]],     // фиксированные места больших ящиков
   doors: [[33.5, 22.6], [62.5, 22.6], [48, 43.3], [18, 53.7], [13, 43.5], [64.5, 52.3], [40, 93.5]],                              // двери корпусов: отсюда выходят зомби
   ops: [
@@ -28,57 +28,60 @@ const MAP_PRISON = {
     ...[[1, 30], [95, 30], [1, 80], [95, 80]].map(p => ['tower', ...p]),
     ['search', 1, 30, 0.1], ['search', 95, 30, Math.PI - 0.1], ['search', 1, 80, -0.15], ['search', 95, 80, Math.PI + 0.15],
     // --- север: камерные крылья, проход между ними, мостик над ним ---
-    ['block', 23, 8, 44, 20, 2, { gap: [39.8, 41.4], esc: 31, col: 0xc8b8a0 }],
-    ['block', 52, 8, 73, 20, 2, { gap: [60, 61.6], esc: 52.3, col: 0xbcac94 }],
-    ['bridge', 44, 52, 13.2, 15.2, 5.2, 'x'],
-    ['pens', 24, 42, 24, 30, 3], ['pens', 54, 72, 24, 30, 3],
+    ['block', 23, 8, 44, 20, 1, { gap: [39.8, 41.4], esc: 35, gapE: [13.2, 15.2], col: 0xc8b8a0 }],
+    ['block', 52, 8, 73, 20, 1, { gap: [60, 61.6], esc: 55, gapW: [13.2, 15.2], col: 0xbcac94 }],
+    ['bridge', 44, 52, 13.2, 15.2, 2.6, 'x'],
+    ['pens', 24, 42, 24, 30, 2, true], ['pens', 54, 72, 24, 30, 2, true],
     // --- кладбище (северо-запад) ---
-    ['fenceZ', 0.5, 30, 20.5], ['fenceX', 0.5, 10, 30], ['gate', 10, 30, 12.4, 30, 'x', false], ['fenceX', 12.4, 20.5, 30],
-    ['shed', 12, 17, 19, 24, { h: 2.8, door: { side: 'S', at: [14.6, 16.4] }, col: 0x8e8a80 }],
+    ['fenceZ', 0.5, 30, 20.5], ['fenceX', 6.5, 10, 30], ['gate', 10, 30, 12.4, 30, 'x', false], ['fenceX', 12.4, 20.5, 30],
+    ['shed', 12, 17, 19, 24, { h: 2.6, door: { side: 'S', at: [14.6, 16.4] }, col: 0x8e8a80 }],
     ...[[6, 8], [9.5, 8], [13, 8], [16.5, 8], [6, 13], [9.5, 13], [13, 13], [16.5, 13], [5, 27], [8, 27.5], [17, 27]].map(p => ['grave', ...p]),
     // --- северо-восток: котельная и склад топлива за воротами ---
-    ['fenceZ', 0.5, 32, 76], ['fenceX', 76, 82.5, 32], ['gate', 82.5, 32, 85.5, 32, 'x', false], ['fenceX', 85.5, 95.5, 32],
-    ['shed', 78, 5, 90, 14, { h: 3.6, open: 'S', col: 0x7a7468 }],
-    ['tank', 79.5, 19], ['tank', 84.5, 19], ['tank', 89.5, 19], ['barrel', 78, 28, true], ['barrel', 92, 27, false], ['barrel', 80.5, 24, false], ['barrel', 91, 15.5, false],
+    ['fenceZ', 0.5, 20, 76], ['fenceZ', 28, 32, 76], ['fenceX', 76, 82.5, 32], ['gate', 82.5, 32, 85.5, 32, 'x', false], ['fenceX', 85.5, 95.5, 32],
+    ['shed', 78, 5, 90, 14, { h: 2.6, open: 'S', open2: 'E', col: 0x7a7468 }],
+    ['xtank', 79.5, 19], ['xtank', 84.5, 19], ['xtank', 89.5, 19], ['barrel', 78, 28, true], ['barrel', 92, 27, false], ['barrel', 80.5, 24, false], ['barrel', 91, 15.5, false],
     ['waterTower', 86, 27],
     // --- центр: администрация, двор, прачечная, склад ---
-    ['block', 39, 32, 57, 41, 3, { gap: [52, 53.6], esc: 40, col: 0xbcac94 }],
+    ['block', 39, 32, 57, 41, 2, { gap: [52, 53.6], esc: 40, col: 0xbcac94 }],
     ['gazebo', 48, 52],
     ['block', 60, 44, 69, 50, 1, { gap: [65, 66.6], esc: 60.6, col: 0xc0b098 }],
-    ['shed', 26, 56, 35, 62, { h: 3, open: 'N', col: 0x8c8474 }],
     // --- запад: лазарет и столовая, проход между ними ---
-    ['block', 5, 34, 21, 42, 1, { col: 0xd8d2c4, cross: true }],
-    ['block', 5, 45, 21, 53, 1, { gap: [14, 15.6], esc: 8, col: 0xb4a48a }],
-    ['bridge', 10, 12, 42, 45, 2.6, 'z'],
+    ['block', 5, 34, 21, 42, 1, { gap: [10, 12], col: 0xd8d2c4, cross: true }],
+    ['block', 5, 45, 21, 53, 1, { gap: [14, 15.6], esc: 8, gapN: [10, 12], col: 0xb4a48a }],
+    ['bridge', 42, 45, 10, 12, 2.6, 'z'],
     ['gate', 21.2, 42, 21.2, 45, 'z', true],
-    ['fenceX', 0.5, 22, 54.5], ['fenceX', 0.5, 22, 59.5], ['gate', 22, 54.5, 22, 59.5, 'z', true],
+    ['fenceX', 14, 22, 54.5], ['fenceX', 14, 22, 59.5], ['gate', 22, 54.5, 22, 59.5, 'z', true],
     // --- восток: спортплощадка в клетке с двумя воротами, коридор от восточных ворот ---
-    ['fenceZ', 36, 43.5, 76], ['gate', 76, 43.5, 76, 46.5, 'z', false], ['fenceZ', 46.5, 52, 76],
-    ['fenceX', 76, 82, 52], ['gate', 82, 52, 85, 52, 'x', false], ['fenceX', 85, 92, 52], ['fenceZ', 36, 52, 92], ['fenceX', 76, 92, 36],
+    ['fenceZ', 36, 42, 76], ['fenceZ', 48, 52, 76],
+    ['fenceX', 76, 80.5, 52], ['fenceX', 86.5, 92, 52], ['fenceZ', 36, 52, 92], ['fenceX', 76, 92, 36],
     ['hoop', 77.6, 44], ['hoop', 90.4, 44], ['shed', 87.5, 37.2, 91, 40.4, { h: 2.6, door: { side: 'W', at: [38.2, 39.4] }, col: 0x7a7a70 }],
-    ['fenceX', 74, 95.5, 54.5], ['fenceX', 74, 95.5, 59.5], ['gate', 74, 54.5, 74, 59.5, 'z', true],
+    ['fenceX', 74, 80, 54.5], ['fenceX', 89, 95.5, 54.5], ['fenceX', 74, 80, 59.5], ['fenceX', 89, 95.5, 59.5], ['gate', 74, 54.5, 74, 59.5, 'z', true],
     // --- юг: внутренняя сетка с воротами на дороге ---
-    ['fenceX', 0.5, 46, 64], ['gate', 46, 64, 50, 64, 'x', true], ['fenceX', 50, 95.5, 64], ['post', 45.9, 64], ['post', 50.1, 64],
+    ['fenceX', 0.5, 18, 64], ['fenceX', 24, 46, 64], ['gate', 46, 64, 50, 64, 'x', true], ['fenceX', 50, 69, 64], ['fenceX', 75, 95.5, 64], ['post', 45.9, 64], ['post', 50.1, 64],
+    ['post', 18, 64], ['post', 24, 64], ['post', 69, 64], ['post', 75, 64], ['car', 14.8, 65.6, true, 0x6e7a50, true], ['car', 76.4, 65.6, true, 0x8c3a30, true, true],
     ['block', 36, 84, 44, 92, 1, { col: 0xa8a294 }],
     ['booth', 45.1, 94], ['barrier', 50.4, 93.4],
     // мастерские: три стены, открыты на восток (к дороге)
-    ['shed', 6, 70, 26, 84, { h: 4, open: 'E', gap: [15, 16.6], esc: 8, col: 0x86806e }],
-    ['pallet', 9.5, 73.5, 0.3], ['pallet', 9.5, 77.5, 1.2], ['pallet', 13, 72.6, 0.1], ['barrel', 8, 82, false], ['barrel', 8.9, 82.6, true], ['barrel', 20, 71.4, false],
+    ['shed', 6, 70, 26, 84, { h: 2.6, open: 'E', open2: 'N', gap: [15, 16.6], esc: 10, col: 0x86806e }],
+    ['barrel', 8, 82, false], ['barrel', 8.9, 82.6, true], ['barrel', 20, 71.4, false],
     ['car', 15, 76.5, true, 0x3e5270, true], ['car', 15, 80.2, true, 0x8c3a30, true, true],
     // карцер: одна дверь с запада, лестница на крышу
-    ['shed', 74, 74, 86, 83, { h: 3.2, door: { side: 'W', at: [77, 78.8] }, gap: [80, 81.6], esc: 75, col: 0x7a7468 }],
-    ['pallet', 82, 78, 0.5],
+    ['shed', 74, 74, 86, 83, { h: 2.6, door: { side: 'W', at: [77, 78.8] }, gap: [80, 81.6], esc: 75, col: 0x7a7468 }],
     // стоянка: машины и автобусы как укрытия
     ['car', 56, 70, true, 0xc8c4ba], ['car', 62, 70, true, 0x60707e, true, true], ['car', 56, 74.4, true, 0x6e7a50], ['car', 62, 74.4, true, 0x8c3a30, true],
     ['car', 58, 78.5, false, 0xd8b030, true], ['car', 70, 70, false, 0x3e5270], ['car', 28, 88, false, 0x8c3a30, true, true], ['car', 56, 92, true, 0x60707e, true],
     ['bus', 60, 82.5, true, 0x8a8a3a], ['bus', 60, 87.5, true, 0x5a6a7a, true],
     // --- общее: скамейки, бочки, фонари, зелень ---
     ...[70, 74, 78, 82].flatMap(z => [['bench', 44.6, z, 1], ['bench', 51.4, z, -1]]),
-    ['barrel', 26, 40, true], ['barrel', 70, 36, true], ['barrel', 40, 58, true], ['barrel', 64, 58, false], ['barrel', 30, 66, true], ['barrel', 88, 68, false], ['barrel', 14, 62, true], ['barrel', 4, 40, false],
-    ...[[48, 4], [48, 14], [48, 24], [30, 22], [66, 22], [36, 36], [60, 36], [30, 46], [69.6, 46], [35.6, 60], [62, 60], [48, 62], [12, 31], [24, 56], [78, 56], [88, 56], [14, 57], [47.2, 68], [50.8, 76], [47.2, 84], [20, 66], [70, 66], [80, 86], [10, 90], [86, 40], [86, 16], [12, 4]].map(p => ['lamp', ...p]),
+    ['barrel', 26, 40, true], ['barrel', 70, 36, true], ['barrel', 40, 58, true], ['barrel', 64, 58, false], ['barrel', 30, 66, true], ['barrel', 88, 68, false], ['barrel', 4, 40, false],
+    ...[[48, 4], [46.5, 17.6], [48, 24], [30, 22], [66, 22], [36, 36], [60, 36], [30, 46], [69.6, 46], [35.6, 60], [62, 60], [48, 62], [12, 31], [24, 56], [78, 56], [88, 56], [14, 57], [47.2, 68], [50.8, 76], [47.2, 84], [20, 66], [70, 66], [80, 86], [10, 90], [86, 40], [86, 16], [12, 4]].map(p => ['lamp', ...p]),
     ...[[4, 4], [18, 5], [5, 27], [19.5, 26], [24, 4], [72, 4], [3, 66], [92, 66], [4, 92], [92, 92], [30, 94], [84, 94], [4, 48], [92, 48], [4, 36]].map(p => ['tree', ...p]),
-    ...[[6, 10], [86, 36], [6, 88], [90, 88], [24, 62], [86, 62], [30, 90], [80, 90], [92, 50], [20, 12], [77, 62]].map(p => ['bush', ...p]),
+    ...[[6, 10], [86, 36], [6, 88], [90, 88], [86, 62], [30, 90], [80, 90], [92, 50], [20, 12]].map(p => ['bush', ...p]),
     ...[[45.2, 66], [50.8, 66], [46, 90], [50, 90], [47, 82]].map(p => ['cone', ...p]),
+    // --- события v0.21: генератор в котельной, вертолётная площадка на крыше администрации, оружейка, взрывные бочки ---
+    ['generator', 86.8, 8.0], ['helipad'], ['armory'],
+    ['ladder', 45, 32, 0, -1], ['ladder', 57, 36, 1, 0], ['ladder', 33, 8, 0, -1], ['ladder', 23, 14, -1, 0], ['ladder', 63, 8, 0, -1], ['ladder', 73, 14, 1, 0], ['ladder', 69, 47, 1, 0], ['ladder', 13, 34, 0, -1], ['ladder', 21, 49, 1, 0], ['ladder', 6, 77, -1, 0], ['ladder', 16, 84, 0, 1], ['ladder', 86, 78, 1, 0], ['ladder', 80, 74, 0, -1],
+    ['xbarrel', 82.2, 23], ['xbarrel', 87.3, 23.5], ['xbarrel', 92.5, 21], ['xbarrel', 10, 80], ['xbarrel', 24, 78], ['xbarrel', 22, 73.5], ['xbarrel', 66, 76], ['xbarrel', 72, 88], ['xbarrel', 38, 50], ['xbarrel', 58, 48], ['xbarrel', 14, 56], ['xbarrel', 26, 48], ['xbarrel', 47.5, 27], ['xbarrel', 92, 70], ['xbarrel', 42, 66], ['xbarrel', 36, 62], ['xbarrel', 80, 70], ['xbarrel', 30, 47], ['xbarrel', 64, 40],
   ],
 };
 
@@ -112,6 +115,7 @@ function gateNear(p, r = 2.4) {
 }
 function tryGate(p) {
   const G = gateNear(p); if (!G) return false;
+  if (G.locked && !G.open) { if (!EV.hasKey) { toast(p, 'Заперто — нужна ключ-карта охранника', '#ffb080'); return true; } G.locked = false; toast(p, 'Карта подошла — оружейка открыта', '#8fd46a'); }
   if (!G.open) { gateSetOpen(G, true); toast(p, 'Ворота открыты', '#8fd46a'); return true; }
   const busy = zombies.some(z => !z.dead && z.x > G.x1 - 0.6 && z.x < G.x2 + 0.6 && z.z > G.z1 - 0.6 && z.z < G.z2 + 0.6) || players.some(q => q.x > G.x1 - 0.5 && q.x < G.x2 + 0.5 && q.z > G.z1 - 0.5 && q.z < G.z2 + 0.5);
   if (busy) { toast(p, 'Что-то мешает закрыть', '#ffb080'); return true; }
@@ -121,7 +125,7 @@ function updateGates(dt) {
   for (let i = GATES.length - 1; i >= 0; i--) {
     const G = GATES[i], want = G.open ? 1 : 0;
     if (G.slide !== want) { G.slide += clamp(want - G.slide, -dt * 2.5, dt * 2.5); applyGatePos(G); }
-    if (G.open) continue;
+    if (G.open || G.locked) continue;
     forNear((G.x1 + G.x2) / 2, (G.z1 + G.z2) / 2, z => {                                 // зомби вплотную — ломают
       if (z.dead || Math.abs(z.y) > 0.5) return;
       const ex = Math.max(G.x1 - z.x, 0, z.x - G.x2), ez = Math.max(G.z1 - z.z, 0, z.z - G.z2);
@@ -144,7 +148,7 @@ function resetGates() {
 
 /* ---------- Прожекторы на вышках: пара ламп на игрока/вид, ближайшие вышки; лучи видны ночью ---------- */
 const SEARCH = [];
-const SEARCH_LIGHTS = Array.from({ length: 2 }, () => { const sp = new THREE.SpotLight(0xdce8ff, 0, 46, 0.3, 0.6, 1.1); scene.add(sp); scene.add(sp.target); return sp; });
+const SEARCH_LIGHTS = Array.from({ length: QS.search }, () => { const sp = new THREE.SpotLight(0xdce8ff, 0, 46, 0.3, 0.6, 1.1); scene.add(sp); scene.add(sp.target); return sp; });
 const BEAM_GEO = new THREE.CylinderGeometry(0.15, 3.2, 1, 14, 1, true); BEAM_GEO.translate(0, -0.5, 0);
 const BEAM_MAT = new THREE.MeshBasicMaterial({ color: 0xcfe0ff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
 function addSearch(x, z, base) {
@@ -160,13 +164,13 @@ function updateSearch(T) {
     S.beam.position.set(S.x, S.y, S.z); S.beam.scale.set(1, len, 1);
     S.beam.quaternion.setFromUnitVectors(_vUp, _vTmp.set(dx, dy, dz).normalize());
   }
-  BEAM_MAT.opacity = 0.07 * clamp((G.night - 0.3) / 0.7, 0, 1);
+  BEAM_MAT.opacity = 0.07 * clamp((G.night - 0.3) / 0.7, 0, 1) * evLights();
 }
 const _vUp = new THREE.Vector3(0, -1, 0), _vTmp = new THREE.Vector3();
 function setSearchLights(cx, cz) {
   for (const S of SEARCH) S.d = Math.hypot(S.x - cx, S.z - cz);
   const ls = SEARCH.slice().sort((a, b) => a.d - b.d);
-  SEARCH_LIGHTS.forEach((sp, i) => { const S = ls[i]; sp.intensity = S && G.night > 0.3 ? 9 * clamp((G.night - 0.3) / 0.7, 0, 1) : 0; if (S) { sp.position.set(S.x, S.y, S.z); sp.target.position.set(S.ax, 0, S.az); sp.target.updateMatrixWorld(); } });
+  SEARCH_LIGHTS.forEach((sp, i) => { const S = ls[i]; sp.intensity = S && G.night > 0.3 ? 9 * clamp((G.night - 0.3) / 0.7, 0, 1) * evLights() : 0; if (S) { sp.position.set(S.x, S.y, S.z); sp.target.position.set(S.ax, 0, S.az); sp.target.updateMatrixWorld(); } });
 }
 
 /* ---------- Постройки карты ---------- */
@@ -183,7 +187,7 @@ function shedOp(x1, z1, x2, z2, o = {}) {
   const W = (a1, b1, a2, b2) => box(a1, 0, b1, a2, H, b2, 0, { material: wm, parent: grp });
   const door = o.door || null, sides = { N: [x1, z1, x2, z1 + T], S: [x1, z2 - T, x2, z2], W: [x1, z1, x1 + T, z2], E: [x2 - T, z1, x2, z2] };
   for (const k of ['N', 'S', 'W', 'E']) {
-    if (o.open === k) continue; const [a1, b1, a2, b2] = sides[k];
+    if (o.open === k || o.open2 === k) continue; const [a1, b1, a2, b2] = sides[k];
     if (door && door.side === k) { const [d1, d2] = door.at; if (k === 'N' || k === 'S') { W(a1, b1, d1, b2); W(d2, b1, a2, b2); box(d1, 2.1, b1, d2, H, b2, 0, { material: wm, parent: grp }); } else { W(a1, b1, a2, d1); W(a1, d2, a2, b2); box(a1, 2.1, d1, a2, H, d2, 0, { material: wm, parent: grp }); } }
     else W(a1, b1, a2, b2);
   }
@@ -210,9 +214,9 @@ function bridgeOp(a1, a2, b1, b2, H, axis) {         // мостик между 
   for (const [ax, az, bx, bz] of axis === 'x' ? [[x1, z1, x2, z1 + 0.08], [x1, z2 - 0.08, x2, z2]] : [[x1, z1, x1 + 0.08, z2], [x2 - 0.08, z1, x2, z2]]) box(ax, H, az, bx, H + 0.9, bz, 0x5a5e5e, { solid: false });
   box(x1, H - 0.9, z1, x2, H - 0.18, z2, 0x4a4844, { solid: false, cast: false });
 }
-function pensOp(x1, x2, z1, z2, n) {                // прогулочные клетки: у каждой один проём к югу
-  const w = (x2 - x1) / n, gapW = 1.8;
-  fenceX(x1, x2, z1);
+function pensOp(x1, x2, z1, z2, n, both) {           // прогулочные клетки: проём к югу (both — и к северу: второй выход)
+  const w = (x2 - x1) / n, gapW = both ? 2.4 : 1.8;
+  if (both) for (let i = 0; i < n; i++) { const a = x1 + i * w, m = a + w / 2; fenceX(a, m - gapW / 2, z1); fenceX(m + gapW / 2, a + w, z1); } else fenceX(x1, x2, z1);
   for (let i = 0; i <= n; i++) fenceZ(z1, z2, x1 + i * w);
   for (let i = 0; i < n; i++) { const a = x1 + i * w, m = a + w / 2; fenceX(a, m - gapW / 2, z2); fenceX(m + gapW / 2, a + w, z2); }
 }
@@ -245,29 +249,42 @@ function busOp(x, z, alongX, col, wreck) {          // автобус: длин�
   P(L - 0.04, L + 0.02, 0.2, Wd - 0.2, 1.3, 2.4, 0x2c3a44, { solid: false, cast: false });
   for (const u of [1.3, 1.3 + 0.9, L - 2.4]) { P(u, u + 0.9, -0.05, 0.12, 0, 0.9, 0x1c1c1c, { solid: false }); P(u, u + 0.9, Wd - 0.12, Wd + 0.05, 0, 0.9, 0x1c1c1c, { solid: false }); }
 }
-function palletOp(x, z, rot) { if (MODELS.pallet_cargo) model('pallet_cargo', x, z, rot); else { box(x - 0.6, 0, z - 0.6, x + 0.6, 0.9, z + 0.6, 0x9a7a4a, { hit: 'wood' }); } }
 function boothOp(x, z) { box(x, 0, z - 1.2, x + 1.0, 2.6, z + 0.2, 0x8a8a84); }
 function barrierOp(x, z) { box(x, 0.9, z, x + 3.6, 1.0, z + 0.1, 0xc84a2a, { solid: false }); }
 function postOp(x, z) { box(x - 0.15, 0, z - 0.15, x + 0.15, 2.6, z + 0.15, 0x5a5e5e); }
 
+// Беседка, вышки, баки, автобусы, деревья, мостики: тоже прозрачнеют, когда закрывают героя (как дома)
+function fadeWrap(fn) {
+  return (...a) => {
+    const grp = new THREE.Group(); staticGroup.add(grp);
+    const prev = BOX_PARENT; BOX_PARENT = grp; try { fn(...a); } finally { BOX_PARENT = prev; }
+    if (!grp.children.length) { staticGroup.remove(grp); return; }
+    const bb = new THREE.Box3().setFromObject(grp);
+    const B = { x1: bb.min.x, z1: bb.min.z, x2: bb.max.x, z2: bb.max.z, H: bb.max.y, grp, mats: [] };
+    B.finish = () => { const cache = new Map(); B.mats = []; grp.traverse(m => { if (!m.isMesh) return; let c = cache.get(m.material); if (!c) { c = m.material.clone(); cache.set(m.material, c); B.mats.push(c); } m.material = c; }); };
+    buildings.push(B);
+  };
+}
 const MAP_OPS = {
-  wall: (...a) => wallSeg(...a), tower: (x, z) => tower(x, z), fenceX: (...a) => fenceX(...a), fenceZ: (...a) => fenceZ(...a),
+  wall: (...a) => wallSeg(...a), tower: fadeWrap((x, z) => tower(x, z)), fenceX: (...a) => fenceX(...a), fenceZ: (...a) => fenceZ(...a),
   gate: (x1, z1, x2, z2, axis, open) => addGate(x1, z1, x2, z2, axis, open), search: (x, z, a) => addSearch(x, z, a),
-  block: blockOp, shed: shedOp, bridge: bridgeOp, pens: pensOp, grave: graveOp, tank: tankOp, gazebo: gazeboOp, hoop: hoopOp, bus: busOp, pallet: palletOp, booth: boothOp, barrier: barrierOp, post: postOp,
-  barrel, lamp, car, bench, waterTower, tree: (x, z) => (MODELS.tree ? model('tree', x, z, x * 1.7) : tree(x, z)),
+  block: blockOp, shed: shedOp, bridge: fadeWrap(bridgeOp), pens: pensOp, grave: graveOp, tank: fadeWrap(tankOp), gazebo: fadeWrap(gazeboOp), hoop: hoopOp, bus: fadeWrap(busOp), booth: fadeWrap(boothOp), barrier: barrierOp, post: postOp,
+  barrel, lamp, car, bench, waterTower: fadeWrap(waterTower), tree: fadeWrap((x, z) => (MODELS.tree ? model('tree', x, z, x * 1.7) : tree(x, z))),
   bush: (x, z) => MODELS.bush && model('bush', x, z, x * 2.3, 0.9 + (x % 1) * 0.3), cone: (x, z) => MODELS.cone && model('cone', x, z, x),
 };
 function buildMap() {
-  paintGround(MAP_PRISON.zones); groundTex.needsUpdate = true;
-  for (const op of MAP_PRISON.ops) { const f = MAP_OPS[op[0]]; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); }
+  paintGround(MAPDEF.zones); groundTex.needsUpdate = true;
+  window.EDFOOT = [];                                                              // для редактора: из каких коробок состоит каждый объект
+  for (const op of MAPDEF.ops) { const f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
   for (const B of buildings) B.finish();
   indexSolids();
 }
 // Точки выхода зомби: проломы, ворота, двери зданий и пустыри по сетке (кроме огороженных участков)
 function mapSpawns() {
+  if (MAPDEF.spawnPts) return MAPDEF.spawnPts.filter(p => !blocked(p.x, p.z, 0, 0.5) && floorAt(p.x, p.z, 0) === 0).map(p => ({ x: p.x, z: p.z, kind: 'field' }));   // город: точки на улицах
   const S = [{ x: 47.5, z: 1.4, kind: 'breach' }, { x: 1.4, z: 57, kind: 'gate' }, { x: MAP - 1.4, z: 57, kind: 'gate' }, { x: 48, z: MAP - 1.4, kind: 'gate' }];
-  for (const [x, z] of MAP_PRISON.doors) S.push({ x, z, kind: 'bld' });
-  const bad = (x, z) => MAP_PRISON.noSpawn.some(r => x > r[0] && x < r[2] && z > r[1] && z < r[3]);
+  for (const [x, z] of MAPDEF.doors) S.push({ x, z, kind: 'bld' });
+  const bad = (x, z) => MAPDEF.noSpawn.some(r => x > r[0] && x < r[2] && z > r[1] && z < r[3]);
   for (let x = 8; x < MAP; x += 12) for (let z = 8; z < MAP; z += 12) if (!bad(x, z) && !blocked(x, z, 0, 0.6) && floorAt(x, z, 0) === 0) S.push({ x, z, kind: 'field' });
   return S;
 }

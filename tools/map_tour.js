@@ -6,7 +6,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('index.html')); await p.waitForTimeout(3500);
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(1200);
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1200);
   const E = f => p.evaluate(f);
   await p.evaluate(n => { G.god = true; G.noSpawn = true; zombies.length = 0; G.nightT = n; }, +(process.env.NIGHT || 0));
   const spots = JSON.parse(process.env.SPOTS || '[["yard",48,46],["alley",48,14],["wcorr",10,57],["garage",16,77],["carzer",70,78],["boiler",84,12],["sport",84,44]]');

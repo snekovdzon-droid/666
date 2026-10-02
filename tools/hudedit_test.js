@@ -20,7 +20,7 @@ const { chromium } = require('playwright'); const path = require('path');
   console.log('сохранено:', await p.evaluate(() => JSON.stringify(HUDL.map)));
   await p.click('#hpDone'); await p.waitForTimeout(500);
   console.log('после «Готово»:', await p.evaluate(() => G.state + ' / панель ' + getComputedStyle($('hudPanel')).display));
-  await p.click('[data-s=back]'); await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(1500);
+  await p.click('[data-s=back]'); await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1500);
   const r2 = await box('radarBox'); console.log('радар в бою:', Math.round(r2.x), Math.round(r2.y), Math.round(r2.width));
   await p.screenshot({ path: dir + '/e3_game.png' });
   console.log(errs.length ? errs.join('\n') : 'OK: ошибок нет'); await b.close();

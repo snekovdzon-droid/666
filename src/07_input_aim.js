@@ -1,12 +1,14 @@
 'use strict';
 /* ---------- 10. Управление: клавиатура, мышь, палец, несколько геймпадов → «пульт» каждого игрока ---------- */
 const keys = new Set(); const mouse = { x: 0, y: 0, down: false, has: false };
-const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
+const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
 addEventListener('keydown', e => {
   if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
   keys.add(e.code);
   if (G.state === 'main') { mainKey(e.code); return; }
+  if (G.state === 'mapedit') { edKey(e); return; }
+  if (G.state === 'maps') { mapPickKey(e.code); return; }
   if (G.state === 'menu') { menuKey(e.code); return; }
   if (G.state === 'levelup') { lvKey(e.code); return; }
   if (G.state === 'end') { if (e.code === 'Enter' || e.code === 'Space') restartRun(); if (e.code === 'Escape') toMenu(); return; }
@@ -20,7 +22,8 @@ addEventListener('keydown', e => {
   if (/^Digit[1-6]$/.test(e.code)) act.slot = +e.code.slice(5) - 1;                     // предметы: 1–6 (игрок на мыши)
   const k2 = ['Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal'].indexOf(e.code); if (k2 >= 0) act.slot2 = k2;   // игрок на стрелках: 7–0
   if (e.code === 'Quote') act.alt2 = true;
-  if (e.code === 'KeyG') act.hook = true; if (e.code === 'Slash') act.hook2 = true;      // крюк-кошка
+  if (e.code === 'KeyG') act.hook = true; if (e.code === 'Slash') act.hook2 = true;
+  if (e.code === 'Space') { act.melee = true; e.preventDefault(); } if (e.code === 'Comma') act.melee2 = true;      // ближний бой      // крюк-кошка
   if (e.code === 'KeyF') act.swap = true; if (e.code === 'Period') act.swap2 = true;
 });
 addEventListener('keyup', e => keys.delete(e.code));
@@ -60,7 +63,7 @@ document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', e
   if (k === 'ql') CAM.yawT += Math.PI / 2; if (k === 'qr') CAM.yawT -= Math.PI / 2; if (k === 'n') G.nightT = G.nightT > 0.5 ? 0 : 1;
   if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, 6, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, 6, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
 
-// Геймпады: у каждого своё состояние. Кнопки: RT огонь, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
+// Геймпады: у каждого своё состояние. Кнопки: RT огонь, R3 ближний бой, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
 // Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
 const PADS = new Map();                                // индекс геймпада → { lx, ly, rx, ry, pr[], just[], gp }
 const PAD = { active: false, navT: 0 };                // active — последний ввод был с геймпада (для одиночной игры)
@@ -80,7 +83,7 @@ function pollPad(dt) {
   }
   for (const k of [...PADS.keys()]) if (!seen.has(k)) PADS.delete(k);
   const any = i => [...PADS.values()].some(s => s.just[i]);
-  if (G.state === 'main' || G.state === 'menu' || G.state === 'end' || G.state === 'levelup') {
+  if (G.state === 'main' || G.state === 'menu' || G.state === 'maps' || G.state === 'end' || G.state === 'levelup') {
     PAD.navT -= dt;
     let h = 0, v = 0;
     for (const s of PADS.values()) {
@@ -91,6 +94,7 @@ function pollPad(dt) {
     if (G.state === 'levelup') { if (h || v) lvKey((h || v) > 0 ? 'ArrowRight' : 'ArrowLeft'); if (any(0)) lvKey('Enter'); }
     else if (G.state === 'main') { if (v) mainKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mainKey('Enter'); if (any(1)) mainKey('Escape'); }
     else if (G.state === 'menu') { if (h) menuKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) menuKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) menuKey('Enter'); if (any(3)) menuKey('Tab'); if (any(1)) menuKey('Backspace'); }
+    else if (G.state === 'maps') { if (v) mapPickKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mapPickKey('Enter'); if (any(1)) mapPickKey('Escape'); }
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
     if (any(4)) CAM.yawT += Math.PI / 2; if (any(5)) CAM.yawT -= Math.PI / 2;
@@ -121,7 +125,7 @@ const maxPlayers = () => IS_TOUCH ? 1 : Math.min(4, 2 + PADS.size);
 const CTRL_NAME = { all: 'всё сразу', kbm: 'WASD + мышь, Shift — бег, R — перезарядка, 1–4 — предметы, F — обменять', keys2: 'стрелки, автоприцел, правый Ctrl — бег, Enter — перезарядка, 7–0 — предметы, «.» — обменять', pad: 'геймпад (крестовина — предметы, Y — обменять/к стволу)' };
 // «Пульт» игрока на этот кадр
 function readControl(p) {
-  let ix = 0, iz = 0, sprint = false, fire = false, reload = false, auto = true, manual = false, aim = null, slot = -1, swap = false, back = false, hook = false, alt = false;
+  let ix = 0, iz = 0, sprint = false, fire = false, reload = false, auto = true, manual = false, aim = null, slot = -1, swap = false, back = false, hook = false, alt = false, melee = false;
   const K = (a, b, c, d) => { if (keys.has(a)) ix -= 1; if (keys.has(b)) ix += 1; if (keys.has(c)) iz -= 1; if (keys.has(d)) iz += 1; };
   const t = p.ctrl;
   if (t === 'all' || t === 'kbm') { K('KeyA', 'KeyD', 'KeyW', 'KeyS'); sprint = keys.has('ShiftLeft') || (t === 'all' && keys.has('ShiftRight')); reload = act.reload; slot = act.slot; swap = act.swap; hook = act.hook; alt = act.alt;
@@ -129,6 +133,7 @@ function readControl(p) {
   if (t === 'all' || t === 'keys2') { K('ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown');
     if (t === 'keys2') { sprint = keys.has('ControlRight') || keys.has('ShiftRight'); reload = act.reload2; slot = act.slot2; swap = act.swap2; hook = act.hook2; alt = act.alt2; } }
   if (t === 'all' && act.hookT) hook = true;
+  if ((t === 'all' || t === 'kbm') && act.melee) melee = true; if (t === 'keys2' && act.melee2) melee = true; if (t === 'all' && act.meleeT) melee = true;
   if (t === 'all' && act.altT) alt = true;
   if (t === 'all' && (act.slotT >= 0 || act.swapT)) { if (act.slotT >= 0) slot = act.slotT; if (act.swapT) swap = true; }   // кнопки на экране
   if (t === 'all' && touch.id !== null) { ix = touch.dx; iz = touch.dy; sprint = touch.run; }
@@ -139,6 +144,7 @@ function readControl(p) {
     const dp = [12, 15, 13, 14].findIndex(b => s.just[b]); if (dp >= 0) slot = dp;   // ↑ → ↓ ← — слоты 1–4
     if (s.just[3]) { swap = true; back = true; }                           // Y — обменять / обратно к стволу / листать слоты
     if (s.just[0]) hook = true;
+    if (s.just[11]) melee = true;                                          // R3 — ближний бой
     if (s.just[6]) alt = true;                                           // LT — подствольник                                          // A — крюк-кошка
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;
     manual = true; auto = true; fire = fire || s.fire;
@@ -146,12 +152,13 @@ function readControl(p) {
   }
   const l = Math.hypot(ix, iz); if (l > 1) { ix /= l; iz /= l; }
   const [wx, wz] = screenToWorld(ix, iz);
-  return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? null : fire, reload, aim, pad: manual, slot, swap, back, hook, alt };
+  return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? null : fire, reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
 }
 
 /* ---------- 11. Прицел: луч из-под курсора в мир / автоприцел ---------- */
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 const zAimY = z => z.y + (z.form === 'crawl' ? 0.3 : z.form === 'hound' ? 0.28 : z.form === 'fat' ? 0.75 : isVoxZ(z) ? VZ.H * 0.6 : 0.65);
+const AIM_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _aimV = new THREE.Vector3();
 // Возвращает { pt, target }: точку прицела и зомби под прицелом (если есть)
 function aimPoint(p, c) {
   if (c.auto) {                                          // автоприцел: телефон, геймпад, ПК без мыши
@@ -184,11 +191,12 @@ function aimPoint(p, c) {
     if (qx * qx + qy * qy + qz * qz < 0.25 && along < bt) { bt = along; best = z; }
   }
   if (best) return { pt: new THREE.Vector3(best.x, zAimY(best), best.z), target: best };
-  const hits = ray.intersectObjects([...staticGroup.children, groundHit], true);
-  for (const h of hits) { const pt = h.point; if (h.object === groundHit) return { pt: pt.setY(Math.max(pt.y, 0)).add(new THREE.Vector3(0, 0.6, 0)), target: null }; return { pt, target: null }; }
+  // курсор не на зомби: целимся в плоскость на уровне ног героя (на крыше и лестнице — своя), а не в первую попавшуюся стену или край крыши —
+  // от неё считался угол наклона, из-за этого ЛЦУ и пули на зданиях улетали вверх и вниз
+  AIM_PLANE.constant = -p.y;
+  const hit = ray.ray.intersectPlane(AIM_PLANE, _aimV);
+  if (hit) return { pt: new THREE.Vector3(hit.x, p.y + 0.6, hit.z), target: null };
   return { pt: null, target: null };
 }
 const groundHit = new THREE.Mesh(new THREE.PlaneGeometry(400, 400).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ visible: false }));
 groundHit.position.set(MAP / 2, 0, MAP / 2); scene.add(groundHit);
-
-

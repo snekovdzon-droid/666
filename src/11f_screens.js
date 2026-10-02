@@ -7,7 +7,7 @@ Object.assign(PIX, {
   perkgen: ['..........', '....kk....', '...kllk...', '..kllllk..', '.kllkkllk.', 'kllk..kllk', '..........', '....kk....', '...kllk...', '..kllllk..'],
 });
 const cardIcon = (p, ch) => ch.type === 'perk' ? (ch.perk.br === 'item' ? ch.perk.item : ch.perk.br === 'wpn' ? 'gun' : 'perkgen')
-  : ch.type === 'itemlv' || ch.type === 'dev' || ch.type === 'att' ? ch.id : ch.type === 'finale' ? 'star' : ch.type === 'fork' || ch.type === 'branch' ? 'path' : ch.type === 'back' ? 'perkgen' : 'medkit';
+  : ch.type === 'curse' ? 'curse' : ch.type === 'melee' ? ch.id : ch.type === 'meleeup' ? p.melee : ch.type === 'itemlv' || ch.type === 'newitem' || ch.type === 'dev' || ch.type === 'att' ? ch.id : ch.type === 'finale' ? 'star' : ch.type === 'fork' || ch.type === 'branch' ? 'path' : ch.type === 'back' ? 'perkgen' : 'medkit';
 
 // Готовая карточка: берём тексты из cardHTML (09_perks_items.js) и раскладываем по новой вёрстке
 function cardView(p, ch, i) {
@@ -42,5 +42,5 @@ function resultsHtml(win) {
   const kb = Object.entries(G.killsBy || {}).sort((a, b) => b[1] - a[1]), mx = kb.length ? kb[0][1] : 1;
   const rows = kb.map(([t, n]) => `<div class="rs-row"><span>${ZOMBIES[t].name}</span><div><i style="width:${(n / mx * 100).toFixed(0)}%;background:${ZOMBIES[t].col}"></i></div><b>${n}</b></div>`).join('');
   return `<div class="rs-stats">${stat('ВРЕМЯ', fmtT(G.t), 'из ' + fmtT(RUN_TIME), newRec ? 'rec' : '')}${stat('УРОВЕНЬ', G.level, 'рекорд ' + rec.level)}${stat('УБИТО', G.kills, newRec ? 'новый рекорд!' : 'рекорд ' + rec.kills, newRec ? 'rec' : '')}${stat('НАЧАЛЬНИК', G.bossKills ? '☠ ×' + G.bossKills : '—', G.bossKills ? 'повержен' : (G.bossN ? 'не победили' : 'не вышел'))}</div>`
-    + (rows ? `<div class="rs-h">Кого убили</div>${rows}` : '') + `<div class="rs-h">Сборка</div>${players.map(playerBlock).join('')}`;
+    + statsHtml() + (rows ? `<div class="rs-h">Кого убили</div>${rows}` : '') + `<div class="rs-h">Сборка</div>${players.map(playerBlock).join('')}`;
 }

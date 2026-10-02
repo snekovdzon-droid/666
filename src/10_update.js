@@ -17,12 +17,15 @@ function updatePlayer(p, dt) {
   if (p.inv > 0) p.inv -= dt;
   if (p.down) { p.fall = Math.max(-Math.PI / 2, (p.fall || 0) - dt * 6); p.moving = false; gravity(p, dt, p.r); if (players.length > 1 && G.state === 'play') updateDownPistol(p, dt); return; }
   const c = readControl(p), B = WEAPONS[p.gun];
+  if (updateClimb(p, c, dt)) return;                                     // лестница: лезем, остальное ждёт
+  updateMelee(p, c, dt);
   if (c.hook) useHook(p);                                                // крюк-кошка
   if (updateHookAnim(p, dt)) { p.moving = true; p.yawT = p.yaw; return; }   // летим на тросе — остальное ждёт
   p.still = c.move < 0.1;
   p.stillT = p.still ? (p.stillT || 0) + dt : 0;         // для «Выцеливания»
   if (p.adrenT > 0) p.adrenT -= dt;
   if (p.slowT > 0) p.slowT -= dt;
+  if (p.slowAcid > 0) p.slowAcid -= dt;
   if (p.trapT > 0) p.trapT -= dt;                                       // попал в капкан
   const fireSlow = B.fireSlow && p.firing && !p.evo.mg_rpk ? (L(p, 'mg_strap') ? 0.85 : B.fireSlow) : 1;
   // пулемёт: база без рывка и ходьба −15%; «Облегчённая коробка» даёт рывок 70% и убирает замедление; «РПК» — полный рывок
@@ -40,7 +43,7 @@ function updatePlayer(p, dt) {
     if (p.stamLock && p.stam >= CFG.STAM_LOCK) p.stamLock = false;
   }
   if (p.stamLock && (p.breathT -= dt) <= 0) { p.breathT = 0.85; SFX.breath(); }
-  const sp = CFG.PLAYER_SPEED * p.st.speed * walk * fireSlow * (p.slowT > 0 ? 0.5 : 1) * (p.trapT > 0 ? 0 : 1) * (p.sprinting ? sprintMul * (1 + [0, 0.1, 0.15, 0.2][L(p, 'so_light')]) : 1) * (p.adrenT > 0 ? 1.25 : 1) * c.move;
+  const sp = CFG.PLAYER_SPEED * p.st.speed * walk * fireSlow * (p.slowT > 0 ? 0.5 : 1) * (p.slowAcid > 0 ? 0.78 : 1) * (p.trapT > 0 ? 0 : 1) * (p.sprinting ? sprintMul * (1 + [0, 0.1, 0.15, 0.2][L(p, 'so_light')]) : 1) * (p.adrenT > 0 ? 1.25 : 1) * c.move;
   const l = Math.hypot(c.wx, c.wz) || 1, wx = c.wx / l, wz = c.wz / l;
   moveEntity(p, (p.still ? 0 : wx * sp) * dt + p.kx * dt, (p.still ? 0 : wz * sp) * dt + p.kz * dt, p.r);
   const kd = Math.exp(-7 * dt); p.kx *= kd; p.kz *= kd;
@@ -106,10 +109,12 @@ function updateZombies(dt) {
     if (z.markT > 0) { z.markT -= dt; if (Math.random() < dt * 6) spawnP({ x: z.x, y: z.y + zHeight(z) + 0.1, z: z.z, vy: 0.3, s: 0.07, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.3 }); }   // метка трассера
     const ox = z.x, oz = z.z;
     const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
-    const wx0 = dx * step + z.kx * dt, wz0 = dz * step + z.kz * dt;
-    moveEntity(z, wx0, wz0, z.r);
-    if (z.wallT > 0) { z.wallT -= dt; const want = Math.hypot(wx0, wz0); if (want > 0.03 && Math.hypot(z.x - ox, z.z - oz) < want * 0.4) { z.wallT = 0; damageZombie(z, z.wallDmg, 0, 0, 0); dust(z.x, z.y + 0.6, z.z, 0xb0a690, 6); } }   // «В стену»
+    const kv = Math.hypot(z.kx, z.kz); if (kv > 60) { z.kx *= 60 / kv; z.kz *= 60 / kv; }                 // потолок отталкивания (иначе на ×4 вылетали бы за стены)
+    const wx0 = dx * step + z.kx * dt, wz0 = dz * step + z.kz * dt, nsub = Math.max(1, Math.ceil(Math.hypot(wx0, wz0) / 0.3));
+    for (let q = 0; q < nsub; q++) moveEntity(z, wx0 / nsub, wz0 / nsub, z.r);
+    if (z.wallT > 0) { z.wallT -= dt; const want = Math.hypot(wx0, wz0); if (want > 0.03 && Math.hypot(z.x - ox, z.z - oz) < want * 0.4) { z.wallT = 0; dzBy(z.wallOwner, z, z.wallDmg, 0, 0, 0); dust(z.x, z.y + 0.6, z.z, 0xb0a690, 6); } }   // «В стену»
     z.kx *= decay; z.kz *= decay;
+    if (z.domT > 0) dominoStep(z, dt);                                    // «Домино» обреза
     let sx = 0, sz = 0;                                                  // расталкиваются с соседями на той же высоте
     forNear(z.x, z.z, n => {
       if (n === z || n.dead || Math.abs(n.y - z.y) > 0.6) return;
@@ -130,7 +135,7 @@ function updateZombies(dt) {
     // горение и кровотечение (перки и снаряжение подключатся на этапах 4–5)
     if (z.burnT > 0) { z.burnT -= dt; if (Math.random() < dt * 14 * BURN_K) spawnP({ x: z.x + rnd(-0.15, 0.15), y: z.y + rnd(0.4, 1.2), z: z.z + rnd(-0.15, 0.15), vy: 1.5, s: rnd(0.07, 0.13), s1: 0.02, col: 0xffc040, col1: 0xd03010, glow: true, life: 0.45 }); }
     if (z.bleedT > 0) z.bleedT -= dt;
-    if ((z.dotT -= dt) <= 0) { z.dotT = 0.25; const d = (z.burnT > 0 ? z.burnDps : 0) + (z.bleedT > 0 ? z.bleedDps : 0); if (d > 0) damageZombie(z, d * 0.25, 0, 0, 0); if (z.burnT > 0) burnSpread(z); }
+    if ((z.dotT -= dt) <= 0) { z.dotT = 0.25; const d = (z.burnT > 0 ? z.burnDps : 0) + (z.bleedT > 0 ? z.bleedDps : 0); if (d > 0) dzBy(z.dotOwner, z, d * 0.25, 0, 0, 0); if (z.burnT > 0) burnSpread(z); }
     if (z.dead) continue;
     for (const p of players) {                                           // укус
       if (p.down || Math.abs(p.y - z.y) > 0.6) continue;
@@ -168,16 +173,16 @@ function updateFires(dt, T) {
 }
 // Смена времени: закат → ночь (N — сразу)
 function updateSky(dt) {
-  const target = Math.max(G.nightT, clamp((G.t - 600) / 60, 0, 1));   // до 10-й минуты закат, затем за минуту наступает ночь
+  const k = clamp((G.t - 60) / (RUN_TIME * 0.85 - 60), 0, 1), target = Math.max(G.nightT, k * k * (3 - 2 * k), EV.blackout ? 0.95 : 0);   // первая минута — закат, дальше плавно темнеет, полная ночь к ~17-й минуте
   G.night += (target - G.night) * Math.min(1, dt * 1.5);
   const n = G.night;
   sun.intensity = 1.15 * (1 - n) + 0.1 * n;
   sun.color.setRGB(1, 0.8 - n * 0.2, 0.58 + n * 0.3);
   hemi.intensity = 0.5 - n * 0.34; hemi.color.setRGB(1 - n * 0.55, 0.88 - n * 0.45, 0.75 - n * 0.2);
   scene.background.setRGB(0.13 - n * 0.09, 0.1 - n * 0.06, 0.09 - n * 0.03); scene.fog.color.copy(scene.background);
-  for (const m of winMats) m.emissiveIntensity = 0.25 + n * 1.1;
-  for (const L of lamps) L.bulb.material.color.setRGB(0.4 + n * 0.6, 0.39 + n * 0.55, 0.3 + n * 0.45);
-  setLampLights(CAM.x, CAM.z);
+  for (const m of winMats) m.emissiveIntensity = 0.25 + n * 1.1 * evLights();
+  for (const L of lamps) { const nl = n * lampOn(L); L.bulb.material.color.setRGB(0.4 + nl * 0.6, 0.39 + nl * 0.55, 0.3 + nl * 0.45); }
+  setLampLights(CAM.x, CAM.z); evSkyFx(n);
 }
 // прожекторы фонарей, ближайших к точке обзора (в раздельном экране — для каждой половины свои)
 function setLampLights(cx, cz) {
@@ -185,7 +190,7 @@ function setLampLights(cx, cz) {
   for (const L of lamps) L.d = Math.hypot(L.x - cx, L.z - cz);
   const ls = lamps.slice().sort((a, b) => a.d - b.d);
   setSearchLights(cx, cz);
-  LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 : 0; if (L) { sp.position.set(L.x + 0.6, 3.95, L.z); sp.target.position.set(L.x + 1.2, 0, L.z); sp.target.updateMatrixWorld(); } });
+  LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 * lampOn(L) : 0; if (L) { sp.position.set(L.x + 0.6, 3.95, L.z); sp.target.position.set(L.x + 1.2, 0, L.z); sp.target.updateMatrixWorld(); } });
 }
 // Здание между камерой и героем — полупрозрачное
 const camDir = new THREE.Vector3();
@@ -194,7 +199,7 @@ function updateFade() {
   for (const B of buildings) {
     const bb = new THREE.Box3(new THREE.Vector3(B.x1, 0, B.z1), new THREE.Vector3(B.x2, B.H + 0.5, B.z2));
     let hit = false;
-    for (const p of players) {                           // здание закрывает хоть одного игрока — полупрозрачное
+    for (const p of (MAPID === 'city' && G.state === 'main' ? [{ x: MM.cam.x, y: 0, z: MM.cam.z }] : players)) {                           // здание закрывает хоть одного игрока — полупрозрачное
       const to = SPLIT.on && viewFor(p) ? viewFor(p).cp : toShared, from = new THREE.Vector3(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(from).normalize();
       if (new THREE.Ray(from, camDir).intersectsBox(bb) && !(p.y >= B.H - 0.1 && p.x > B.x1 && p.x < B.x2 && p.z > B.z1 && p.z < B.z2)) { hit = true; break; }
     }
@@ -227,7 +232,7 @@ function updateRevive(dt) {
     if (helper) {
       p.reviveT += dt * (L(helper, 'medic') ? 2 : 1);
       if (p.reviveT >= CFG.REVIVE_TIME) {
-        p.down = false; p.reviveT = 0; p.fall = 0; p.hp = Math.max(2, Math.ceil(p.maxHp / 2)); p.inv = 2; p.ammo = wStat(p).mag;
+        p.down = false; p.reviveT = 0; p.fall = 0; p.hp = L(helper, 'firstaid') ? 2 : 1; p.inv = 2; p.ammo = wStat(p).mag; if (helper.rs) helper.rs.revives++;
         for (let i = 0; i < 16; i++) spawnP({ x: p.x, y: p.y + 0.5, z: p.z, vx: rnd(-1.5, 1.5), vy: rnd(1, 3), vz: rnd(-1.5, 1.5), s: 0.07, s1: 0.01, col: 0x9ff0a0, glow: true, life: 0.7, drag: 0.95 });
         SFX.level();
       }
@@ -306,4 +311,3 @@ function updateShield(p, dt) {
   p.shieldT += dt;
   if (!p.shield && p.shieldT >= p.shieldCd) { p.shield = true; p.shieldCd = 1; SFX.click(); }
 }
-

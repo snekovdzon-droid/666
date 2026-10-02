@@ -47,10 +47,13 @@ function rollChoices(p) {
   const fin = finaleReady(p); if (fin) pool.push({ type: 'finale', b: fin });
   for (const u of PERKS) if (perkAllowed(p, u)) pool.push({ type: 'perk', perk: u });
   for (const id of freeAttach(p)) pool.push({ type: 'att', id });
-  for (const id of DEV_IDS) { const lv = devLv(p, id); if (lv ? lv < DEV_MAX : devCount(p) < devSlotsOf(p)) pool.push({ type: 'dev', id }); }
+  for (const id of DEV_IDS) { if ((id === 'dog' && devLv(p, 'drone')) || (id === 'drone' && devLv(p, 'dog'))) continue; const lv = devLv(p, id); if (lv ? lv < devMaxOf(id) : devCount(p) < devSlotsOf(p)) pool.push({ type: 'dev', id }); }
   for (const id in p.known) if (p.known[id] < ITEM_MAX_LV) pool.push({ type: 'itemlv', id });
+  for (const id of ITEM_IDS) if (!p.known[id]) pool.push({ type: 'newitem', id });
+  for (const c2 of meleeCardPool(p)) pool.push(c2);                                               // оружие ближнего боя и его улучшения             // новый предмет: открывает тип и даёт 1 заряд
   const out = [];
   while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  maybeCurse(p, out);                                                                  // шанс ~8%: проклятие заменяет одну из трёх карточек
   if (!out.length) out.push({ type: 'heal' });
   return out;
 }
@@ -63,6 +66,7 @@ function givePerk(p, u) {
 const LV = { choices: [], sel: 0, readyAt: 0, fork: false };
 function cardHTML(p, ch, i) {
   const key = `${i + 1}`;
+  if (ch.type === 'curse') return curseCardHtml(ch, key);
   if (ch.type === 'perk') {
     const u = ch.perk, lv = L(p, u.id), br = u.branch && (u.sub ? subOf(p) : branchOf(p));
     const tag = u.br === 'wpn' ? `ОРУЖИЕ · ${WEAPONS[u.gun].name}${u.branch === 'neutral' ? ' · любой путь' : br ? ' · ' + br.name : ''}` : u.br === 'item' ? `ПРЕДМЕТ · ${ITEMS[u.item].name}` : 'ОБЩЕЕ';
@@ -82,9 +86,11 @@ function cardHTML(p, ch, i) {
     const b = ch.b;
     return { cls: 'evo', html: `<span class="tag">ФИНАЛ ПУТИ · ${b.name}</span><b>${b.fin.name}</b><span>${b.fin.desc}</span><i>${key}</i>` };
   }
+  if (ch.type === 'melee' || ch.type === 'meleeup') return meleeCardHtml(p, ch, key);
+  if (ch.type === 'newitem') return { cls: 'item', html: `<span class="tag">НОВЫЙ ПРЕДМЕТ</span><b>${ITEMS[ch.id].name}</b><span>${ITEMS[ch.id].desc}</span><i>+1 заряд · подсумок ${pouchN(p)}/${pouchCap(p)} · дальше ищи на карте · ${key}</i>` };
   if (ch.type === 'itemlv') { const lv = itemLv(p, ch.id); return { cls: 'item', html: `<span class="tag">ПРЕДМЕТ</span><b>${ITEMS[ch.id].name}</b><span>${itemLvText(ch.id, lv)}</span><i>ур. ${lv} → ${lv + 1} из ${ITEM_MAX_LV} · ${key}</i>` }; }
   if (ch.type === 'att') return { cls: 'att', html: `<span class="tag">ОБВЕС · ${WEAPONS[p.gun].name}</span><b>${ATTACH[ch.id].name}</b><span>${ATTACH[ch.id].desc}</span><i>ставится сразу · ${key}</i>` };
-  if (ch.type === 'dev') { const lv = devLv(p, ch.id); return { cls: 'dev', html: `<span class="tag">ДЕВАЙС${lv ? '' : ' · новый'}</span><b>${DEVICES[ch.id].name}</b><span>${devCardText(ch.id, lv)}</span><i>ур. ${lv + 1} из ${DEV_MAX} · слотов ${devCount(p) + (lv ? 0 : 1)}/${devSlotsOf(p)} · ${key}</i>` }; }
+  if (ch.type === 'dev') { const lv = devLv(p, ch.id); return { cls: 'dev', html: `<span class="tag">ДЕВАЙС${lv ? '' : (ch.id === 'dog' || ch.id === 'drone') ? ' · компаньон (только один)' : ' · новый'}</span><b>${DEVICES[ch.id].name}</b><span>${devCardText(ch.id, lv)}</span><i>ур. ${lv + 1} из ${DEV_MAX} · слотов ${devCount(p) + (lv ? 0 : 1)}/${devSlotsOf(p)} · ${key}</i>` }; }
   if (ch.type === 'back') return { cls: 'gen', html: `<span class="tag">НАЗАД</span><b>Пока не выбирать</b><span>Вернуться к обычным карточкам</span><i>${key}</i>` };
   return { cls: 'gen', html: `<span class="tag">ОБЩЕЕ</span><b>Перевязка</b><span>Всё прокачано. Лечит 2 сердца.</span><i>${key}</i>` };
 }
@@ -125,6 +131,9 @@ function pickCard(i) {
     SFX.level();                                                    // путь выбран — уровень потрачен
   }
   else if (ch.type === 'perk') givePerk(p, ch.perk);
+  else if (ch.type === 'curse') applyCurse(p, ch.id);
+  else if (ch.type === 'melee' || ch.type === 'meleeup') meleePick(p, ch);
+  else if (ch.type === 'newitem') { p.known[ch.id] = 1; if (giveItem(p, ch.id)) toast(p, 'Новый предмет: ' + ITEMS[ch.id].name, '#7cc0ff'); else toast(p, 'Подсумок полон — тип открыт, заряды ищи на карте', '#ffb080'); }
   else if (ch.type === 'itemlv') p.known[ch.id] = itemLv(p, ch.id) + 1;      // уровень найденного предмета
   else if (ch.type === 'dev') giveDevice(p, ch.id);
   else if (ch.type === 'att') giveAttach(p, ch.id);                          // девайс: новый в слот или +1 уровень
@@ -153,12 +162,12 @@ function setBurn(z, t, dps, spread, gen = 0, slow = false) {
   if (z.dead) return;
   if (!(z.burnT > 0)) { z.burnGen = gen; z.burnSpread = !!spread && gen === 0; z.burnSlow = slow; z.burnDps = dps; }
   else { if (gen < z.burnGen) z.burnGen = gen; if (spread && gen === 0) z.burnSpread = true; if (slow) z.burnSlow = true; z.burnDps = Math.max(z.burnDps, dps); }
-  z.burnT = Math.max(z.burnT || 0, t);
+  z.burnT = Math.max(z.burnT || 0, t); if (gen === 0) z.dotOwner = ATTR || LASTOWN || null;
 }
 // «Пожар»: горящий зомби поджигает соседей вплотную, у них вдвое слабее и короче, и они дальше огонь не передают
 function burnSpread(z) {
   if (!z.burnSpread || z.burnGen !== 0) return;
-  forNear(z.x, z.z, n => { if (n !== z && !n.dead && !(n.burnT > 0) && (n.x - z.x) ** 2 + (n.z - z.z) ** 2 < 0.64) setBurn(n, z.burnT * 0.5, z.burnDps * 0.5, false, 1, z.burnSlow); });
+  forNear(z.x, z.z, n => { if (n !== z && !n.dead && !(n.burnT > 0) && (n.x - z.x) ** 2 + (n.z - z.z) ** 2 < 0.64) { setBurn(n, z.burnT * 0.5, z.burnDps * 0.5, false, 1, z.burnSlow); n.dotOwner = z.dotOwner; } });
 }
 // «Адреналин» и «Кровавая баня» (обрез, Берсерк): убийства ближе 1,5 клетки
 function onCloseKill(p) {
@@ -167,6 +176,43 @@ function onCloseKill(p) {
     p.hp++; SFX.pickup();
     for (let k = 0; k < 10; k++) spawnP({ x: p.x, y: p.y + 1, z: p.z, vx: rnd(-1, 1), vy: rnd(1, 2.5), vz: rnd(-1, 1), s: 0.08, s1: 0.01, col: 0xe04a3a, glow: true, life: 0.8, drag: 0.95 });
   }
+}
+/* ---- Ударная волна обреза: конус ±35°, 3,5 клетки; толкает всех в конусе, даже если дробь не попала ----
+   Сила падает с расстоянием; «Мощный заряд» ×1,4 за уровень; «Хватка» вдвое слабее; дуплет ×1,5; тяжёлые летят слабее, босс стоит.
+   «Домино»: летящий зомби передаёт толчок и урон тем, на кого налетел. */
+const SAW_KRES = { fat: 0.45, armored: 0.6, riot: 0.45, brute: 0.3, screamer: 0.8, spitter: 0.8 };
+const kresOf = z => z.kres !== undefined ? Math.max(z.kres, SAW_KRES[z.type] || 0) : (SAW_KRES[z.type] || 1);
+function sawBlast(p, dir, use) {
+  const mz = muzzleOf(p), R = 3.5, half = 0.61, fx = Math.sin(dir), fz = Math.cos(dir);
+  const mult = Math.pow(1.4, L(p, 'so_charge')) * (L(p, 'so_grip') ? 0.5 : 1) * (use === 2 ? 1.5 : 1), dom = L(p, 'so_domino');
+  let n = 0;
+  forNear(mz.x, mz.z, z => {
+    if (z.dead || z.swell || z.boss || z.type === 'warden' || Math.abs(z.y - p.y) > 1.2) return;
+    const dx = z.x - mz.x, dz = z.z - mz.z, d = Math.hypot(dx, dz); if (d > R + z.r || d < 0.01) return;
+    const cs = (dx * fx + dz * fz) / d; if (cs < Math.cos(half)) return;
+    const k = kresOf(z), v = 14 * (1 - 0.6 * Math.min(1, d / R)) * mult * k;
+    let ux = dx / d * 0.5 + fx * 0.5, uz = dz / d * 0.5 + fz * 0.5; const ul = Math.hypot(ux, uz) || 1; ux /= ul; uz /= ul;
+    z.kx += ux * v; z.kz += uz * v;
+    z.stunT = Math.max(z.stunT || 0, p.evo.so_liveram ? 1 : k < 0.7 ? 0.2 : 0.35);
+    if (dom) { z.domT = 0.7; z.domLv = dom; z.domOwner = p; z.domHit = [z.id]; }
+    n++;
+  }, R + 1);
+  for (let i = 0; i < 8; i++) { const a = dir + rnd(-half, half), r = rnd(0.6, R); spawnP({ x: mz.x + Math.sin(a) * r, y: p.y + rnd(0.1, 0.6), z: mz.z + Math.cos(a) * r, vx: Math.sin(a) * rnd(2, 5), vy: rnd(0, 1), vz: Math.cos(a) * rnd(2, 5), s: 0.1, s1: 0.5, col: 0xcfc6b2, col1: 0x8a8272, life: 0.35 }); }
+  if (n > 3) shake = Math.max(shake, 0.25);
+}
+function dominoStep(z, dt) {
+  z.domT -= dt;
+  const sp = Math.hypot(z.kx, z.kz); if (sp < 5) return;
+  const lv = z.domLv, own = z.domOwner;
+  forNear(z.x, z.z, n => {
+    if (n === z || n.dead || n.boss || n.type === 'warden' || Math.abs(n.y - z.y) > 0.6 || z.domHit.includes(n.id)) return;
+    const dx = n.x - z.x, dz = n.z - z.z, d = Math.hypot(dx, dz); if (d > (z.r + n.r) * 1.2) return;
+    z.domHit.push(n.id); const share = (lv >= 2 ? 1 : 0.6) * kresOf(n);
+    n.kx += z.kx * share; n.kz += z.kz * share; z.kx *= 0.75; z.kz *= 0.75;
+    n.domT = 0.5; n.domLv = lv; n.domOwner = own; n.domHit = z.domHit;
+    if (lv >= 2) n.stunT = Math.max(n.stunT || 0, 0.4);
+    dzBy(own, n, (lv >= 2 ? 20 : 10) * (own && own.st ? own.st.dmg : 1), dx / (d || 1), dz / (d || 1), 0);
+  }, z.r + 1.4);
 }
 // «Таран» (обрез): пока летишь от отдачи — сбиваешь и ранишь зомби позади
 function updateRam(p, dt) {
@@ -179,7 +225,7 @@ function updateRam(p, dt) {
     const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz);
     if (d > p.r + z.r + 0.25) return;
     z.ramT = G.t + 0.4;
-    damageZombie(z, (12 * lv + (evo ? 40 : 0)) * p.st.dmg, dx / (d || 1), dz / (d || 1), 0.9);
+    dzBy(p, z, (12 * lv + (evo ? 40 : 0)) * p.st.dmg, dx / (d || 1), dz / (d || 1), 0.9);
     if (evo) z.stunT = Math.max(z.stunT || 0, 1);
   });
 }
@@ -202,6 +248,12 @@ const itemStat = (p, id) => ITEMS[id].stat(itemLv(p, id));
 const slotTypes = p => p.slots.filter(id => p.pouch[id] > 0);           // слоты 1–4 — типы, которые сейчас в подсумке
 function toast(p, txt, col = '#ffe38a') { p.msg = txt; p.msgCol = col; p.msgT = 2.2; }
 // Положить заряд в подсумок: false — места нет. Первая находка типа — «умею» на 1-м уровне
+// Какие предметы может выдать ящик: только уже открытые карточкой (pref — предпочтительные из них). Пока ничего не открыто — первая находка открывает тип
+function itemPool(p, pref) {
+  const kn = ITEM_IDS.filter(i => p.known[i]);
+  if (!kn.length) return pref && pref.length ? pref : ITEM_IDS;
+  const pk = pref ? kn.filter(i => pref.includes(i)) : kn; return pk.length ? pk : kn;
+}
 function giveItem(p, id) {
   if (pouchN(p) >= pouchCap(p)) return false;
   if (!p.known[id]) { p.known[id] = 1; toast(p, 'Новый предмет: ' + ITEMS[id].name, '#7cc0ff'); }
@@ -313,7 +365,7 @@ function updatePools(dt) {
     P.tick = 0.25;
     forNear(P.x, P.z, z => {
       if (z.dead || Math.abs(z.y - P.y) > 0.8 || (z.x - P.x) ** 2 + (z.z - P.z) ** 2 >= P.R * P.R) return;
-      damageZombie(z, P.dps * 0.25, 0, 0, 0);
+      dzBy(P.owner, z, P.dps * 0.25, 0, 0, 0);
       if (P.ignite) setBurn(z, 3, 5 * P.owner.st.dmg, true);                                   // «Поджог»
     }, P.R + 1);
     for (const q of players) if (!q.down && q.inv <= 0 && Math.abs(q.y - P.y) < 0.8 && (q.x - P.x) ** 2 + (q.z - P.z) ** 2 < P.R * P.R && !L(q, 'fireproof') && G.state === 'play') hurtPlayer(q);
@@ -353,7 +405,7 @@ function updateTurrets(dt) {
     t.cool = 1 / t.rate;
     const hy = t.y + 0.47, a = t.yaw + rnd(-0.03, 0.03), mx = t.x + Math.sin(t.yaw) * 0.4, mz = t.z + Math.cos(t.yaw) * 0.4;
     const e = clamp(Math.atan2(zAimY(z) - hy, Math.max(0.5, Math.hypot(z.x - t.x, z.z - t.z))), -0.6, 0.6);
-    bullets.push({ owner: null, x0: t.x, z0: t.z, x: mx, y: hy, z: mz, vx: Math.sin(a) * Math.cos(e) * 14, vy: Math.sin(e) * 14, vz: Math.cos(a) * Math.cos(e) * 14, life: 0.55, dmg: t.dmg, pierce: 0, knock: 0.1, hits: [] });
+    bullets.push({ owner: null, src: t.owner, x0: t.x, z0: t.z, x: mx, y: hy, z: mz, vx: Math.sin(a) * Math.cos(e) * 14, vy: Math.sin(e) * 14, vz: Math.cos(a) * Math.cos(e) * 14, life: 0.55, dmg: t.dmg, pierce: 0, knock: 0.1, hits: [] });
     spawnP({ x: mx, y: hy, z: mz, vx: Math.sin(a) * 2, vy: 0.2, vz: Math.cos(a) * 2, s: 0.07, s1: 0.01, col: 0xfff0a0, col1: 0xff7020, glow: true, life: 0.06 });
     SFX.shot('smg');
   }
@@ -392,7 +444,7 @@ function updateWires(dt) {
       if (z.dead || Math.abs(z.y - w.y) > 0.8 || !inWire(w, z.x, z.z, z.r * 0.5)) return;
       z.slowT = 0.3; z.slowMul = Math.min(z.slowMul || 1, 1 - w.slow);
       if (!w.seen.has(z.id)) { w.seen.add(z.id); w.uses--; }
-      if ((z.wireT || 0) <= G.t) { z.wireT = G.t + 0.5; damageZombie(z, w.dmg, 0, 0, 0); if (w.bleed) { z.bleedT = 3; z.bleedDps = 4 * w.owner.st.dmg; } }
+      if ((z.wireT || 0) <= G.t) { z.wireT = G.t + 0.5; dzBy(w.owner, z, w.dmg, 0, 0, 0); if (w.bleed) { z.bleedT = 3; z.bleedDps = 4 * w.owner.st.dmg; z.dotOwner = w.owner; } }
     }, R);
     if (w.trap && w.seen.size >= 5) {                                                    // растяжка сработала
       w.trap = false; const S = itemStat(w.owner, 'grenade');
@@ -405,7 +457,7 @@ function updateWires(dt) {
       let px = w.x, py = w.y + 0.3, pz = w.z;
       for (const z of list.slice(0, 3)) {
         for (let k = 1; k <= 6; k++) spawnP({ x: px + (z.x - px) * k / 6 + rnd(-0.08, 0.08), y: py + (z.y + 0.7 - py) * k / 6 + rnd(-0.08, 0.08), z: pz + (z.z - pz) * k / 6 + rnd(-0.08, 0.08), s: 0.06, col: 0x9fe8ff, glow: true, life: 0.12 });
-        damageZombie(z, 10 * w.owner.st.dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.2); px = z.x; py = z.y + 0.7; pz = z.z;
+        dzBy(w.owner, z, 10 * w.owner.st.dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.2); px = z.x; py = z.y + 0.7; pz = z.z;
       }
       if (list.length) SFX.rico();
     }
@@ -426,19 +478,19 @@ function crateMesh(big) {
   for (const k of [-0.3, 0.3]) { const m = new THREE.Mesh(boxGeo, crateBand); m.scale.set(s * 1.02, s * 0.12, s * 1.02); m.position.y = s * 0.4 + k * s * 0.8; g.add(m); }
   g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); scene.add(g); return g;
 }
-function spawnCrate(x, z, big) { const y = floorAt(x, z, 0.3), g = crateMesh(big); g.position.set(x, y, z); g.rotation.y = Math.random() * TAU; CRATES.push({ x, y, z, big, g, t: 0 }); }
+function spawnCrate(x, z, big, y0) { const y = floorAt(x, z, (y0 || 0) + 0.3), g = crateMesh(big); g.position.set(x, y, z); g.rotation.y = Math.random() * TAU; CRATES.push({ x, y, z, big, g, t: 0 }); }
 function crateTimer(dt) {
   if ((G.crateT -= dt) > 0) return;
   G.crateT = CRATE.every;
   const al = alivePlayers(); if (!al.length) return;
-  const big = CRATES.filter(c => c.big);
+  const big = CRATES.filter(c => c.big && !c.keep);
   if (big.length >= CRATE.max) {                                                          // на большой карте: самый дальний ящик уступает место
     let far = null, fd = 0; for (const c of big) { const d = Math.min(...al.map(p => Math.hypot(p.x - c.x, p.z - c.z))); if (d > fd) { fd = d; far = c; } }
     if (fd < 25) return; removeCrate(CRATES.indexOf(far));
   }
   if (Math.random() < 0.6) {                                                              // фиксированные места: оружейная, кухня, склад топлива… (не на глазах и не рядом с игроком)
-    const free = MAP_PRISON.crates.filter(([x, z]) => !CRATES.some(c => Math.hypot(c.x - x, c.z - z) < 1.5) && al.every(q => Math.hypot(q.x - x, q.z - z) > 7) && !onScreen(x, z));
-    if (free.length) { const [x, z] = free[Math.floor(Math.random() * free.length)]; spawnCrate(x, z, true); return; }
+    const free = MAPDEF.crates.filter(([x, z]) => !CRATES.some(c => Math.hypot(c.x - x, c.z - z) < 1.5) && al.every(q => Math.hypot(q.x - x, q.z - z) > 7) && !onScreen(x, z));
+    if (free.length) { const [x, z, y] = free[Math.floor(Math.random() * free.length)]; spawnCrate(x, z, true, y); return; }
   }
   const p = al[Math.floor(Math.random() * al.length)];
   for (let i = 0; i < 40; i++) {
@@ -448,14 +500,15 @@ function crateTimer(dt) {
   }
 }
 function removeCrate(i) { if (i < 0) return; scene.remove(CRATES[i].g); CRATES.splice(i, 1); }
-function dropFromZombie(z) { if (Math.random() < CRATE.dropChance * (players.some(p => L(p, 'looter')) ? 2 : 1) * (players.some(p => p.cls === 'tech') ? 2 : 1)) spawnCrate(z.x, z.z, false); }   // «Мародёр» ×2, Техник ×2
+function dropFromZombie(z) { if (Math.random() < CRATE.dropChance * (players.some(p => L(p, 'looter')) ? 2 : 1) * (players.some(p => p.cls === 'tech') ? 2 : 1)) spawnCrate(z.x, z.z, false, z.y); }   // «Мародёр» ×2, Техник ×2
 function openCrate(p, c) {
+  if (c.loot) return openLootCrate(p, c);
   SFX.crate(); dust(c.x, c.y + 0.3, c.z, 0xc9a45a, 10);
   const fa = c.big ? freeAttach(p) : [];
   if (fa.length && Math.random() < 0.2) { giveAttach(p, fa[Math.floor(Math.random() * fa.length)]); return; }   // большой ящик: иногда обвес
   const n = (c.big ? 1 + (Math.random() < 0.5 ? 1 : 0) : 1) + (c.big && p.cls === 'tech' ? 1 : 0), got = [];   // Техник: из большого +1
   for (let i = 0; i < n; i++) {
-    const id = ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)];
+    const pool = itemPool(p), id = pool[Math.floor(Math.random() * pool.length)];
     if (giveItem(p, id)) got.push(ITEMS[id].name); else dropItem(id, c.x + rnd(-0.4, 0.4), c.y, c.z + rnd(-0.4, 0.4));
   }
   if (got.length) toast(p, '+ ' + got.join(', '));
@@ -477,7 +530,7 @@ function trySwap(p) {
   }
   const gi = GITEMS.findIndex(g => Math.hypot(g.x - p.x, g.z - p.z) < 0.8 && Math.abs(g.y - p.y) < 1);
   if (gi < 0) return false;
-  const G2 = GITEMS[gi];
+  const G2 = GITEMS[gi]; if (!p.known[G2.id]) return false;
   let out = p.hand && p.hand !== G2.id && p.pouch[p.hand] > 0 ? p.hand : null;
   if (!out) { let bn = 0; for (const id of p.slots) if (id !== G2.id && p.pouch[id] > bn) { bn = p.pouch[id]; out = id; } }
   if (!out) return false;
@@ -498,6 +551,7 @@ function updateCratesItems(dt) {
     if (g.t > 120) { removeGItem(i); continue; }
     for (const p of players) {
       if (p.down || Math.hypot(p.x - g.x, p.z - g.z) > 0.6 || Math.abs(p.y - g.y) > 1) continue;
+      if (!p.known[g.id]) { if (!(p.msgT > 0.5)) toast(p, 'Нужна карточка предмета: ' + ITEMS[g.id].name, '#ffb080'); continue; }
       if (giveItem(p, g.id)) { SFX.pickup(); toast(p, '+ ' + ITEMS[g.id].name); removeGItem(i); break; }
       if (!(p.msgT > 0.5)) toast(p, 'Подсумок полон — ' + swapKey(p) + ': обменять на «' + ITEMS[g.id].name + '»', '#ffb080');
     }
@@ -632,7 +686,7 @@ function updateClays(dt) {
     SFX.boom(); shake = Math.max(shake, 0.25); scorch(c.x + Math.sin(c.yaw) * 0.6, c.z + Math.cos(c.yaw) * 0.6, 0.7);
     for (let k = 0; k < 40; k++) { const a = c.yaw + rnd(-0.85, 0.85), v = rnd(5, 12); spawnP({ x: c.x, y: c.y + 0.2, z: c.z, vx: Math.sin(a) * v, vy: rnd(0, 1.5), vz: Math.cos(a) * v, s: 0.06, s1: 0.01, col: 0xffd080, col1: 0x904020, glow: true, life: 0.25 }); }
     dust(c.x, c.y + 0.2, c.z, 0x7a6a52, 10);
-    forNear(c.x, c.z, z => { if (!z.dead && Math.abs(z.y - c.y) < 1.2 && inCone(c, z.x, z.z, c.R)) { const d = Math.hypot(z.x - c.x, z.z - c.z); damageZombie(z, c.dmg * (1 - d / c.R * 0.5), (z.x - c.x) / d, (z.z - c.z) / d, 6); } }, c.R + 1);
+    forNear(c.x, c.z, z => { if (!z.dead && Math.abs(z.y - c.y) < 1.2 && inCone(c, z.x, z.z, c.R)) { const d = Math.hypot(z.x - c.x, z.z - c.z); dzBy(c.owner, z, c.dmg * (1 - d / c.R * 0.5), (z.x - c.x) / d, (z.z - c.z) / d, 6); } }, c.R + 1);
     for (const q of players) if (!q.down && q.inv <= 0 && Math.abs(q.y - c.y) < 1.2 && inCone(c, q.x, q.z, c.R) && !L(q, 'fireproof') && G.state === 'play') hurtPlayer(q);
   }
 }
@@ -656,7 +710,7 @@ function updateTraps(dt) {
     if ((t.cd -= dt) > 0) continue;
     let got = null;
     forNear(t.x, t.z, z => { if (!got && !z.dead && !z.swell && Math.abs(z.y - t.y) < 0.4 && Math.hypot(z.x - t.x, z.z - t.z) < 0.38) got = z; }, 1);
-    if (got) { t.held = got; got.trapT = t.hold; damageZombie(got, t.dmg, 0, 0, 0); SFX.click(); t.g.scale.y = 1.6; blood(got.x, got.y + 0.2, got.z, 0, 0, 5); continue; }
+    if (got) { t.held = got; got.trapT = t.hold; dzBy(t.owner, got, t.dmg, 0, 0, 0); SFX.click(); t.g.scale.y = 1.6; blood(got.x, got.y + 0.2, got.z, 0, 0, 5); continue; }
     for (const q of players) if (!q.down && Math.abs(q.y - t.y) < 0.4 && Math.hypot(q.x - t.x, q.z - t.z) < 0.32) {   // свой тоже попадётся
       t.held = q; q.trapT = 1.2; SFX.click(); t.g.scale.y = 1.6; if (q.inv <= 0 && G.state === 'play') hurtPlayer(q); toast(q, 'Капкан!', '#ffb080'); break;
     }
@@ -735,7 +789,7 @@ function updateGas(dt) {
     if (g.burn <= 0) { const k = fires.indexOf(g.f); if (k >= 0) fires.splice(k, 1); scorch(g.x, g.z, 0.35); GAS.splice(i, 1); continue; }
     if (g.tick > 0) continue;
     g.tick = 0.25;
-    forNear(g.x, g.z, z => { if (!z.dead && Math.abs(z.y - g.y) < 0.8 && (z.x - g.x) ** 2 + (z.z - g.z) ** 2 < 0.25) { damageZombie(z, g.dps * 0.25, 0, 0, 0); setBurn(z, 2, 4 * g.owner.st.dmg, false); } }, 1);
+    forNear(g.x, g.z, z => { if (!z.dead && Math.abs(z.y - g.y) < 0.8 && (z.x - g.x) ** 2 + (z.z - g.z) ** 2 < 0.25) { dzBy(g.owner, z, g.dps * 0.25, 0, 0, 0); setBurn(z, 2, 4 * g.owner.st.dmg, false); } }, 1);
     for (const q of players) if (!q.down && q.inv <= 0 && Math.abs(q.y - g.y) < 0.8 && (q.x - g.x) ** 2 + (q.z - g.z) ** 2 < 0.16 && !L(q, 'fireproof') && G.state === 'play') hurtPlayer(q);
   }
 }
@@ -767,7 +821,8 @@ const devLv = (p, id) => (p.dev && p.dev[id]) || 0;
 const devSlotsOf = p => (p.devSlots || 1) + L(p, 'devslot') + L(p, 'smg_tact');
 const devCount = p => Object.keys(p.dev || {}).length;
 function giveDevice(p, id) {
-  p.dev = p.dev || {}; p.dev[id] = Math.min(DEV_MAX, (p.dev[id] || 0) + 1);
+  p.dev = p.dev || {}; if ((id === 'dog' && p.dev.drone) || (id === 'drone' && p.dev.dog)) return;               // компаньон только один
+  p.dev[id] = Math.min(devMaxOf(id), (p.dev[id] || 0) + 1);
   if (id === 'inject') p.injReady = true;
   if (id === 'hook' && p.hookCd === undefined) p.hookCd = 0;
 }
@@ -798,49 +853,104 @@ function updateDrone(p, dt) {
   if (p.down || (d.cool -= dt) > 0 || !z) return;
   d.cool = 1 / (lv >= 2 ? 3 : 2);
   const sy = d.y - 0.05, dx = z.x - d.x, dz = z.z - d.z, dist = Math.hypot(dx, dz) || 1, dy = zAimY(z) - sy, l = Math.hypot(dist, dy);
-  bullets.push({ owner: null, x0: d.x, z0: d.z, x: d.x, y: sy, z: d.z, vx: dx / l * 16, vy: dy / l * 16, vz: dz / l * 16, life: 0.5, dmg: 4 * p.st.dmg, pierce: 0, knock: 0.05, hits: [] });
+  bullets.push({ owner: null, src: p, x0: d.x, z0: d.z, x: d.x, y: sy, z: d.z, vx: dx / l * 16, vy: dy / l * 16, vz: dz / l * 16, life: 0.5, dmg: 4 * p.st.dmg, pierce: 0, knock: 0.05, hits: [] });
   spawnP({ x: d.x + Math.sin(d.yaw) * 0.12, y: sy, z: d.z + Math.cos(d.yaw) * 0.12, s: 0.05, col: 0xfff0a0, glow: true, life: 0.05 });
   if (canPlay('drone', 90)) SFX.shot('smg');
 }
-/* ---- Собака: держится у ноги, бросается на того, кто вот-вот укусит ---- */
-const DOGS = new Map();
+/* ---- Собака (овчарка): в покое ходит справа от героя; раз в 10 с бросается на слабого зомби и убивает; с 2-го ур. подбирает опыт,
+   с 3-го оглушает сильных (кроме босса), с 4-го — кровотечение у сильных; в коопе стережёт упавшего и отгоняет врагов ---- */
+const DOGS = new Map(), DOG_CD = 10, DOG_WEAK = { walker: 1, runner: 1, hound: 1 };
+const isBossZ = z => z.type === 'warden' || z === G.boss;
 function dogOf(p) {
   let d = DOGS.get(p); if (d) return d;
-  const g = new THREE.Group(), C = 0x6a4a2e, D = 0x4a3220;
-  const add = (c, x, y, z, w, h, l) => { const m = new THREE.Mesh(boxGeo, tuMat(c)); m.scale.set(w, h, l); m.position.set(x, y, z); m.castShadow = true; g.add(m); return m; };
-  add(C, 0, 0.26, 0, 0.16, 0.14, 0.38); const head = add(C, 0, 0.36, 0.24, 0.14, 0.13, 0.15); add(D, 0, 0.33, 0.33, 0.08, 0.07, 0.07);
-  add(D, -0.05, 0.45, 0.22, 0.03, 0.06, 0.03); add(D, 0.05, 0.45, 0.22, 0.03, 0.06, 0.03); const tail = add(D, 0, 0.33, -0.22, 0.03, 0.03, 0.12);
-  const legs = [[-0.05, 0.12], [0.05, 0.12], [-0.05, -0.13], [0.05, -0.13]].map(([x, z]) => add(D, x, 0.1, z, 0.04, 0.2, 0.04));
+  const g = new THREE.Group(), TAN = 0xb8823e, BLK = 0x1e1a16, LT = 0xd2a860, RED = 0xa03020;
+  const add = (c, x, y, z, w, h, l, par = g) => { const m = new THREE.Mesh(boxGeo, tuMat(c)); m.scale.set(w, h, l); m.position.set(x, y, z); m.castShadow = true; par.add(m); return m; };
+  add(TAN, 0, 0.52, 0.16, 0.34, 0.34, 0.5); add(TAN, 0, 0.47, -0.26, 0.28, 0.3, 0.42); add(LT, 0, 0.34, 0.2, 0.24, 0.1, 0.44);   // грудь, круп, светлое брюхо
+  add(BLK, 0, 0.71, -0.02, 0.3, 0.09, 0.66); add(BLK, 0, 0.64, -0.34, 0.26, 0.08, 0.28);                                             // чепрак
+  add(TAN, 0, 0.66, 0.46, 0.2, 0.26, 0.2); add(RED, 0, 0.6, 0.44, 0.22, 0.05, 0.22);                                                 // шея и ошейник
+  const head = new THREE.Group(); head.position.set(0, 0.78, 0.6); g.add(head);
+  add(TAN, 0, 0, 0, 0.2, 0.2, 0.22, head); add(BLK, 0, -0.04, 0.2, 0.11, 0.1, 0.18, head); add(BLK, 0, -0.01, 0.3, 0.06, 0.05, 0.04, head);   // голова, морда, нос
+  for (const sd of [-1, 1]) { add(TAN, sd * 0.07, 0.15, -0.04, 0.06, 0.15, 0.05, head); add(BLK, sd * 0.07, 0.24, -0.04, 0.045, 0.05, 0.04, head); add(0x111111, sd * 0.06, 0.04, 0.11, 0.025, 0.025, 0.02, head); }   // уши и глаза
+  const tail = new THREE.Group(); tail.position.set(0, 0.52, -0.46); tail.rotation.x = 0.5; g.add(tail); add(BLK, 0, -0.08, -0.14, 0.09, 0.09, 0.34, tail);
+  const legs = [[-0.1, 0.3], [0.1, 0.3], [-0.1, -0.3], [0.1, -0.3]].map(([x, z]) => { const lg = new THREE.Group(); lg.position.set(x, 0.42, z); g.add(lg); add(TAN, 0, -0.21, 0, 0.09, 0.42, 0.09, lg); add(BLK, 0, -0.4, 0.03, 0.1, 0.05, 0.14, lg); return lg; });
   scene.add(g);
-  d = { g, head, tail, legs, x: p.x - 0.6, y: p.y, z: p.z, yaw: 0, cd: 0, bite: null, biteT: 0, ph: 0 }; DOGS.set(p, d); return d;
+  d = { g, head, tail, legs, x: p.x + 0.9, y: p.y, z: p.z, yaw: 0, cd: 4, st: 'follow', tgt: null, t: 0, ph: 0, moving: false, guardT: 0 }; DOGS.set(p, d); return d;
+}
+function dogTarget(p, lv) {                                   // слабый — ходок, ползун, бегун, пёс; остальные сильные; босса не трогаем
+  let weak = null, wd = 1e9, strong = null, sd = 1e9; const R = 7;
+  forNear(p.x, p.z, z => {
+    if (z.dead || z.swell || isBossZ(z) || Math.abs(z.y - p.y) > 1) return;
+    const q = (z.x - p.x) ** 2 + (z.z - p.z) ** 2; if (q > R * R) return;
+    if (DOG_WEAK[z.type]) { if (q < wd) { wd = q; weak = z; } } else if (q < sd) { sd = q; strong = z; }
+  }, R);
+  return lv >= 3 && strong ? strong : weak;
+}
+function dogStrike(p, z, lv) {
+  const dx = z.x - p.x, dz = z.z - p.z, dd = Math.hypot(dx, dz) || 1;
+  blood(z.x, z.y + 0.4, z.z, dx / dd, dz / dd, 4);
+  if (DOG_WEAK[z.type]) dzBy(p, z, 1e9, dx / dd, dz / dd, 0.3, undefined, true);
+  else {
+    z.stunT = Math.max(z.stunT || 0, 2.5); z.kx += dx / dd * 3; z.kz += dz / dd * 3;
+    if (lv >= 4) { z.bleedT = Math.max(z.bleedT || 0, 6); z.bleedDps = Math.max(z.bleedDps || 0, 6 * p.st.dmg, z.hp * 0.04); z.dotOwner = p; }
+  }
+  if (canPlay('dogbite', 150)) SFX.crate();
 }
 function updateDog(p, dt) {
   const lv = devLv(p, 'dog'); if (!lv) return;
-  const d = dogOf(p); d.cd -= dt;
-  let tx, tz, sp = 5.5;
-  if (d.bite) {
-    const z = d.bite;
-    if (z.dead || (d.biteT -= dt) <= 0) { d.bite = null; d.cd = [6, 4, 3][lv - 1]; }
-    else { tx = z.x - Math.sin(d.yaw) * 0.3; tz = z.z - Math.cos(d.yaw) * 0.3; sp = 12; z.stunT = Math.max(z.stunT || 0, 0.15); if (lv >= 2) damageZombie(z, 15 * p.st.dmg * dt, 0, 0, 0); if (Math.random() < dt * 6) blood(z.x, z.y + 0.4, z.z, 0, 0, 1); }
+  const d = dogOf(p); d.cd -= dt; d.t += dt;
+  if (lv >= 2) for (const g of gems) if (!g.pull && Math.abs(g.y - p.y) < 2 && (g.x - p.x) ** 2 + (g.z - p.z) ** 2 < 36) g.pull = true;     // опыт с 6 клеток
+  let tx = d.x, tz = d.z, sp = 0, down = null;
+  if (players.length > 1) { let bd = 1e9; for (const q of players) if (q.down) { const k = Math.hypot(q.x - d.x, q.z - d.z); if (k < bd) { bd = k; down = q; } } }
+  if (down) {                                                 // кооп: стоит у упавшего и отгоняет врагов
+    d.st = 'guard'; d.tgt = null;
+    const a = Math.atan2(d.x - down.x, d.z - down.z); tx = down.x + Math.sin(a) * 0.8; tz = down.z + Math.cos(a) * 0.8; sp = 8;
+    if ((d.guardT -= dt) <= 0) {
+      d.guardT = 0.3; let any = false;
+      forNear(down.x, down.z, z => {
+        if (z.dead || z.swell || isBossZ(z) || Math.abs(z.y - down.y) > 1.2) return;
+        const dx = z.x - down.x, dz = z.z - down.z, dd = Math.hypot(dx, dz); if (dd > 2.8) return;
+        z.kx += dx / (dd || 1) * 6; z.kz += dz / (dd || 1) * 6; z.stunT = Math.max(z.stunT || 0, 0.4); any = true;
+      }, 3);
+      if (any && canPlay('dogbark', 1500) && SFX.bark) SFX.bark();
+    }
+  } else {
+    if (d.st === 'guard') d.st = 'follow';
+    if (d.st === 'follow' && d.cd <= 0 && !p.down) { const tg = dogTarget(p, lv); if (tg) { d.st = 'lunge'; d.tgt = tg; d.t = 0; } }
+    if (d.st === 'lunge') {
+      const z = d.tgt;
+      if (!z || z.dead || d.t > 2.5) { d.st = 'follow'; d.tgt = null; d.cd = 2; }
+      else { tx = z.x; tz = z.z; sp = 13; if (Math.hypot(z.x - d.x, z.z - d.z) < 0.6) { dogStrike(p, z, lv); d.st = 'bite'; d.t = 0; d.cd = DOG_CD; } }
+    } else if (d.st === 'bite') {
+      const z = d.tgt; if (z && !z.dead) { tx = z.x; tz = z.z; sp = 3; }
+      if (d.t > 0.45) { d.st = 'follow'; d.tgt = null; }
+    }
+    if (d.st === 'follow') {                                  // в покое: справа от героя на экране, шагом
+      const c = Math.cos(CAM.yaw), s = Math.sin(CAM.yaw); tx = p.x + c * 0.95; tz = p.z - s * 0.95;
+      sp = clamp(Math.hypot(tx - d.x, tz - d.z) * 4, 0, 6.5);
+    }
   }
-  if (!d.bite && d.cd <= 0 && !p.down) {                                        // кто вот-вот укусит
-    let best = null, bd = 1.8 * 1.8; forNear(p.x, p.z, z => { if (z.dead || z.swell || Math.abs(z.y - p.y) > 0.6) return; const q = (z.x - p.x) ** 2 + (z.z - p.z) ** 2; if (q < bd) { bd = q; best = z; } }, 2);
-    if (best) { d.bite = best; d.biteT = [1.5, 1.5, 2.5][lv - 1] + 0.3; best.stunT = Math.max(best.stunT || 0, [1.5, 1.5, 2.5][lv - 1]); best.kx += (best.x - p.x) * 2; best.kz += (best.z - p.z) * 2; SFX.hurt && canPlay('dog', 400) && SFX.click(); }
-  }
-  if (!d.bite) { const a = p.yaw + 2.4; tx = p.x + Math.sin(a) * 0.7; tz = p.z + Math.cos(a) * 0.7; }
   const dx = tx - d.x, dz = tz - d.z, dist = Math.hypot(dx, dz);
-  if (dist > 12) { d.x = p.x; d.z = p.z; d.y = p.y; }                           // отстала (крюк, крыша) — догоняет сразу
-  else if (dist > 0.05) { const s = Math.min(dist, sp * dt * (dist > 3 ? 1.6 : 1)); const ox = d.x, oz = d.z; const e = { x: d.x, y: d.y, z: d.z, vy: 0 }; moveEntity(e, dx / dist * s, dz / dist * s, 0.15); d.x = e.x; d.z = e.z; d.y = floorAt(d.x, d.z, d.y + 0.4); d.ph += Math.hypot(d.x - ox, d.z - oz) * 9; d.yaw = Math.atan2(dx, dz); }
-  d.g.position.set(d.x, d.y, d.z); d.g.rotation.y = d.yaw;
-  d.legs.forEach((m, i) => m.rotation.x = Math.sin(d.ph + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * 0.6);
-  d.tail.rotation.y = Math.sin(G.t * 9) * 0.5; d.head.position.y = d.bite ? 0.32 + Math.sin(G.t * 30) * 0.02 : 0.36;
+  let moved = 0;
+  if (dist > 14) { d.x = tx; d.z = tz; d.y = p.y; }            // отстала (крюк, крыша) — догоняет сразу
+  else if (dist > 0.04 && sp > 0.05) {
+    const st = Math.min(dist, sp * dt), ox = d.x, oz = d.z, e = { x: d.x, y: d.y, z: d.z, vy: 0 };
+    moveEntity(e, dx / dist * st, dz / dist * st, 0.2); d.x = e.x; d.z = e.z; d.y = floorAt(d.x, d.z, d.y + 0.4);
+    moved = Math.hypot(d.x - ox, d.z - oz);
+  }
+  d.moving = moved > 0.002; d.ph += moved * (d.st === 'follow' ? 7 : 5);
+  const want = d.moving && d.st !== 'bite' ? Math.atan2(dx, dz) : d.st === 'bite' && d.tgt ? Math.atan2(d.tgt.x - d.x, d.tgt.z - d.z) : p.yaw;
+  let da = want - d.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); d.yaw += da * Math.min(1, dt * 10);
+  d.g.position.set(d.x, d.y + (d.st === 'lunge' ? Math.abs(Math.sin(d.ph * 0.9)) * 0.1 : 0), d.z); d.g.rotation.y = d.yaw;
+  const sw = d.moving ? (d.st === 'follow' ? 0.5 : 0.9) : 0;
+  d.legs.forEach((m, i) => { m.rotation.x = Math.sin(d.ph + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * sw; });
+  d.tail.rotation.y = Math.sin(G.t * (d.moving ? 10 : 5)) * 0.4; d.head.rotation.x = d.st === 'bite' ? Math.sin(G.t * 30) * 0.2 : 0;
 }
 /* ---- Магнитный пояс: ящики и предметы с земли ---- */
 function updateMagnet(p, dt) {
   if (devLv(p, 'magnet') < 3 || p.down) return;
   const pull = o => { const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz); if (d < 4 && d > 0.3 && Math.abs(o.y - p.y) < 1.5) { const s = Math.min(d, 4 * dt); o.x += dx / d * s; o.z += dz / d * s; o.g.position.x = o.x; o.g.position.z = o.z; } };
   for (const c of CRATES) pull(c);
-  for (const g of GITEMS) if (pouchN(p) < pouchCap(p)) pull(g);
+  for (const g of GITEMS) if (pouchN(p) < pouchCap(p) && p.known[g.id]) pull(g);
 }
 /* ---- Автоинжектор: вызывается из hurtPlayer, когда сердца кончились ---- */
 function tryInject(p) {
@@ -858,7 +968,7 @@ function updateTesla(p, dt) {
   let px = p.x, py = p.y + 1.1, pz = p.z, z = first, dmg = 25 * p.st.dmg;
   for (let k = 0; k <= hops && z; k++) {
     for (let s = 1; s <= 7; s++) spawnP({ x: px + (z.x - px) * s / 7 + rnd(-0.1, 0.1), y: py + (z.y + 0.7 - py) * s / 7 + rnd(-0.1, 0.1), z: pz + (z.z - pz) * s / 7 + rnd(-0.1, 0.1), s: 0.07, col: 0xa8e8ff, glow: true, life: 0.14 });
-    hit.add(z); damageZombie(z, dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.15);
+    hit.add(z); dzBy(p, z, dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.15);
     px = z.x; py = z.y + 0.7; pz = z.z; dmg *= 0.7;
     let nx = null, nd = 9; forNear(px, pz, q => { if (!q.dead && !hit.has(q)) { const d = (q.x - px) ** 2 + (q.z - pz) ** 2; if (d < nd) { nd = d; nx = q; } } }, 3); z = nx;
   }
@@ -937,4 +1047,3 @@ function updateAttach(dt) {
   }
 }
 function clearAttach() { for (const v of ATTV.values()) { if (v.beam) scene.remove(v.beam); if (v.light) { scene.remove(v.light); scene.remove(v.light.target); } } ATTV.clear(); }
-

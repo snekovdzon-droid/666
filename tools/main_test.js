@@ -16,7 +16,7 @@ const { chromium } = require('playwright'); const path = require('path');
   await p.click('[data-a=settings]'); await p.waitForTimeout(300); await p.screenshot({ path: dir + '/m2_settings.png' });
   await p.click('[data-s=back]'); await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.waitForTimeout(500); log.push(await st());
   await p.keyboard.press('Escape'); await p.waitForTimeout(500); log.push(await st());
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(2000); log.push(await st());
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(2000); log.push(await st());
   console.log('состояния:', log.join(' → '));
   console.log(errs.length ? errs.join('\n') : 'OK: ошибок нет'); await b.close();
 })();

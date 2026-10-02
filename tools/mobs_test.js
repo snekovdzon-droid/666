@@ -6,7 +6,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
   const errs = []; p.on('pageerror', e => errs.push('pageerror: ' + e.message)); p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   await p.goto('file://' + path.resolve(process.argv[2] || 'index.html')); await p.waitForTimeout(3000);
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.waitForTimeout(1500);
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelector('#mpList .mp').click(); }); await p.waitForTimeout(1500);
   const E = f => p.evaluate(f);
   const sim = async sec => { const t0 = await E(() => G.t); await p.waitForFunction(([t0, sec]) => G.t > t0 + sec, [t0, sec], { timeout: 120000, polling: 200 }); };   // ждём игровое время, а не реальное
   await E(() => { G.god = true; G.noSpawn = true; G.timeScale = 3; zombies.length = 0; });
