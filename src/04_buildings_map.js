@@ -13,11 +13,11 @@ function building(x1, z1, x2, z2, floors, o = {}) {
   // парапет (ограда крыши) — кроме проёма к лестнице
   const PH = 0.45, pm = mat(0xc8b69a).clone(); B.mats.push(pm);
   const gap = o.gap;                                   // [x1, x2] проём на южной стороне
-  if (gap) { box(x1, H, z2 - 0.18, gap[0], H + PH, z2, 0, { material: pm, parent: grp }); box(gap[1], H, z2 - 0.18, x2, H + PH, z2, 0, { material: pm, parent: grp }); }
-  else box(x1, H, z2 - 0.18, x2, H + PH, z2, 0, { material: pm, parent: grp });
-  if (o.gapN) { box(x1, H, z1, o.gapN[0], H + PH, z1 + 0.18, 0, { material: pm, parent: grp }); box(o.gapN[1], H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp }); } else box(x1, H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp });
-  if (o.gapW) { box(x1, H, z1, x1 + 0.18, H + PH, o.gapW[0], 0, { material: pm, parent: grp }); box(x1, H, o.gapW[1], x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp }); } else box(x1, H, z1, x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp });
-  if (o.gapE) { box(x2 - 0.18, H, z1, x2, H + PH, o.gapE[0], 0, { material: pm, parent: grp }); box(x2 - 0.18, H, o.gapE[1], x2, H + PH, z2, 0, { material: pm, parent: grp }); } else box(x2 - 0.18, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
+  if (gap) { para(x1, H, z2 - 0.18, gap[0], H + PH, z2, 0, { material: pm, parent: grp }); para(gap[1], H, z2 - 0.18, x2, H + PH, z2, 0, { material: pm, parent: grp }); }
+  else para(x1, H, z2 - 0.18, x2, H + PH, z2, 0, { material: pm, parent: grp });
+  if (o.gapN) { para(x1, H, z1, o.gapN[0], H + PH, z1 + 0.18, 0, { material: pm, parent: grp }); para(o.gapN[1], H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp }); } else para(x1, H, z1, x2, H + PH, z1 + 0.18, 0, { material: pm, parent: grp });
+  if (o.gapW) { para(x1, H, z1, x1 + 0.18, H + PH, o.gapW[0], 0, { material: pm, parent: grp }); para(x1, H, o.gapW[1], x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp }); } else para(x1, H, z1, x1 + 0.18, H + PH, z2, 0, { material: pm, parent: grp });
+  if (o.gapE) { para(x2 - 0.18, H, z1, x2, H + PH, o.gapE[0], 0, { material: pm, parent: grp }); para(x2 - 0.18, H, o.gapE[1], x2, H + PH, z2, 0, { material: pm, parent: grp }); } else para(x2 - 0.18, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
   // окна с решётками на все стороны, часть горит светом
   const win = (cx, cy, cz, alongX) => {
     const w = 0.55, h = 0.8, t = 0.06, m = Math.random() < 0.25 ? winMat : mat(DARK);

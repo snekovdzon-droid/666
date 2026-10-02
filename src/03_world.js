@@ -86,6 +86,9 @@ function box(x1, y1, z1, x2, y2, z2, col, o = {}) {
   if (o.solid !== false) solids.push({ x1, y1, z1, x2, y2, z2, mat: o.hit || 'concrete', group: o.parent || null });
   return m;
 }
+// Ограды крыш (парапеты) убраны: с крыши можно спрыгнуть (падение с высоты ранит на 1 сердце)
+const PARAPETS = false;
+function para(...a) { return PARAPETS ? box(...a) : null; }
 // Сетка для быстрого поиска коробок
 const SG = 2, sgrid = new Map();
 function indexSolids() {

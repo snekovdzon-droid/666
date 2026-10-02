@@ -238,8 +238,8 @@ function cbuild(x1, z1, x2, z2, floors, o = {}) {
   };
   const PH = 0.45, T = 0.2, G = o.gaps || { N: [], S: [], E: [], W: [] }, skip = o.skip || [];
   const seg = (side, a0, a1) => { if (skip.includes(side)) return; for (const [s, e] of parapetSegs(a0, a1, G[side])) {
-    if (side === 'N') box(s, H, z1, e, H + PH, z1 + T, 0, { material: pm, parent: grp }); if (side === 'S') box(s, H, z2 - T, e, H + PH, z2, 0, { material: pm, parent: grp });
-    if (side === 'W') box(x1, H, s, x1 + T, H + PH, e, 0, { material: pm, parent: grp }); if (side === 'E') box(x2 - T, H, s, x2, H + PH, e, 0, { material: pm, parent: grp }); } };
+    if (side === 'N') para(s, H, z1, e, H + PH, z1 + T, 0, { material: pm, parent: grp }); if (side === 'S') para(s, H, z2 - T, e, H + PH, z2, 0, { material: pm, parent: grp });
+    if (side === 'W') para(x1, H, s, x1 + T, H + PH, e, 0, { material: pm, parent: grp }); if (side === 'E') para(x2 - T, H, s, x2, H + PH, e, 0, { material: pm, parent: grp }); } };
   seg('N', x1, x2); seg('S', x1, x2); seg('W', z1, z2); seg('E', z1, z2);
   return B;
 }

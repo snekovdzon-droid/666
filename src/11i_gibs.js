@@ -28,6 +28,7 @@ function gibZombie(z, dx, dz, ratio) {
   SFX.gib(); shake = Math.max(shake, 0.12);
   for (let i = 0; i < 9; i++) spawnP({ x: z.x, y: z.y + 0.7, z: z.z, vx: ux * rnd(2, 7) + rnd(-2, 2), vy: rnd(2, 6), vz: uz * rnd(2, 7) + rnd(-2, 2), g: 16, s: rnd(0.07, 0.13), col: z.look[i % 3] ?? 0x8a1010, life: 10, bounce: 1, rx: rnd(0, 3) });   // мелкие куски
   if (!isVoxZ(z)) return;                                                  // собака и прочие «из коробок» — только мелкие куски
+  if (z.vm === undefined) z.vm = Math.floor(Math.random() * VOXMS.length);   // убит, ещё ни разу не нарисованный
   const M = VOXMS[z.vm % VOXMS.length], { H, w } = formScale(z), W = VZ.W * w, c = Math.cos(z.yaw), s = Math.sin(z.yaw);
   for (const k of VOX_PARTS) {
     if (k !== 'body' && Math.random() < (k === 'head' ? 0.2 : 0.3)) continue;                    // часть «испарилась» в кровь

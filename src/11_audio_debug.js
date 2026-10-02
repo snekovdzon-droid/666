@@ -85,8 +85,8 @@ const SFX = {
     setTimeout(() => { if (soundOn()) noiseHit({ dur: 0.28, type: 'bandpass', freq: 1600, q: 1, vol: 0.045, attack: 0.12, sweep: 1900 }); }, 380); },
   shot(id) {
     if (!soundOn()) return;
-    const RS = { rifle: [30, 0.8, 1], mg: [25, 0.75, 1], smg: [30, 0.7, 1], pistol: [0, 0.7, 1.1, 'smg'], revolver: [0, 1, 1], shotgun: [0, 1, 1], sawnoff: [0, 1, 0.92] }[id];
-    if (RS && Sound.real && (RS[3] || id) && (Sound.buf[(RS[3] || id) + '_1'])) { if (RS[0] && !canPlay(id, RS[0])) return; playReal(RS[3] || id, RS[1], RS[2]); return; }
+    const RS = { rifle: [30, 0.8, 1], mg: [25, 0.75, 1], smg: [30, 0.7, 1], pistol: [0, 0.7, 1.1, 'smg'], revolver: [0, 1, 1], shotgun: [0, 1, 1], sawnoff: [0, 1, 0.82, 'shotgun'] }[id];
+    if (RS && Sound.real && (RS[3] || id) && (Sound.buf[(RS[3] || id) + '_1'])) { if (RS[0] && !canPlay(id, RS[0])) return; playReal(RS[3] || id, RS[1], RS[2], 0.07); if (id === 'sawnoff') setTimeout(() => playReal('shotgun', 0.85, 0.7, 0.07), 14); return; }   // обрез: два ствола почти одновременно
     switch (id) {
       case 'shotgun': noiseHit({ dur: 0.28, freq: 2200, sweep: 400, vol: 0.7 }); tone({ f0: 110, f1: 40, dur: 0.18, vol: 0.6 }); break;
       case 'sawnoff': noiseHit({ dur: 0.38, freq: 2600, sweep: 300, vol: 0.85 }); tone({ f0: 90, f1: 35, dur: 0.25, vol: 0.8 }); break;

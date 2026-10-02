@@ -195,8 +195,8 @@ function shedOp(x1, z1, x2, z2, o = {}) {
   box(x1, H - 0.25, z1, x2, H, z2, 0, { material: rm, parent: grp });                                   // крыша: под ней ходят, по ней — если есть лестница
   const PH = 0.4, pm = mat(0xc8b69a).clone(); B.mats.push(pm);
   const gap = o.gap;
-  if (gap) { box(x1, H, z2 - 0.16, gap[0], H + PH, z2, 0, { material: pm, parent: grp }); box(gap[1], H, z2 - 0.16, x2, H + PH, z2, 0, { material: pm, parent: grp }); } else box(x1, H, z2 - 0.16, x2, H + PH, z2, 0, { material: pm, parent: grp });
-  box(x1, H, z1, x2, H + PH, z1 + 0.16, 0, { material: pm, parent: grp }); box(x1, H, z1, x1 + 0.16, H + PH, z2, 0, { material: pm, parent: grp }); box(x2 - 0.16, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
+  if (gap) { para(x1, H, z2 - 0.16, gap[0], H + PH, z2, 0, { material: pm, parent: grp }); para(gap[1], H, z2 - 0.16, x2, H + PH, z2, 0, { material: pm, parent: grp }); } else para(x1, H, z2 - 0.16, x2, H + PH, z2, 0, { material: pm, parent: grp });
+  para(x1, H, z1, x2, H + PH, z1 + 0.16, 0, { material: pm, parent: grp }); para(x1, H, z1, x1 + 0.16, H + PH, z2, 0, { material: pm, parent: grp }); para(x2 - 0.16, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
   if (gap && o.esc !== undefined) { fireEscape(o.esc, gap[0], z2, z2 + 1.3, H, grp); box(gap[0], H - 0.1, z2, gap[1], H, z2 + 1.3, RED, { parent: grp, hit: 'metal' }); }
   buildings.push(B);
   B.finish = () => { const cache = new Map(); B.mats = []; grp.traverse(m => { if (!m.isMesh) return; let c = cache.get(m.material); if (!c) { c = m.material.clone(); cache.set(m.material, c); B.mats.push(c); } m.material = c; }); };

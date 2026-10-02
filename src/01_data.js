@@ -18,9 +18,9 @@ const CFG = {
 //   rateMax/spinUp/fireSlow — раскрутка и замедление при стрельбе (пулемёт); heavy — пуля-"рельса" (револьвер)
 const WEAPONS = {
   shotgun:  { name:'Дробовик',  desc:'Веер дроби, сильно отталкивает. Бесполезен издалека.',
-              dmg:6,  rate:1.1, mag:4,   reload:1.7, pellets:6, spread:0.45, speed:12, life:0.38, pierce:0,  knock:0.5,  fan:false },
+              dmg:25, rate:1.1, mag:4,   reload:1.7, pellets:6, spread:0.45, speed:12, life:0.38, pierce:0,  knock:0.5,  fan:false },
   sawnoff:  { name:'Обрез',     desc:'Два выстрела огромным веером. Ударная волна раскидывает толпу, отдача отбрасывает тебя назад.',
-              dmg:7,  rate:4,   mag:2,   reload:1.4, pellets:9, spread:0.8,  speed:11, life:0.3,  pierce:0,  knock:1.44,  fan:false, selfKnock:5 },
+              dmg:25, rate:4,   mag:2,   reload:1.4, pellets:9, spread:0.8,  speed:11, life:0.3,  pierce:0,  knock:1.44,  fan:false, selfKnock:5 },
   rifle:    { name:'Автомат',   desc:'Длинные очереди. Чем дольше жмёшь, тем сильнее разброс.',
               dmg:7,  rate:9,   mag:30,  reload:2.0, pellets:1, spread:0.03, speed:16, life:0.6,  pierce:0,  knock:0.1,  fan:true, bloom:0.025, bloomMax:0.32 },
   // пулемёт: урон 5, раскрутка до 11, перезарядка 4 с. База (батч 2): нет рывка на Shift, ходьба −15%, при стрельбе ещё −30%

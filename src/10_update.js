@@ -8,9 +8,14 @@ function moveEntity(e, dx, dz, r) {
   if (fl > e.y) { e.y = fl; e.vy = 0; }                          // шаг на ступеньку
   return moved;
 }
+const FALL_V = 9.5;                                    // скорость приземления, с которой больно (~2 м падения: с крыши этажа и выше)
+function fallHurt(p) {
+  dust(p.x, p.y + 0.1, p.z, 0xb0a690, 8); SFX.thump(); shake = Math.max(shake, 0.2); rumble(p, 0.6, 140);
+  if (p.inv <= 0) { hurtPlayer(p); p.inv = Math.max(p.inv, 0.6); }
+}
 function gravity(e, dt, r) {
   const fl = floorAt(e.x, e.z, e.y, r * 0.6);
-  if (e.y > fl + 1e-3 || e.vy > 0) { e.vy -= 22 * dt; e.y = Math.max(fl, e.y + e.vy * dt); if (e.y <= fl) e.vy = 0; } else { e.y = fl; e.vy = 0; }
+  if (e.y > fl + 1e-3 || e.vy > 0) { e.vy -= 22 * dt; e.y = Math.max(fl, e.y + e.vy * dt); if (e.y <= fl) { if (e.vy < -FALL_V && e.idx !== undefined && !e.down && G.state === 'play') fallHurt(e); e.vy = 0; } } else { e.y = fl; e.vy = 0; }
 }
 let shake = 0;
 function updatePlayer(p, dt) {

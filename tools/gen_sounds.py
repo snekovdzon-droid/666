@@ -7,22 +7,15 @@ root = pathlib.Path(__file__).resolve().parent.parent
 out = root / 'assets' / 'sounds'; out.mkdir(parents=True, exist_ok=True)
 S1 = "Snake's Authentic Gun Sounds"; S2 = "Snake's SECOND Authentic Gun Sounds"
 R1 = S1 + "/Reloads, Cycling & More/WAV/"
+# Только одиночные выстрелы (очереди и Spray в начале дают «очередь» на один выстрел).
 # имя: (файл, начало, длина, затухание в конце)
 M = {
   'rifle_1': (S1 + "/Isolated/5.56/WAV/556 Single Isolated WAV.wav", 0, 0.6, 0.3),
-  'rifle_2': (S1 + "/Isolated/5.56/WAV/556 Spray Isolated WAV.wav", 0, 0.6, 0.3),
-  'rifle_3': (S1 + "/Isolated/5.56/WAV/556 Burst Isolated WAV.wav", 0, 0.6, 0.3),
   'mg_1': (S1 + "/Isolated/7.62x39/WAV/762x39 Single Isolated WAV.wav", 0, 0.55, 0.3),
-  'mg_2': (S1 + "/Isolated/7.62x39/WAV/762x39 Spray Isolated WAV.wav", 0, 0.55, 0.3),
-  'mg_3': (S1 + "/Isolated/7.62x39/WAV/762x39 Burst Isolated WAV.wav", 0, 0.55, 0.3),
   'smg_1': (S2 + "/Isolated/9mm/WAV/9mm Single Isolated.wav", 0, 0.45, 0.25),
-  'smg_2': (S2 + "/Isolated/9mm/WAV/9mm Spray Isolated.wav", 0, 0.45, 0.25),
-  'smg_3': (S2 + "/Isolated/9mm/WAV/9mm Burst Isolated.wav", 0, 0.45, 0.25),
   'revolver_1': (S1 + "/Isolated/7.62x54R/WAV/762x54r Single Isolated WAV.wav", 0, 0.95, 0.5),
   'revolver_2': (S2 + "/Isolated/.308 (7.62x51)/WAV/308 Single Isolated.wav", 0, 0.95, 0.5),
   'shotgun_1': (S2 + "/Isolated/20 Gauge/WAV/20 Gauge Single Isolated.wav", 0, 1.0, 0.5),
-  'shotgun_2': (S2 + "/Isolated/20 Gauge/WAV/20 Gauge Slow Burst Isolated.wav", 0, 1.0, 0.5),
-  'sawnoff_1': (S2 + "/Isolated/20 Gauge/WAV/20 Gauge Double Tap Isolated.wav", 0, 1.3, 0.6),
   'dry': ("assault rifle/pistol-dry-fire.wav", 0, 0.4, 0.1),
   'rifle_start': (R1 + "AR Reload Part 1 WAV.wav", 0, 0.56, 0.05),
   'rifle_end': (R1 + "AR Reload Part 2 WAV.wav", 0, 1.06, 0.05),
