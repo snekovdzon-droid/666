@@ -69,7 +69,7 @@ function abilHtml(p) {
   if (hl) { const cd = HOOK_CD[hl - 1], left = Math.max(0, p.hookCd || 0); chip('hook', 'Крюк-кошка', K.hook, left <= 0, left / cd, left > 0 ? Math.ceil(left) : '', 0, 0); }
   return out.join('');
 }
-const devState = (p, id) => id === 'hook' ? '' : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
+const devState = (p, id) => id === 'hook' ? '' : id === 'inject' ? (p.injReady ? '✓' : '—') : '';
 const __devStateOld = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
 
 /* --- радар: вид сверху, повёрнут как камера --- */

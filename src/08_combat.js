@@ -512,7 +512,7 @@ function updateGems(dt, T) {
     const p = nearestAlive(g.x, g.z);
     if (p && G.state === 'play') {
       const dx = p.x - g.x, dz = p.z - g.z, dy = p.y + 0.4 - g.y, d = Math.hypot(dx, dz);
-      if (d < CFG.PICKUP_R * p.st.pickup * (1 + 0.5 * Math.min(2, devLv(p, 'magnet'))) && Math.abs(dy) < 1.6) g.pull = true;   // «Магнитный пояс» +50% / +100%
+      if (d < CFG.PICKUP_R * p.st.pickup && Math.abs(dy) < 1.6) g.pull = true;   // «Магнитный пояс» +50% / +100%
       if (g.pull && d > 0.001) { const s = Math.min(d, 9 * dt); g.x += dx / d * s; g.z += dz / d * s; g.y += dy * Math.min(1, 9 * dt); g.vy = 0; }
       if (d < 0.35 && Math.abs(dy) < 1) { gems.splice(i, 1); addXp(g.v); SFX.pickup(); continue; }
     }

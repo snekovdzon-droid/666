@@ -245,7 +245,7 @@ const CAM_MAX = 12;                                      // дальше это�
 function camTargets() { return players; }               // и упавших держим в кадре — чтобы напарник мог поднять
 function camCenter() { const f = camTargets(); let x = 0, z = 0, y = 0; for (const p of f) { x += p.x; z += p.z; y += p.y; } return { x: x / f.length, z: z / f.length, y: y / f.length }; }
 // экранные оси на земле: вправо (cos, −sin), в глубину (sin, cos)
-function scrOff(dx, dz) { const c = Math.cos(CAM.yaw), s = Math.sin(CAM.yaw); return [dx * c - dz * s, dx * s + dz * c]; }
+function scrOff(dx, dz, yaw = CAM.yaw) { const c = Math.cos(yaw), s = Math.sin(yaw); return [dx * c - dz * s, dx * s + dz * c]; }
 function tether() {
   if (players.length < 2) return;
   const C = camCenter(), a = innerWidth / innerHeight, sp = Math.sin(CAM.pitch);
@@ -274,10 +274,13 @@ function updateRevive(dt) {
 }
 /* ---------- Раздельный экран (кооп): у каждого игрока своя камера и своя часть окна ---------- */
 const SPLIT = { on: false, views: [], hs: 1 };
+// поворот камеры игрока: в раздельном экране — только его вид, иначе общий
+const yawOf = p => { const v = SPLIT.on && p ? viewFor(p) : null; return v ? v.yaw : CAM.yaw; };
+function rotCam(p, dir) { const v = SPLIT.on && p && G.state === 'play' ? viewFor(p) : null; if (v) v.yawT += dir * Math.PI / 2; else CAM.yawT += dir * Math.PI / 2; }
 function viewFor(p) { return SPLIT.views.find(v => v.p === p) || null; }
 function splitStart() {
   SPLIT.on = !!G.split && players.length > 1 && !IS_TOUCH;
-  SPLIT.views = SPLIT.on ? players.map(p => ({ p, x: p.x, z: p.z, y: p.y * 0.5, kx: 0, kz: 0, rect: null, cp: new THREE.Vector3(), vm: new THREE.Matrix4(), pm: new THREE.Matrix4() })) : [];
+  SPLIT.views = SPLIT.on ? players.map(p => ({ p, yaw: CAM.yaw, yawT: CAM.yawT, x: p.x, z: p.z, y: p.y * 0.5, kx: 0, kz: 0, rect: null, cp: new THREE.Vector3(), vm: new THREE.Matrix4(), pm: new THREE.Matrix4() })) : [];
   document.body.classList.toggle('split', SPLIT.on); splitLayout();
 }
 function splitEnd() { SPLIT.on = false; SPLIT.views = []; document.body.classList.remove('split'); const el = $('splitLines'); if (el) el.style.display = 'none'; }
@@ -291,9 +294,9 @@ function splitLayout() {
 }
 addEventListener('resize', splitLayout);
 // камера по виду: кадр, свет, тени
-function placeCam(cx, cy, cz, sx, sz, aspect, h, shift) {
+function placeCam(cx, cy, cz, sx, sz, aspect, h, shift, yaw = CAM.yaw) {
   const D = 40, cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
-  cam.position.set(cx + Math.sin(CAM.yaw) * cp * D + sx, cy + sp * D, cz + Math.cos(CAM.yaw) * cp * D + sz);
+  cam.position.set(cx + Math.sin(yaw) * cp * D + sx, cy + sp * D, cz + Math.cos(yaw) * cp * D + sz);
   cam.lookAt(cx + sx, cy, cz + sz);
   cam.left = -h * aspect - shift; cam.right = h * aspect - shift; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
   sun.position.set(cx - 14, 26, cz - 10); sun.target.position.set(cx, 0, cz);
@@ -306,12 +309,13 @@ function leadStep(p, dt) {
 }
 function placeViewCam(v) {
   let sx = v.kx + (v.p.lx || 0), sz = v.kz + (v.p.lz || 0); if (shake > 0) { sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
-  placeCam(v.x, v.y, v.z, sx, sz, v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs, 0); v.cp.copy(cam.position);
+  placeCam(v.x, v.y, v.z, sx, sz, v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs, 0, v.yaw); v.cp.copy(cam.position);
 }
 function updateSplitCams(dt) {
   CAM.zoom += (CAM.zoomT - CAM.zoom) * Math.min(1, dt * 4);
   if (shake > 0) shake -= dt;
   for (const p of players) leadStep(p, dt);
+  for (const v of SPLIT.views) v.yaw += (v.yawT - v.yaw) * Math.min(1, dt * 8);                // у каждого игрока свой поворот экрана
   const kd = Math.exp(-16 * dt), k = Math.min(1, dt * 6); let ax = 0, az = 0, sd = 0;
   for (const v of SPLIT.views) {
     v.x += (v.p.x - v.x) * k; v.z += (v.p.z - v.z) * k; v.y += (v.p.y * 0.5 - v.y) * k; v.kx *= kd; v.kz *= kd; ax += v.p.x; az += v.p.z;

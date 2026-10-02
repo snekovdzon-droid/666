@@ -12,8 +12,8 @@ addEventListener('keydown', e => {
   if (G.state === 'menu') { menuKey(e.code); return; }
   if (G.state === 'levelup') { lvKey(e.code); return; }
   if (G.state === 'end') { if (e.code === 'Enter' || e.code === 'Space') restartRun(); if (e.code === 'Escape') toMenu(); return; }
-  if (e.code === 'KeyQ') CAM.yawT += Math.PI / 2;
-  if (e.code === 'KeyE') CAM.yawT -= Math.PI / 2;
+  if (e.code === 'KeyQ') rotCam(players.find(q => q.ctrl === 'kbm' || q.ctrl === 'all'), 1);
+  if (e.code === 'KeyE') rotCam(players.find(q => q.ctrl === 'kbm' || q.ctrl === 'all'), -1);
   if (e.code === 'KeyN') G.nightT = G.nightT > 0.5 ? 0 : 1;
   if (e.code === 'KeyR') act.reload = true;
   if (e.code === 'Enter' || e.code === 'NumpadEnter') act.reload2 = true;
@@ -97,7 +97,7 @@ function pollPad(dt) {
     else if (G.state === 'maps') { if (v) mapPickKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mapPickKey('Enter'); if (any(1)) mapPickKey('Escape'); }
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
-    if (any(4)) CAM.yawT += Math.PI / 2; if (any(5)) CAM.yawT -= Math.PI / 2;
+    for (const [gi, s] of PADS) { const own = players.find(q => (q.ctrl === 'pad' && q.pad === gi) || q.ctrl === 'all'); if (s.just[4]) rotCam(own, 1); if (s.just[5]) rotCam(own, -1); }   // у каждого геймпада — свой экран
     if (any(8)) G.nightT = G.nightT > 0.5 ? 0 : 1;
     if (any(9)) G.paused = !G.paused;
   }
@@ -110,7 +110,7 @@ function rumble(p, s = 0.6, ms = 120) {
 addEventListener('mousemove', () => { PAD.active = false; });
 addEventListener('keydown', () => { PAD.active = false; });
 // экранное направление → мировое (с учётом поворота камеры)
-function screenToWorld(ix, iz) { const cy = Math.cos(CAM.yaw), sy = Math.sin(CAM.yaw); return [ix * cy + iz * sy, -ix * sy + iz * cy]; }
+function screenToWorld(ix, iz, yaw = CAM.yaw) { const cy = Math.cos(yaw), sy = Math.sin(yaw); return [ix * cy + iz * sy, -ix * sy + iz * cy]; }
 // Кто чем управляет: 1 игрок — всё сразу; в коопе — геймпады, а если их не хватает — клавиатура+мышь и стрелки
 function assignControls(n) {
   if (n === 1) return [{ ctrl: 'all' }];
@@ -148,10 +148,10 @@ function readControl(p) {
     if (s.just[6]) alt = true;                                           // LT — подствольник                                          // A — крюк-кошка
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;
     manual = true; auto = true; fire = fire || s.fire;
-    if (Math.hypot(s.rx, s.ry) > 0.35) { const [wx, wz] = screenToWorld(s.rx, s.ry), l = Math.hypot(wx, wz); aim = [wx / l, wz / l]; }
+    if (Math.hypot(s.rx, s.ry) > 0.35) { const [wx, wz] = screenToWorld(s.rx, s.ry, yawOf(p)), l = Math.hypot(wx, wz); aim = [wx / l, wz / l]; }
   }
   const l = Math.hypot(ix, iz); if (l > 1) { ix /= l; iz /= l; }
-  const [wx, wz] = screenToWorld(ix, iz);
+  const [wx, wz] = screenToWorld(ix, iz, yawOf(p));
   return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? null : fire, reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
 }
 

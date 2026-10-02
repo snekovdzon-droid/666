@@ -620,7 +620,6 @@ Object.assign(ITEM_VIS, {
   smoke:    { muz: 0.1,  parts: [[0x8a8a8a, 0, 0, 0.08, 0.08, 0.15, 0.08], [0x5a5a5a, 0, 0.09, 0.08, 0.05, 0.03, 0.05]] },
   canister: { muz: 0.18, parts: [[0xb83a2a, 0, -0.02, 0.1, 0.14, 0.2, 0.2], [0x2a2a2a, 0, 0.1, 0.18, 0.03, 0.05, 0.03], [0x8a2a1a, 0, 0.11, 0.06, 0.1, 0.03, 0.03]] },
   medkit:   { muz: 0.1,  parts: [[0xe8e2d4, 0, 0, 0.1, 0.18, 0.13, 0.08], [0xc83030, 0, 0, 0.1, 0.12, 0.035, 0.085], [0xc83030, 0, 0, 0.1, 0.035, 0.1, 0.085]] },
-  armor:    { muz: 0.1,  parts: [[0x3a4a6a, 0, 0, 0.1, 0.2, 0.22, 0.06], [0x2a3450, 0, 0.08, 0.1, 0.16, 0.03, 0.065]] },
 });
 Object.assign(ITEM_SHORT, { flash: 'СВЕТОШ', claymore: 'КЛЕЙМ', trap: 'КАПКАН', sandbags: 'МЕШКИ', smoke: 'ДЫМ', canister: 'КАНИСТ', medkit: 'АПТЕЧ', armor: 'БРОНЯ' });
 const ahead = (p, d) => { let x = p.x + Math.sin(p.yaw) * d, z = p.z + Math.cos(p.yaw) * d; if (blocked(x, z, p.y, 0.25)) { x = p.x; z = p.z; } return [x, floorAt(x, z, p.y + 0.3), z]; };
@@ -639,10 +638,6 @@ function useItem2(p, id, S) {
     if (down) { down.reviveT = CFG.REVIVE_TIME; toast(p, 'Напарник поднят', '#9ff0a0'); return true; }
     if (p.hp >= p.maxHp) { toast(p, 'Здоров — аптечка не нужна', '#aaa'); return false; }
     p.hp = Math.min(p.maxHp, p.hp + S.heal); SFX.level(); healFx(p); return true;
-  }
-  if (id === 'armor') {
-    if ((p.armor || 0) >= 3) { toast(p, 'Бронежилет и так полный', '#aaa'); return false; }
-    p.armor = Math.min(3, (p.armor || 0) + S.blue); SFX.shield(); return true;
   }
   return true;
 }
@@ -930,7 +925,7 @@ function updateDog(p, dt) {
       if (d.t > 0.45) { d.st = 'follow'; d.tgt = null; }
     }
     if (d.st === 'follow') {                                  // в покое: справа от героя на экране, шагом
-      const c = Math.cos(CAM.yaw), s = Math.sin(CAM.yaw); tx = p.x + c * 0.95; tz = p.z - s * 0.95;
+      const yw = yawOf(p), c = Math.cos(yw), s = Math.sin(yw); tx = p.x + c * 0.95; tz = p.z - s * 0.95;
       sp = clamp(Math.hypot(tx - d.x, tz - d.z) * 4, 0, 6.5);
     }
   }
@@ -950,17 +945,10 @@ function updateDog(p, dt) {
   d.legs.forEach((m, i) => { m.rotation.x = Math.sin(d.ph + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * sw; });
   d.tail.rotation.y = Math.sin(G.t * (d.moving ? 10 : 5)) * 0.4; d.head.rotation.x = d.st === 'bite' ? Math.sin(G.t * 30) * 0.2 : 0;
 }
-/* ---- Магнитный пояс: ящики и предметы с земли ---- */
-function updateMagnet(p, dt) {
-  if (devLv(p, 'magnet') < 3 || p.down) return;
-  const pull = o => { const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz); if (d < 4 && d > 0.3 && Math.abs(o.y - p.y) < 1.5) { const s = Math.min(d, 4 * dt); o.x += dx / d * s; o.z += dz / d * s; o.g.position.x = o.x; o.g.position.z = o.z; } };
-  for (const c of CRATES) pull(c);
-  for (const g of GITEMS) if (pouchN(p) < pouchCap(p) && p.known[g.id]) pull(g);
-}
 /* ---- Автоинжектор: вызывается из hurtPlayer, когда сердца кончились ---- */
 function tryInject(p) {
   const lv = devLv(p, 'inject'); if (!lv || !p.injReady) return false;
-  p.injReady = false; p.injT = lv >= 3 ? 240 : -1; p.hp = lv >= 2 ? 2 : 1; p.inv = 2.5;
+  p.injReady = false; p.hp = 1; p.inv = 2.5;                      // одноразовый
   SFX.level(); healFx(p); toast(p, 'Автоинжектор!', '#9ff0a0'); return true;
 }
 /* ---- Тесла-ранец ---- */
@@ -1010,8 +998,7 @@ function updateDevices(dt) {
   updateAttach(dt);
   for (const p of players) {
     if (!p.dev) continue;
-    if (p.injT > 0 && (p.injT -= dt) <= 0) { p.injReady = true; toast(p, 'Автоинжектор заряжен', '#9ff0a0'); }
-    updateDrone(p, dt); updateDog(p, dt); updateMagnet(p, dt); updateTesla(p, dt);
+    updateDrone(p, dt); updateDog(p, dt); updateTesla(p, dt);
   }
 }
 function clearDevices() {
@@ -1033,7 +1020,7 @@ function updateAttach(dt) {
     let v = ATTV.get(p);
     if (!v && (p.att.laser || p.att.light)) { v = {}; ATTV.set(p, v); }
     if (!v) continue;
-    const show = !p.down && !p.hand && G.state !== 'menu', mz = show ? muzzleOf(p) : null;
+    const show = !p.down && !p.hand && !p.climb && !p.hookAnim && G.state !== 'menu', mz = show ? muzzleOf(p) : null;   // на лестнице и в рывке крюком луч скрыт
     if (p.att.laser) {                                                    // луч до первой цели или стены
       if (!v.beam) { v.beam = new THREE.Mesh(boxGeo, laserMat); scene.add(v.beam); }
       v.beam.visible = show;

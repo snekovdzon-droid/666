@@ -51,13 +51,14 @@ function updateClimb(p, c, dt) {
   }
   for (const L of LADS) {
     const onTop = Math.abs(p.y - L.H) < 0.15 && Math.hypot(p.x - L.lx, p.z - L.lz) < 0.7, onBase = p.y < 0.3 && Math.hypot(p.x - L.bx, p.z - L.bz) < 0.65;
-    if (!onTop && !onBase) { L.hold = 0; continue; }
-    if (onBase && !L.seen && !(p.msgT > 0)) { L.seen = true; toast(p, 'Лестница: иди к стене, чтобы залезть', '#bfe0ff'); }
+    if (!onTop && !onBase) continue;
+    if (onBase && !p.ladSeen && !(p.msgT > 0)) { p.ladSeen = true; toast(p, 'Лестница: иди к стене, чтобы залезть', '#bfe0ff'); }
     const want = onBase ? dx * -L.nx + dz * -L.nz : dx * L.nx + dz * L.nz;       // вверх — в стену; вниз — к краю крыши у лестницы
     if (mv && want > 0.65) {
-      L.hold += dt;
-      if (L.hold > (onBase ? 0.12 : 0.25)) { L.hold = 0; p.climb = { L, dir: onBase ? 1 : -1 }; if (!onBase) p.y = L.H - 0.05; return true; }
-    } else L.hold = 0;
+      if (p.lhL !== L) { p.lhL = L; p.lhold = 0; }                              // удержание у лестницы — у каждого игрока своё
+      p.lhold = (p.lhold || 0) + dt;
+      if (p.lhold > (onBase ? 0.12 : 0.25)) { p.lhold = 0; p.climb = { L, dir: onBase ? 1 : -1 }; if (!onBase) p.y = L.H - 0.05; return true; }
+    } else p.lhold = 0;
   }
   return false;
 }

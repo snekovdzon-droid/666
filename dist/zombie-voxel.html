@@ -411,20 +411,17 @@ const ITEMS = {
               stat: lv => ({ fuel: 3.5 + lv * 0.5, dps: 10 + lv * 3, burn: 4 + lv * 0.4 }) },
   medkit:   { name:'Аптечка', short:'АПТЕЧКА', desc:'Лечит сердце. Рядом лежит напарник — сразу поднимает его',
               stat: lv => ({ heal: lv >= 5 ? 3 : lv >= 3 ? 2 : 1 }) },
-  armor:    { name:'Бронежилет', short:'БРОНЯ', desc:'Синее сердце: принимает укус первым (до 3)',
-              stat: lv => ({ blue: lv >= 5 ? 3 : lv >= 3 ? 2 : 1 }) },
 };
 const ITEM_IDS = Object.keys(ITEMS);
 // Девайсы (батч 7): пассивные помощники, 3 уровня, берутся карточками в свободный слот (1, «Второй девайс» +1, Техник 2, «Тактика» +1)
 const DEVICES = {
   drone:  { name:'Дрон',            lv:['Летает рядом и стреляет по ближайшему (4 урона, 2 в секунду)', 'Прожектор и темп 3 в секунду', 'Собирает опыт вокруг тебя с 6 клеток'] },
   dog:    { name:'Собака',          lv:['Овчарка ходит справа от тебя, раз в 10 с бросается на слабого зомби и убивает его. В коопе отгоняет врагов от упавшего', 'Подбирает опыт вокруг тебя с 6 клеток', 'Бросается и на сильных (не на босса) и оглушает их на 2,5 с', 'Укус вызывает у сильных кровотечение (не у босса)'] },
-  magnet: { name:'Магнитный пояс',  lv:['Опыт притягивается с +50% расстояния', '+100%', 'Притягивает и ящики, и предметы с земли (4 клетки)'] },
-  inject: { name:'Автоинжектор',    lv:['Один раз спасает от смерти: встаёшь с 1 сердцем', 'Встаёшь с 2 сердцами', 'Перезаряжается за 4 минуты'] },
+  inject: { name:'Автоинжектор',    lv:['Один раз за забег воскрешает с 1 сердцем, когда сердца кончились'] },
   hook:   { name:'Крюк-кошка',      lv:['Рывок крюком туда, куда смотришь (G / A / кнопка), перезарядка 1 мин', 'Перезарядка 45 с', 'Крюк цепляется за крыши — забираешься наверх; перезарядка 30 с'] },
   tesla:  { name:'Тесла-ранец',     lv:['Редкая мощная молния по ближайшему зомби раз в 6 с (50 урона)', 'Молния прыгает ещё на двоих', 'Раз в 4 с, прыгает на четверых'] },
 };
-const DEV_IDS = Object.keys(DEVICES), DEV_MAX = 3, devMaxOf = id => id === 'dog' ? 4 : DEV_MAX;   // у собаки четыре уровня
+const DEV_IDS = Object.keys(DEVICES), DEV_MAX = 3, devMaxOf = id => id === 'dog' ? 4 : id === 'inject' ? 1 : DEV_MAX;   // у собаки четыре уровня
 // Обвесы (батч 8): только плюсы, можно поставить все, получаются в забеге (карточки и большие ящики), видны на стволе
 const ATTACH = {
   laser:  { name:'ЛЦУ',                desc:'Лазерный целеуказатель: разброс −30%, луч показывает, куда летят пули' },
@@ -451,6 +448,7 @@ const PERKS = [
   { id:'knock',  br:'gen', name:'Тяжёлый калибр',    desc:'Отталкивание +40%',        max:5, apply:p=>p.st.knock*=1.4 },
   { id:'pouch',     br:'gen', name:'Расширенный подсумок', desc:'Подсумок для предметов: 2 → 4 → 6 зарядов', max:2 },
   { id:'devslot',   br:'gen', name:'Второй девайс',      desc:'+1 слот под девайс', max:1 },
+  { id:'armor',     br:'gen', name:'Бронежилет',         desc:'Одно синее сердце: принимает первый укус вместо тебя', max:1, apply:p=>{ p.armor = (p.armor || 0) + 1; } },
   { id:'fireproof', br:'gen', name:'Огнеупорный костюм', desc:'Граната, огонь и колючка — твои и напарника — тебя не ранят', max:1 },
   { id:'looter',    br:'gen', name:'Мародёр',            desc:'Ящики с зомби падают вдвое чаще', max:1 },
   { id:'skin',      br:'gen', name:'Толстая кожа',       desc:'Неуязвимость после удара +50%', max:2 },
@@ -2029,7 +2027,9 @@ pSoft.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pSoft.instanceColor = new
 pLit.castShadow = false;                              // тени от дыма и крошек дорогие, почти не видны
 const parts = [], _c2 = new THREE.Color();
 let pOvf = 0;
-function spawnP(o) { if (QS.fx < 1 && Math.random() > QS.fx) return; if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
+// Дым = растущая негорящая частица серого цвета: весь дым в игре рисуется полупрозрачным (30%)
+function isSmoke(o) { if (o.soft !== undefined) return o.soft; if (o.glow || o.s1 == null || o.s1 < o.s * 1.7 || o.col === undefined) return false; const r = (o.col >> 16) & 255, g = (o.col >> 8) & 255, b = o.col & 255; return Math.max(r, g, b) - Math.min(r, g, b) < 40; }
+function spawnP(o) { if (QS.fx < 1 && Math.random() > QS.fx) return; o.soft = isSmoke(o); if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
 function updateParts(dt) {
   let nl = 0, ng = 0, ns = 0;
   for (let i = parts.length - 1; i >= 0; i--) {
@@ -2528,8 +2528,8 @@ addEventListener('keydown', e => {
   if (G.state === 'menu') { menuKey(e.code); return; }
   if (G.state === 'levelup') { lvKey(e.code); return; }
   if (G.state === 'end') { if (e.code === 'Enter' || e.code === 'Space') restartRun(); if (e.code === 'Escape') toMenu(); return; }
-  if (e.code === 'KeyQ') CAM.yawT += Math.PI / 2;
-  if (e.code === 'KeyE') CAM.yawT -= Math.PI / 2;
+  if (e.code === 'KeyQ') rotCam(players.find(q => q.ctrl === 'kbm' || q.ctrl === 'all'), 1);
+  if (e.code === 'KeyE') rotCam(players.find(q => q.ctrl === 'kbm' || q.ctrl === 'all'), -1);
   if (e.code === 'KeyN') G.nightT = G.nightT > 0.5 ? 0 : 1;
   if (e.code === 'KeyR') act.reload = true;
   if (e.code === 'Enter' || e.code === 'NumpadEnter') act.reload2 = true;
@@ -2613,7 +2613,7 @@ function pollPad(dt) {
     else if (G.state === 'maps') { if (v) mapPickKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mapPickKey('Enter'); if (any(1)) mapPickKey('Escape'); }
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
-    if (any(4)) CAM.yawT += Math.PI / 2; if (any(5)) CAM.yawT -= Math.PI / 2;
+    for (const [gi, s] of PADS) { const own = players.find(q => (q.ctrl === 'pad' && q.pad === gi) || q.ctrl === 'all'); if (s.just[4]) rotCam(own, 1); if (s.just[5]) rotCam(own, -1); }   // у каждого геймпада — свой экран
     if (any(8)) G.nightT = G.nightT > 0.5 ? 0 : 1;
     if (any(9)) G.paused = !G.paused;
   }
@@ -2626,7 +2626,7 @@ function rumble(p, s = 0.6, ms = 120) {
 addEventListener('mousemove', () => { PAD.active = false; });
 addEventListener('keydown', () => { PAD.active = false; });
 // экранное направление → мировое (с учётом поворота камеры)
-function screenToWorld(ix, iz) { const cy = Math.cos(CAM.yaw), sy = Math.sin(CAM.yaw); return [ix * cy + iz * sy, -ix * sy + iz * cy]; }
+function screenToWorld(ix, iz, yaw = CAM.yaw) { const cy = Math.cos(yaw), sy = Math.sin(yaw); return [ix * cy + iz * sy, -ix * sy + iz * cy]; }
 // Кто чем управляет: 1 игрок — всё сразу; в коопе — геймпады, а если их не хватает — клавиатура+мышь и стрелки
 function assignControls(n) {
   if (n === 1) return [{ ctrl: 'all' }];
@@ -2664,10 +2664,10 @@ function readControl(p) {
     if (s.just[6]) alt = true;                                           // LT — подствольник                                          // A — крюк-кошка
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;
     manual = true; auto = true; fire = fire || s.fire;
-    if (Math.hypot(s.rx, s.ry) > 0.35) { const [wx, wz] = screenToWorld(s.rx, s.ry), l = Math.hypot(wx, wz); aim = [wx / l, wz / l]; }
+    if (Math.hypot(s.rx, s.ry) > 0.35) { const [wx, wz] = screenToWorld(s.rx, s.ry, yawOf(p)), l = Math.hypot(wx, wz); aim = [wx / l, wz / l]; }
   }
   const l = Math.hypot(ix, iz); if (l > 1) { ix /= l; iz /= l; }
-  const [wx, wz] = screenToWorld(ix, iz);
+  const [wx, wz] = screenToWorld(ix, iz, yawOf(p));
   return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? null : fire, reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
 }
 
@@ -3231,7 +3231,7 @@ function updateGems(dt, T) {
     const p = nearestAlive(g.x, g.z);
     if (p && G.state === 'play') {
       const dx = p.x - g.x, dz = p.z - g.z, dy = p.y + 0.4 - g.y, d = Math.hypot(dx, dz);
-      if (d < CFG.PICKUP_R * p.st.pickup * (1 + 0.5 * Math.min(2, devLv(p, 'magnet'))) && Math.abs(dy) < 1.6) g.pull = true;   // «Магнитный пояс» +50% / +100%
+      if (d < CFG.PICKUP_R * p.st.pickup && Math.abs(dy) < 1.6) g.pull = true;   // «Магнитный пояс» +50% / +100%
       if (g.pull && d > 0.001) { const s = Math.min(d, 9 * dt); g.x += dx / d * s; g.z += dz / d * s; g.y += dy * Math.min(1, 9 * dt); g.vy = 0; }
       if (d < 0.35 && Math.abs(dy) < 1) { gems.splice(i, 1); addXp(g.v); SFX.pickup(); continue; }
     }
@@ -3870,7 +3870,6 @@ Object.assign(ITEM_VIS, {
   smoke:    { muz: 0.1,  parts: [[0x8a8a8a, 0, 0, 0.08, 0.08, 0.15, 0.08], [0x5a5a5a, 0, 0.09, 0.08, 0.05, 0.03, 0.05]] },
   canister: { muz: 0.18, parts: [[0xb83a2a, 0, -0.02, 0.1, 0.14, 0.2, 0.2], [0x2a2a2a, 0, 0.1, 0.18, 0.03, 0.05, 0.03], [0x8a2a1a, 0, 0.11, 0.06, 0.1, 0.03, 0.03]] },
   medkit:   { muz: 0.1,  parts: [[0xe8e2d4, 0, 0, 0.1, 0.18, 0.13, 0.08], [0xc83030, 0, 0, 0.1, 0.12, 0.035, 0.085], [0xc83030, 0, 0, 0.1, 0.035, 0.1, 0.085]] },
-  armor:    { muz: 0.1,  parts: [[0x3a4a6a, 0, 0, 0.1, 0.2, 0.22, 0.06], [0x2a3450, 0, 0.08, 0.1, 0.16, 0.03, 0.065]] },
 });
 Object.assign(ITEM_SHORT, { flash: 'СВЕТОШ', claymore: 'КЛЕЙМ', trap: 'КАПКАН', sandbags: 'МЕШКИ', smoke: 'ДЫМ', canister: 'КАНИСТ', medkit: 'АПТЕЧ', armor: 'БРОНЯ' });
 const ahead = (p, d) => { let x = p.x + Math.sin(p.yaw) * d, z = p.z + Math.cos(p.yaw) * d; if (blocked(x, z, p.y, 0.25)) { x = p.x; z = p.z; } return [x, floorAt(x, z, p.y + 0.3), z]; };
@@ -3889,10 +3888,6 @@ function useItem2(p, id, S) {
     if (down) { down.reviveT = CFG.REVIVE_TIME; toast(p, 'Напарник поднят', '#9ff0a0'); return true; }
     if (p.hp >= p.maxHp) { toast(p, 'Здоров — аптечка не нужна', '#aaa'); return false; }
     p.hp = Math.min(p.maxHp, p.hp + S.heal); SFX.level(); healFx(p); return true;
-  }
-  if (id === 'armor') {
-    if ((p.armor || 0) >= 3) { toast(p, 'Бронежилет и так полный', '#aaa'); return false; }
-    p.armor = Math.min(3, (p.armor || 0) + S.blue); SFX.shield(); return true;
   }
   return true;
 }
@@ -4180,7 +4175,7 @@ function updateDog(p, dt) {
       if (d.t > 0.45) { d.st = 'follow'; d.tgt = null; }
     }
     if (d.st === 'follow') {                                  // в покое: справа от героя на экране, шагом
-      const c = Math.cos(CAM.yaw), s = Math.sin(CAM.yaw); tx = p.x + c * 0.95; tz = p.z - s * 0.95;
+      const yw = yawOf(p), c = Math.cos(yw), s = Math.sin(yw); tx = p.x + c * 0.95; tz = p.z - s * 0.95;
       sp = clamp(Math.hypot(tx - d.x, tz - d.z) * 4, 0, 6.5);
     }
   }
@@ -4200,17 +4195,10 @@ function updateDog(p, dt) {
   d.legs.forEach((m, i) => { m.rotation.x = Math.sin(d.ph + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI : 0)) * sw; });
   d.tail.rotation.y = Math.sin(G.t * (d.moving ? 10 : 5)) * 0.4; d.head.rotation.x = d.st === 'bite' ? Math.sin(G.t * 30) * 0.2 : 0;
 }
-/* ---- Магнитный пояс: ящики и предметы с земли ---- */
-function updateMagnet(p, dt) {
-  if (devLv(p, 'magnet') < 3 || p.down) return;
-  const pull = o => { const dx = p.x - o.x, dz = p.z - o.z, d = Math.hypot(dx, dz); if (d < 4 && d > 0.3 && Math.abs(o.y - p.y) < 1.5) { const s = Math.min(d, 4 * dt); o.x += dx / d * s; o.z += dz / d * s; o.g.position.x = o.x; o.g.position.z = o.z; } };
-  for (const c of CRATES) pull(c);
-  for (const g of GITEMS) if (pouchN(p) < pouchCap(p) && p.known[g.id]) pull(g);
-}
 /* ---- Автоинжектор: вызывается из hurtPlayer, когда сердца кончились ---- */
 function tryInject(p) {
   const lv = devLv(p, 'inject'); if (!lv || !p.injReady) return false;
-  p.injReady = false; p.injT = lv >= 3 ? 240 : -1; p.hp = lv >= 2 ? 2 : 1; p.inv = 2.5;
+  p.injReady = false; p.hp = 1; p.inv = 2.5;                      // одноразовый
   SFX.level(); healFx(p); toast(p, 'Автоинжектор!', '#9ff0a0'); return true;
 }
 /* ---- Тесла-ранец ---- */
@@ -4260,8 +4248,7 @@ function updateDevices(dt) {
   updateAttach(dt);
   for (const p of players) {
     if (!p.dev) continue;
-    if (p.injT > 0 && (p.injT -= dt) <= 0) { p.injReady = true; toast(p, 'Автоинжектор заряжен', '#9ff0a0'); }
-    updateDrone(p, dt); updateDog(p, dt); updateMagnet(p, dt); updateTesla(p, dt);
+    updateDrone(p, dt); updateDog(p, dt); updateTesla(p, dt);
   }
 }
 function clearDevices() {
@@ -4283,7 +4270,7 @@ function updateAttach(dt) {
     let v = ATTV.get(p);
     if (!v && (p.att.laser || p.att.light)) { v = {}; ATTV.set(p, v); }
     if (!v) continue;
-    const show = !p.down && !p.hand && G.state !== 'menu', mz = show ? muzzleOf(p) : null;
+    const show = !p.down && !p.hand && !p.climb && !p.hookAnim && G.state !== 'menu', mz = show ? muzzleOf(p) : null;   // на лестнице и в рывке крюком луч скрыт
     if (p.att.laser) {                                                    // луч до первой цели или стены
       if (!v.beam) { v.beam = new THREE.Mesh(boxGeo, laserMat); scene.add(v.beam); }
       v.beam.visible = show;
@@ -4553,7 +4540,7 @@ const CAM_MAX = 12;                                      // дальше это�
 function camTargets() { return players; }               // и упавших держим в кадре — чтобы напарник мог поднять
 function camCenter() { const f = camTargets(); let x = 0, z = 0, y = 0; for (const p of f) { x += p.x; z += p.z; y += p.y; } return { x: x / f.length, z: z / f.length, y: y / f.length }; }
 // экранные оси на земле: вправо (cos, −sin), в глубину (sin, cos)
-function scrOff(dx, dz) { const c = Math.cos(CAM.yaw), s = Math.sin(CAM.yaw); return [dx * c - dz * s, dx * s + dz * c]; }
+function scrOff(dx, dz, yaw = CAM.yaw) { const c = Math.cos(yaw), s = Math.sin(yaw); return [dx * c - dz * s, dx * s + dz * c]; }
 function tether() {
   if (players.length < 2) return;
   const C = camCenter(), a = innerWidth / innerHeight, sp = Math.sin(CAM.pitch);
@@ -4582,10 +4569,13 @@ function updateRevive(dt) {
 }
 /* ---------- Раздельный экран (кооп): у каждого игрока своя камера и своя часть окна ---------- */
 const SPLIT = { on: false, views: [], hs: 1 };
+// поворот камеры игрока: в раздельном экране — только его вид, иначе общий
+const yawOf = p => { const v = SPLIT.on && p ? viewFor(p) : null; return v ? v.yaw : CAM.yaw; };
+function rotCam(p, dir) { const v = SPLIT.on && p && G.state === 'play' ? viewFor(p) : null; if (v) v.yawT += dir * Math.PI / 2; else CAM.yawT += dir * Math.PI / 2; }
 function viewFor(p) { return SPLIT.views.find(v => v.p === p) || null; }
 function splitStart() {
   SPLIT.on = !!G.split && players.length > 1 && !IS_TOUCH;
-  SPLIT.views = SPLIT.on ? players.map(p => ({ p, x: p.x, z: p.z, y: p.y * 0.5, kx: 0, kz: 0, rect: null, cp: new THREE.Vector3(), vm: new THREE.Matrix4(), pm: new THREE.Matrix4() })) : [];
+  SPLIT.views = SPLIT.on ? players.map(p => ({ p, yaw: CAM.yaw, yawT: CAM.yawT, x: p.x, z: p.z, y: p.y * 0.5, kx: 0, kz: 0, rect: null, cp: new THREE.Vector3(), vm: new THREE.Matrix4(), pm: new THREE.Matrix4() })) : [];
   document.body.classList.toggle('split', SPLIT.on); splitLayout();
 }
 function splitEnd() { SPLIT.on = false; SPLIT.views = []; document.body.classList.remove('split'); const el = $('splitLines'); if (el) el.style.display = 'none'; }
@@ -4599,9 +4589,9 @@ function splitLayout() {
 }
 addEventListener('resize', splitLayout);
 // камера по виду: кадр, свет, тени
-function placeCam(cx, cy, cz, sx, sz, aspect, h, shift) {
+function placeCam(cx, cy, cz, sx, sz, aspect, h, shift, yaw = CAM.yaw) {
   const D = 40, cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
-  cam.position.set(cx + Math.sin(CAM.yaw) * cp * D + sx, cy + sp * D, cz + Math.cos(CAM.yaw) * cp * D + sz);
+  cam.position.set(cx + Math.sin(yaw) * cp * D + sx, cy + sp * D, cz + Math.cos(yaw) * cp * D + sz);
   cam.lookAt(cx + sx, cy, cz + sz);
   cam.left = -h * aspect - shift; cam.right = h * aspect - shift; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
   sun.position.set(cx - 14, 26, cz - 10); sun.target.position.set(cx, 0, cz);
@@ -4614,12 +4604,13 @@ function leadStep(p, dt) {
 }
 function placeViewCam(v) {
   let sx = v.kx + (v.p.lx || 0), sz = v.kz + (v.p.lz || 0); if (shake > 0) { sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
-  placeCam(v.x, v.y, v.z, sx, sz, v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs, 0); v.cp.copy(cam.position);
+  placeCam(v.x, v.y, v.z, sx, sz, v.rect.w / v.rect.h, CAM.zoom * SPLIT.hs, 0, v.yaw); v.cp.copy(cam.position);
 }
 function updateSplitCams(dt) {
   CAM.zoom += (CAM.zoomT - CAM.zoom) * Math.min(1, dt * 4);
   if (shake > 0) shake -= dt;
   for (const p of players) leadStep(p, dt);
+  for (const v of SPLIT.views) v.yaw += (v.yawT - v.yaw) * Math.min(1, dt * 8);                // у каждого игрока свой поворот экрана
   const kd = Math.exp(-16 * dt), k = Math.min(1, dt * 6); let ax = 0, az = 0, sd = 0;
   for (const v of SPLIT.views) {
     v.x += (v.p.x - v.x) * k; v.z += (v.p.z - v.z) * k; v.y += (v.p.y * 0.5 - v.y) * k; v.kx *= kd; v.kz *= kd; ax += v.p.x; az += v.p.z;
@@ -5466,7 +5457,7 @@ function abilHtml(p) {
   if (hl) { const cd = HOOK_CD[hl - 1], left = Math.max(0, p.hookCd || 0); chip('hook', 'Крюк-кошка', K.hook, left <= 0, left / cd, left > 0 ? Math.ceil(left) : '', 0, 0); }
   return out.join('');
 }
-const devState = (p, id) => id === 'hook' ? '' : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
+const devState = (p, id) => id === 'hook' ? '' : id === 'inject' ? (p.injReady ? '✓' : '—') : '';
 const __devStateOld = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
 
 /* --- радар: вид сверху, повёрнут как камера --- */
@@ -6535,13 +6526,14 @@ function updateClimb(p, c, dt) {
   }
   for (const L of LADS) {
     const onTop = Math.abs(p.y - L.H) < 0.15 && Math.hypot(p.x - L.lx, p.z - L.lz) < 0.7, onBase = p.y < 0.3 && Math.hypot(p.x - L.bx, p.z - L.bz) < 0.65;
-    if (!onTop && !onBase) { L.hold = 0; continue; }
-    if (onBase && !L.seen && !(p.msgT > 0)) { L.seen = true; toast(p, 'Лестница: иди к стене, чтобы залезть', '#bfe0ff'); }
+    if (!onTop && !onBase) continue;
+    if (onBase && !p.ladSeen && !(p.msgT > 0)) { p.ladSeen = true; toast(p, 'Лестница: иди к стене, чтобы залезть', '#bfe0ff'); }
     const want = onBase ? dx * -L.nx + dz * -L.nz : dx * L.nx + dz * L.nz;       // вверх — в стену; вниз — к краю крыши у лестницы
     if (mv && want > 0.65) {
-      L.hold += dt;
-      if (L.hold > (onBase ? 0.12 : 0.25)) { L.hold = 0; p.climb = { L, dir: onBase ? 1 : -1 }; if (!onBase) p.y = L.H - 0.05; return true; }
-    } else L.hold = 0;
+      if (p.lhL !== L) { p.lhL = L; p.lhold = 0; }                              // удержание у лестницы — у каждого игрока своё
+      p.lhold = (p.lhold || 0) + dt;
+      if (p.lhold > (onBase ? 0.12 : 0.25)) { p.lhold = 0; p.climb = { L, dir: onBase ? 1 : -1 }; if (!onBase) p.y = L.H - 0.05; return true; }
+    } else p.lhold = 0;
   }
   return false;
 }

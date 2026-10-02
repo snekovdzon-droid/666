@@ -128,7 +128,9 @@ pSoft.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pSoft.instanceColor = new
 pLit.castShadow = false;                              // тени от дыма и крошек дорогие, почти не видны
 const parts = [], _c2 = new THREE.Color();
 let pOvf = 0;
-function spawnP(o) { if (QS.fx < 1 && Math.random() > QS.fx) return; if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
+// Дым = растущая негорящая частица серого цвета: весь дым в игре рисуется полупрозрачным (30%)
+function isSmoke(o) { if (o.soft !== undefined) return o.soft; if (o.glow || o.s1 == null || o.s1 < o.s * 1.7 || o.col === undefined) return false; const r = (o.col >> 16) & 255, g = (o.col >> 8) & 255, b = o.col & 255; return Math.max(r, g, b) - Math.min(r, g, b) < 40; }
+function spawnP(o) { if (QS.fx < 1 && Math.random() > QS.fx) return; o.soft = isSmoke(o); if (parts.length >= MAX_P * 1.6) { parts[pOvf++ % parts.length] = parts[parts.length - 1]; parts.pop(); } parts.push(Object.assign({ vx: 0, vy: 0, vz: 0, g: 0, drag: 1, life: 1, s: 0.08, s1: null, rest: false, glow: false, t: 0 }, o)); }
 function updateParts(dt) {
   let nl = 0, ng = 0, ns = 0;
   for (let i = parts.length - 1; i >= 0; i--) {
