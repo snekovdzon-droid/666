@@ -61,7 +61,7 @@ function updatePlayerWeapon(p, c, dt) {
     if (L(p, 'so_jet')) p.inv = Math.max(p.inv, 0.3);
   }
   if (id === 'revolver' && p.evo.rv_500) { p.kx -= Math.sin(dir) * 2.8; p.kz -= Math.cos(dir) * 2.8; }   // «.500 Магнум»: отдача на полшага
-  if (id === 'rifle' && L(p, 'ri_ubgl') && (p.ubglC || 0) < ubglMax(p) && ++p.ubglN >= ubglEvery(p)) { p.ubglN = 0; p.ubglC = (p.ubglC || 0) + 1; SFX.click(); }   // подствольник: заряд копится, выстрел — по кнопке
+   // подствольник: заряд копится, выстрел — по кнопке
   if (id === 'revolver') p.fanN++;
   if (B.bloom && !L(p, 'ri_burst') && !p.evo.ri_marks && !p.evo.smg_spec) p.bloom = Math.min(B.bloomMax, p.bloom + B.bloom * Math.pow(0.5, L(p, 'ri_recoil')));
   if (id === 'shotgun' && L(p, 'sg_aim')) p.stillT = 0;   // «Выцеливание» потрачено — снова постой
@@ -360,11 +360,16 @@ function secondTarget(p, first) {
 }
 // Подствольник (автомат): граната летит дугой в точку прицела (2–8 клеток), рвётся о зомби, стену или землю
 const UBGL = [];
-const ubglEvery = p => [30, 25, 20][L(p, 'ri_feed')], ubglMax = p => L(p, 'ri_feed') ? 3 : 2;
+// Заряды подствольника копятся по времени: 1 заряд на «Подствольнике», 2 и 3 — на «Быстрой подаче»; каждый заряд готовится 30 с, минус 5 с за уровень «Быстрой подачи»
+const ubglMax = p => 1 + L(p, 'ri_feed'), ubglCd = p => 30 - 5 * L(p, 'ri_feed');
 function updateUbgl(p, A, dt) {
   const c = p.lastC;
+  if (L(p, 'ri_ubgl')) {
+    if (p.ubglC == null) p.ubglC = 1;                                 // первый заряд готов сразу
+    if (p.ubglC < ubglMax(p)) { if ((p.ubglRc = (p.ubglRc || 0) + dt) >= ubglCd(p)) { p.ubglRc = 0; p.ubglC++; SFX.click(); toast(p, 'Подствольник заряжен', '#9fe88a'); } } else p.ubglRc = 0;
+  }
   if (c && c.alt && L(p, 'ri_ubgl') && p.gun === 'rifle' && !p.hand && !(p.ubglQ > 0)) {     // ПКМ / LT / кнопка — выстрел из подствольника
-    if (p.ubglC > 0) { p.ubglC--; p.ubglQ = p.evo.ri_gl ? 2 : 1; p.ubglT = 0; p.ubglAt = A.pt; } else toast(p, `Подствольник: заряд через ${ubglEvery(p) - p.ubglN} выстрелов`, '#aaa');
+    if (p.ubglC > 0) { p.ubglC--; p.ubglQ = p.evo.ri_gl ? 2 : 1; p.ubglT = 0; p.ubglAt = A.pt; } else toast(p, `Подствольник: заряд через ${Math.ceil(ubglCd(p) - (p.ubglRc || 0))} с`, '#aaa');
   }
   if (!(p.ubglQ > 0) || (p.ubglT -= dt) > 0) return;
   p.ubglQ--; p.ubglT = 0.18;

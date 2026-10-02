@@ -91,6 +91,11 @@ body:not(.touch) #btns .t{display:none}
 .slot .pips{position:absolute;left:0;right:0;bottom:1px;justify-content:center}
 .pips{display:flex;gap:1px}.pips i{width:4px;height:3px;background:#3a3228}.pips i.on{background:#ecd060}
 .cap{font-size:11px;color:#8a806c;margin-left:2px}.chip{display:flex;align-items:center;gap:4px;font-size:11.5px;color:#ffb080;background:rgba(60,26,14,.9);border:1px solid #6a3a22;padding:2px 6px}
+.abil{display:flex;gap:6px;margin-top:6px}.abil:empty{display:none}.hud.c1 .abil,.hud.c3 .abil{justify-content:flex-end}
+.ab{position:relative;width:48px;height:50px;background:rgba(14,11,8,.88);border:1px solid #4a4032;display:flex;align-items:center;justify-content:center;padding-bottom:6px;box-sizing:border-box}
+.ab::before{content:'';position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.66) var(--p),transparent 0);pointer-events:none}
+.ab.rdy{border-color:#8fd46a;box-shadow:0 0 9px rgba(143,212,106,.55)}.ab u{position:absolute;left:3px;top:1px;font-size:10px;text-decoration:none;color:#e8a050;font-weight:700;z-index:1}
+.ab em{position:absolute;right:3px;top:1px;font-style:normal;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;z-index:1}.ab .pips{position:absolute;left:0;right:0;bottom:2px;justify-content:center;z-index:1}.ab .pips i{width:7px;height:4px}
 .devs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.devs:empty{display:none}
 .dev{position:relative;width:32px;height:36px;background:rgba(14,36,34,.85);border:1px solid #2e6a62;display:flex;align-items:center;justify-content:center;padding-bottom:4px;box-sizing:border-box}
 .dev.att{width:26px;height:26px;padding:0;background:rgba(40,36,14,.85);border-color:#6a6024}.dev .pips{position:absolute;left:0;right:0;bottom:1px;justify-content:center}
@@ -215,7 +220,7 @@ body.touch .mel{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.30</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.31</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Тюрьма. Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div></div></div>
@@ -262,6 +267,7 @@ body.touch .mel{display:none}
 <script src="src/11e_hud.js"></script>
 <script src="src/11f_screens.js"></script>
 <script src="src/11g_hud_layout.js"></script>
+<script src="src/11h_tesla_fx.js"></script>
 <script src="src/12_ui_loop.js"></script>
 <script src="src/12b_events.js"></script>
 <script src="src/12c_prison_v27.js"></script>

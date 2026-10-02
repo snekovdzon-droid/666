@@ -354,6 +354,7 @@ function drawVoxHero(p) {
   else { ang.armA = -1.45 - gp + kick * 0.3 + rdip; ang.armB = -1.3 - gp + kick * 0.2 + rdip; yaw.armA = 0.18; yaw.armB = -0.42; }
   voxEmit(VOXHEROES[p.idx % VOXHEROES.length], ang, yaw, 1);
   drawGear(p, ang, yaw);
+  drawTeslaPack(p);
 }
 // Вещи класса (GEAR в 01_data) — кодовые коробки поверх воксельного героя, крепятся к голове, телу, рукам
 const _gt = new THREE.Matrix4(), _gs = new THREE.Matrix4();

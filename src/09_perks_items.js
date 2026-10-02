@@ -826,7 +826,7 @@ function giveDevice(p, id) {
   if (id === 'inject') p.injReady = true;
   if (id === 'hook' && p.hookCd === undefined) p.hookCd = 0;
 }
-const HOOK_CD = [90, 60, 60];
+const HOOK_CD = [60, 45, 30];
 /* ---- Дрон ---- */
 const DRONES = new Map();                                 // игрок → { g, x, y, z, cool, light }
 function droneOf(p) {
@@ -965,14 +965,17 @@ function updateTesla(p, dt) {
   const first = nearestZombie(p.x, p.z, 5); if (!first) return;
   p.teslaT = lv >= 3 ? 2 : 3;
   const hops = lv >= 3 ? 4 : lv >= 2 ? 2 : 0, hit = new Set();
-  let px = p.x, py = p.y + 1.1, pz = p.z, z = first, dmg = 25 * p.st.dmg;
+  const tip = teslaTip(p, Math.floor(Math.random() * lv), lv);
+  let a = tip, z = first, dmg = 25 * p.st.dmg;
+  teslaFlash(tip);
   for (let k = 0; k <= hops && z; k++) {
-    for (let s = 1; s <= 7; s++) spawnP({ x: px + (z.x - px) * s / 7 + rnd(-0.1, 0.1), y: py + (z.y + 0.7 - py) * s / 7 + rnd(-0.1, 0.1), z: pz + (z.z - pz) * s / 7 + rnd(-0.1, 0.1), s: 0.07, col: 0xa8e8ff, glow: true, life: 0.14 });
-    hit.add(z); dzBy(p, z, dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.15);
-    px = z.x; py = z.y + 0.7; pz = z.z; dmg *= 0.7;
-    let nx = null, nd = 9; forNear(px, pz, q => { if (!q.dead && !hit.has(q)) { const d = (q.x - px) ** 2 + (q.z - pz) ** 2; if (d < nd) { nd = d; nx = q; } } }, 3); z = nx;
+    const b = { x: z.x, y: z.y + 0.75, z: z.z };
+    addBolt(a, b, false); teslaImpact(z);
+    hit.add(z); dzBy(p, z, dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.25);
+    a = b; dmg *= 0.7;
+    let nx = null, nd = 9; forNear(z.x, z.z, q => { if (!q.dead && !hit.has(q)) { const d = (q.x - z.x) ** 2 + (q.z - z.z) ** 2; if (d < nd) { nd = d; nx = q; } } }, 3); z = nx;
   }
-  SFX.rico();
+  SFX.zap();
 }
 /* ---- Крюк-кошка: рывок; на 3-м уровне цепляется за крыши ---- */
 function useHook(p) {

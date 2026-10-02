@@ -27,6 +27,7 @@ const PIX = {
   barrel: ['..........', '..........', '.kkkkkkkkk', 'kGGGGGGGGk', 'kGggggggGk', '.kkkkkkkkk', '..........', '..........', '..........', '..........'],
   crate: ['..........', '.kkkkkkkk.', 'kNtttttNk.', 'kNtNttNtk.', 'kNtttttNk.', 'kNtNttNtk.', 'kNtttttNk.', '.kkkkkkkk.', '..........', '..........'],
   gate: ['..........', 'rr......rr', 'rgggggggr.', 'rgGgGgGgr.', 'rgggggggr.', 'rgGgGgGgr.', 'rgggggggr.', 'rr......rr', '..........', '..........'],
+  ubgl: ['..........', '...kk.....', '..kllk....', '.kllLlkkkk', '.klLllkGgk', '.kllLlkGgk', '..kllk.kkk', '...kk.....', '..........', '..........'],
   skull: ['..........', '..kkkkkk..', '.kwwwwwwk.', '.kwkwwkwk.', '.kwkwwkwk.', '.kwwwwwwk.', '..kwkkwk..', '..kwkwkk..', '...kkkk...', '..........'],
 };
 const _pixC = {};
@@ -48,7 +49,28 @@ function heartSvg(kind) {
 }
 const heartsHtml = p => heartSvg('f').repeat(Math.max(0, p.hp)) + heartSvg('e').repeat(Math.max(0, p.maxHp - p.hp)) + heartSvg('a').repeat(Math.max(0, p.armor || 0)) + (p.shield ? heartSvg('s') : '');
 const pips = (n, max) => `<span class="pips">${'<i class="on"></i>'.repeat(Math.min(n, max))}${'<i></i>'.repeat(Math.max(0, max - n))}</span>`;
-const devState = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
+// способности с кнопкой под плашкой игрока: подствольник и крюк — иконка, заряды, кольцо перезарядки, клавиша
+function abilKeys(p) {
+  if (IS_TOUCH) return { ubgl: '', hook: '' };
+  const pad = p.ctrl === 'pad' || (p.ctrl === 'all' && PAD.active), k2 = p.ctrl === 'keys2';
+  return { ubgl: pad ? 'LT' : k2 ? "'" : 'ПКМ', hook: pad ? 'A' : k2 ? '/' : 'G' };
+}
+function abilHtml(p) {
+  const K = abilKeys(p), out = [];
+  const chip = (id, name, key, ready, frac, sec, n, mx) => {
+    const deg = Math.round(clamp(frac, 0, 1) * 180) * 2;                       // шаг 2°, чтобы строка не менялась каждый кадр
+    out.push(`<div class="ab${ready ? ' rdy' : ''}" style="--p:${deg}deg" title="${name}">${key ? `<u>${key}</u>` : ''}${pixIcon(id, 26)}${sec ? `<em>${sec}</em>` : ''}${mx > 1 || n > 0 ? pips(n, mx) : ''}</div>`);
+  };
+  if (L(p, 'ri_ubgl') && p.gun === 'rifle') {
+    const mx = ubglMax(p), n = p.ubglC == null ? 1 : p.ubglC, cd = ubglCd(p), rc = p.ubglRc || 0;
+    chip('ubgl', 'Подствольник', K.ubgl, n > 0, n < mx ? 1 - rc / cd : 0, n < mx ? Math.ceil(cd - rc) : '', n, mx);
+  }
+  const hl = devLv(p, 'hook');
+  if (hl) { const cd = HOOK_CD[hl - 1], left = Math.max(0, p.hookCd || 0); chip('hook', 'Крюк-кошка', K.hook, left <= 0, left / cd, left > 0 ? Math.ceil(left) : '', 0, 0); }
+  return out.join('');
+}
+const devState = (p, id) => id === 'hook' ? '' : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
+const __devStateOld = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
 
 /* --- радар: вид сверху, повёрнут как камера --- */
 const RADAR = { R: 26, S: 118, n: 0 };

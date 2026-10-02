@@ -91,6 +91,11 @@ body:not(.touch) #btns .t{display:none}
 .slot .pips{position:absolute;left:0;right:0;bottom:1px;justify-content:center}
 .pips{display:flex;gap:1px}.pips i{width:4px;height:3px;background:#3a3228}.pips i.on{background:#ecd060}
 .cap{font-size:11px;color:#8a806c;margin-left:2px}.chip{display:flex;align-items:center;gap:4px;font-size:11.5px;color:#ffb080;background:rgba(60,26,14,.9);border:1px solid #6a3a22;padding:2px 6px}
+.abil{display:flex;gap:6px;margin-top:6px}.abil:empty{display:none}.hud.c1 .abil,.hud.c3 .abil{justify-content:flex-end}
+.ab{position:relative;width:48px;height:50px;background:rgba(14,11,8,.88);border:1px solid #4a4032;display:flex;align-items:center;justify-content:center;padding-bottom:6px;box-sizing:border-box}
+.ab::before{content:'';position:absolute;inset:0;background:conic-gradient(rgba(0,0,0,.66) var(--p),transparent 0);pointer-events:none}
+.ab.rdy{border-color:#8fd46a;box-shadow:0 0 9px rgba(143,212,106,.55)}.ab u{position:absolute;left:3px;top:1px;font-size:10px;text-decoration:none;color:#e8a050;font-weight:700;z-index:1}
+.ab em{position:absolute;right:3px;top:1px;font-style:normal;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000;z-index:1}.ab .pips{position:absolute;left:0;right:0;bottom:2px;justify-content:center;z-index:1}.ab .pips i{width:7px;height:4px}
 .devs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.devs:empty{display:none}
 .dev{position:relative;width:32px;height:36px;background:rgba(14,36,34,.85);border:1px solid #2e6a62;display:flex;align-items:center;justify-content:center;padding-bottom:4px;box-sizing:border-box}
 .dev.att{width:26px;height:26px;padding:0;background:rgba(40,36,14,.85);border-color:#6a6024}.dev .pips{position:absolute;left:0;right:0;bottom:1px;justify-content:center}
@@ -215,7 +220,7 @@ body.touch .mel{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.30</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.31</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Тюрьма. Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div></div></div>
@@ -416,7 +421,7 @@ const DEVICES = {
   dog:    { name:'Собака',          lv:['Овчарка ходит справа от тебя, раз в 10 с бросается на слабого зомби и убивает его. В коопе отгоняет врагов от упавшего', 'Подбирает опыт вокруг тебя с 6 клеток', 'Бросается и на сильных (не на босса) и оглушает их на 2,5 с', 'Укус вызывает у сильных кровотечение (не у босса)'] },
   magnet: { name:'Магнитный пояс',  lv:['Опыт притягивается с +50% расстояния', '+100%', 'Притягивает и ящики, и предметы с земли (4 клетки)'] },
   inject: { name:'Автоинжектор',    lv:['Один раз спасает от смерти: встаёшь с 1 сердцем', 'Встаёшь с 2 сердцами', 'Перезаряжается за 4 минуты'] },
-  hook:   { name:'Крюк-кошка',      lv:['Рывок крюком туда, куда смотришь (G / A / кнопка), раз в 1:30', 'Раз в минуту', 'Крюк цепляется за крыши — забираешься наверх'] },
+  hook:   { name:'Крюк-кошка',      lv:['Рывок крюком туда, куда смотришь (G / A / кнопка), перезарядка 1 мин', 'Перезарядка 45 с', 'Крюк цепляется за крыши — забираешься наверх; перезарядка 30 с'] },
   tesla:  { name:'Тесла-ранец',     lv:['Молния по ближайшему зомби раз в 3 с (25 урона)', 'Молния прыгает ещё на двоих', 'Раз в 2 с, прыгает на четверых'] },
 };
 const DEV_IDS = Object.keys(DEVICES), DEV_MAX = 3, devMaxOf = id => id === 'dog' ? 4 : DEV_MAX;   // у собаки четыре уровня
@@ -492,8 +497,8 @@ const PERKS = [
   { id:'ri_series', br:'wpn', gun:'rifle', branch:'marks', name:'Прицельная серия', desc:'Каждая 3-я пуля ×1,5 урона (2-й ур. — ×2)', max:2 },
   { id:'ri_scope',  br:'wpn', gun:'rifle', branch:'marks', name:'Выдержка',         desc:'Дальность +25%; по целям дальше 5 клеток урон +15%', max:2 },
   // ---- автомат: ветка «Подствольник» ----
-  { id:'ri_ubgl',   br:'wpn', gun:'rifle', branch:'ubgl', name:'Подствольник',  desc:'Граната из подствольника по кнопке (ПКМ / LT / кнопка на экране): заряд копится каждые 30 выстрелов, в запасе до 2. Радиус 1,2, урон 25. Ранит напарников', max:1 },
-  { id:'ri_feed',   br:'wpn', gun:'rifle', branch:'ubgl', name:'Быстрая подача', desc:'Заряд каждые 25 выстрелов (2-й ур. — каждые 20), в запасе до 3', max:2 },
+  { id:'ri_ubgl',   br:'wpn', gun:'rifle', branch:'ubgl', name:'Подствольник',  desc:'Граната из подствольника по кнопке (ПКМ / LT / кнопка на экране): 1 заряд, готовится 30 с. Радиус 1,2, урон 25. Ранит напарников', max:1 },
+  { id:'ri_feed',   br:'wpn', gun:'rifle', branch:'ubgl', name:'Быстрая подача', desc:'Запас зарядов +1 за уровень (2, затем 3), каждый заряд готовится на 5 с быстрее: 25 с, затем 20 с', max:2 },
   { id:'ri_frag',   br:'wpn', gun:'rifle', branch:'ubgl', name:'Осколочные',     desc:'Граната: радиус +20% и урон +25%', max:2 },
   // ---- автомат: нейтральные (подавление) — в любой ветке ----
   { id:'ri_supp',   br:'wpn', gun:'rifle', branch:'neutral', name:'Прижать огнём', desc:'Попадание замедляет зомби на 10% на 1 с, складывается до −30% (2-й ур. — до −40%)', max:2 },
@@ -602,7 +607,7 @@ const BRANCHES = {
       fin:{ id:'ri_pierce', name:'Прошивка', desc:'Каждая пуля пробивает ещё троих' } },
     { id:'marks',   name:'Стрелок',     desc:'Короткие точные очереди, сильная 3-я пуля, бьёт далеко',
       fin:{ id:'ri_marks', name:'Марксман', desc:'Без разброса на любой дистанции, 3-я пуля пробивает всех' } },
-    { id:'ubgl',    key:'ri_ubgl', name:'Подствольник', desc:'Подствольный гранатомёт: сам стреляет гранатой через каждые N выстрелов',
+    { id:'ubgl',    key:'ri_ubgl', name:'Подствольник', desc:'Подствольный гранатомёт: граната по кнопке, заряд восстанавливается по времени (30 с)',
       fin:{ id:'ri_gl', name:'Гранатомётчик', desc:'Подствольник бьёт двумя гранатами подряд, взрыв оглушает на 0,5 с' } },
   ],
   mg: [
@@ -2223,6 +2228,7 @@ function drawVoxHero(p) {
   else { ang.armA = -1.45 - gp + kick * 0.3 + rdip; ang.armB = -1.3 - gp + kick * 0.2 + rdip; yaw.armA = 0.18; yaw.armB = -0.42; }
   voxEmit(VOXHEROES[p.idx % VOXHEROES.length], ang, yaw, 1);
   drawGear(p, ang, yaw);
+  drawTeslaPack(p);
 }
 // Вещи класса (GEAR в 01_data) — кодовые коробки поверх воксельного героя, крепятся к голове, телу, рукам
 const _gt = new THREE.Matrix4(), _gs = new THREE.Matrix4();
@@ -2715,7 +2721,7 @@ function updatePlayerWeapon(p, c, dt) {
     if (L(p, 'so_jet')) p.inv = Math.max(p.inv, 0.3);
   }
   if (id === 'revolver' && p.evo.rv_500) { p.kx -= Math.sin(dir) * 2.8; p.kz -= Math.cos(dir) * 2.8; }   // «.500 Магнум»: отдача на полшага
-  if (id === 'rifle' && L(p, 'ri_ubgl') && (p.ubglC || 0) < ubglMax(p) && ++p.ubglN >= ubglEvery(p)) { p.ubglN = 0; p.ubglC = (p.ubglC || 0) + 1; SFX.click(); }   // подствольник: заряд копится, выстрел — по кнопке
+   // подствольник: заряд копится, выстрел — по кнопке
   if (id === 'revolver') p.fanN++;
   if (B.bloom && !L(p, 'ri_burst') && !p.evo.ri_marks && !p.evo.smg_spec) p.bloom = Math.min(B.bloomMax, p.bloom + B.bloom * Math.pow(0.5, L(p, 'ri_recoil')));
   if (id === 'shotgun' && L(p, 'sg_aim')) p.stillT = 0;   // «Выцеливание» потрачено — снова постой
@@ -3014,11 +3020,16 @@ function secondTarget(p, first) {
 }
 // Подствольник (автомат): граната летит дугой в точку прицела (2–8 клеток), рвётся о зомби, стену или землю
 const UBGL = [];
-const ubglEvery = p => [30, 25, 20][L(p, 'ri_feed')], ubglMax = p => L(p, 'ri_feed') ? 3 : 2;
+// Заряды подствольника копятся по времени: 1 заряд на «Подствольнике», 2 и 3 — на «Быстрой подаче»; каждый заряд готовится 30 с, минус 5 с за уровень «Быстрой подачи»
+const ubglMax = p => 1 + L(p, 'ri_feed'), ubglCd = p => 30 - 5 * L(p, 'ri_feed');
 function updateUbgl(p, A, dt) {
   const c = p.lastC;
+  if (L(p, 'ri_ubgl')) {
+    if (p.ubglC == null) p.ubglC = 1;                                 // первый заряд готов сразу
+    if (p.ubglC < ubglMax(p)) { if ((p.ubglRc = (p.ubglRc || 0) + dt) >= ubglCd(p)) { p.ubglRc = 0; p.ubglC++; SFX.click(); toast(p, 'Подствольник заряжен', '#9fe88a'); } } else p.ubglRc = 0;
+  }
   if (c && c.alt && L(p, 'ri_ubgl') && p.gun === 'rifle' && !p.hand && !(p.ubglQ > 0)) {     // ПКМ / LT / кнопка — выстрел из подствольника
-    if (p.ubglC > 0) { p.ubglC--; p.ubglQ = p.evo.ri_gl ? 2 : 1; p.ubglT = 0; p.ubglAt = A.pt; } else toast(p, `Подствольник: заряд через ${ubglEvery(p) - p.ubglN} выстрелов`, '#aaa');
+    if (p.ubglC > 0) { p.ubglC--; p.ubglQ = p.evo.ri_gl ? 2 : 1; p.ubglT = 0; p.ubglAt = A.pt; } else toast(p, `Подствольник: заряд через ${Math.ceil(ubglCd(p) - (p.ubglRc || 0))} с`, '#aaa');
   }
   if (!(p.ubglQ > 0) || (p.ubglT -= dt) > 0) return;
   p.ubglQ--; p.ubglT = 0.18;
@@ -3996,7 +4007,7 @@ function giveDevice(p, id) {
   if (id === 'inject') p.injReady = true;
   if (id === 'hook' && p.hookCd === undefined) p.hookCd = 0;
 }
-const HOOK_CD = [90, 60, 60];
+const HOOK_CD = [60, 45, 30];
 /* ---- Дрон ---- */
 const DRONES = new Map();                                 // игрок → { g, x, y, z, cool, light }
 function droneOf(p) {
@@ -4135,14 +4146,17 @@ function updateTesla(p, dt) {
   const first = nearestZombie(p.x, p.z, 5); if (!first) return;
   p.teslaT = lv >= 3 ? 2 : 3;
   const hops = lv >= 3 ? 4 : lv >= 2 ? 2 : 0, hit = new Set();
-  let px = p.x, py = p.y + 1.1, pz = p.z, z = first, dmg = 25 * p.st.dmg;
+  const tip = teslaTip(p, Math.floor(Math.random() * lv), lv);
+  let a = tip, z = first, dmg = 25 * p.st.dmg;
+  teslaFlash(tip);
   for (let k = 0; k <= hops && z; k++) {
-    for (let s = 1; s <= 7; s++) spawnP({ x: px + (z.x - px) * s / 7 + rnd(-0.1, 0.1), y: py + (z.y + 0.7 - py) * s / 7 + rnd(-0.1, 0.1), z: pz + (z.z - pz) * s / 7 + rnd(-0.1, 0.1), s: 0.07, col: 0xa8e8ff, glow: true, life: 0.14 });
-    hit.add(z); dzBy(p, z, dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.15);
-    px = z.x; py = z.y + 0.7; pz = z.z; dmg *= 0.7;
-    let nx = null, nd = 9; forNear(px, pz, q => { if (!q.dead && !hit.has(q)) { const d = (q.x - px) ** 2 + (q.z - pz) ** 2; if (d < nd) { nd = d; nx = q; } } }, 3); z = nx;
+    const b = { x: z.x, y: z.y + 0.75, z: z.z };
+    addBolt(a, b, false); teslaImpact(z);
+    hit.add(z); dzBy(p, z, dmg, 0, 0, 0); z.stunT = Math.max(z.stunT || 0, 0.25);
+    a = b; dmg *= 0.7;
+    let nx = null, nd = 9; forNear(z.x, z.z, q => { if (!q.dead && !hit.has(q)) { const d = (q.x - z.x) ** 2 + (q.z - z.z) ** 2; if (d < nd) { nd = d; nx = q; } } }, 3); z = nx;
   }
-  SFX.rico();
+  SFX.zap();
 }
 /* ---- Крюк-кошка: рывок; на 3-м уровне цепляется за крыши ---- */
 function useHook(p) {
@@ -5269,6 +5283,7 @@ const PIX = {
   barrel: ['..........', '..........', '.kkkkkkkkk', 'kGGGGGGGGk', 'kGggggggGk', '.kkkkkkkkk', '..........', '..........', '..........', '..........'],
   crate: ['..........', '.kkkkkkkk.', 'kNtttttNk.', 'kNtNttNtk.', 'kNtttttNk.', 'kNtNttNtk.', 'kNtttttNk.', '.kkkkkkkk.', '..........', '..........'],
   gate: ['..........', 'rr......rr', 'rgggggggr.', 'rgGgGgGgr.', 'rgggggggr.', 'rgGgGgGgr.', 'rgggggggr.', 'rr......rr', '..........', '..........'],
+  ubgl: ['..........', '...kk.....', '..kllk....', '.kllLlkkkk', '.klLllkGgk', '.kllLlkGgk', '..kllk.kkk', '...kk.....', '..........', '..........'],
   skull: ['..........', '..kkkkkk..', '.kwwwwwwk.', '.kwkwwkwk.', '.kwkwwkwk.', '.kwwwwwwk.', '..kwkkwk..', '..kwkwkk..', '...kkkk...', '..........'],
 };
 const _pixC = {};
@@ -5290,7 +5305,28 @@ function heartSvg(kind) {
 }
 const heartsHtml = p => heartSvg('f').repeat(Math.max(0, p.hp)) + heartSvg('e').repeat(Math.max(0, p.maxHp - p.hp)) + heartSvg('a').repeat(Math.max(0, p.armor || 0)) + (p.shield ? heartSvg('s') : '');
 const pips = (n, max) => `<span class="pips">${'<i class="on"></i>'.repeat(Math.min(n, max))}${'<i></i>'.repeat(Math.max(0, max - n))}</span>`;
-const devState = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
+// способности с кнопкой под плашкой игрока: подствольник и крюк — иконка, заряды, кольцо перезарядки, клавиша
+function abilKeys(p) {
+  if (IS_TOUCH) return { ubgl: '', hook: '' };
+  const pad = p.ctrl === 'pad' || (p.ctrl === 'all' && PAD.active), k2 = p.ctrl === 'keys2';
+  return { ubgl: pad ? 'LT' : k2 ? "'" : 'ПКМ', hook: pad ? 'A' : k2 ? '/' : 'G' };
+}
+function abilHtml(p) {
+  const K = abilKeys(p), out = [];
+  const chip = (id, name, key, ready, frac, sec, n, mx) => {
+    const deg = Math.round(clamp(frac, 0, 1) * 180) * 2;                       // шаг 2°, чтобы строка не менялась каждый кадр
+    out.push(`<div class="ab${ready ? ' rdy' : ''}" style="--p:${deg}deg" title="${name}">${key ? `<u>${key}</u>` : ''}${pixIcon(id, 26)}${sec ? `<em>${sec}</em>` : ''}${mx > 1 || n > 0 ? pips(n, mx) : ''}</div>`);
+  };
+  if (L(p, 'ri_ubgl') && p.gun === 'rifle') {
+    const mx = ubglMax(p), n = p.ubglC == null ? 1 : p.ubglC, cd = ubglCd(p), rc = p.ubglRc || 0;
+    chip('ubgl', 'Подствольник', K.ubgl, n > 0, n < mx ? 1 - rc / cd : 0, n < mx ? Math.ceil(cd - rc) : '', n, mx);
+  }
+  const hl = devLv(p, 'hook');
+  if (hl) { const cd = HOOK_CD[hl - 1], left = Math.max(0, p.hookCd || 0); chip('hook', 'Крюк-кошка', K.hook, left <= 0, left / cd, left > 0 ? Math.ceil(left) : '', 0, 0); }
+  return out.join('');
+}
+const devState = (p, id) => id === 'hook' ? '' : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
+const __devStateOld = (p, id) => id === 'hook' ? (p.hookCd > 0 ? Math.ceil(p.hookCd) + '' : '✓') : id === 'inject' ? (p.injReady ? '✓' : p.injT > 0 ? Math.ceil(p.injT) + '' : '—') : '';
 
 /* --- радар: вид сверху, повёрнут как камера --- */
 const RADAR = { R: 26, S: 118, n: 0 };
@@ -5524,6 +5560,94 @@ addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script>'use strict';
+/* ---------- Тесла-ранец: ранец на спине героя и заметные молнии ----------
+   Ранец рисуется коробками на теле героя (катушек столько, какой уровень девайса). Молния — ломаная из светящихся
+   брусков от верхушки катушки к зомби и дальше по цепочке, мерцает ~0,3 с; на цели вспышка света, искры и треск. */
+const TBOLTS = [];
+const TESLA_LIGHT = new THREE.PointLight(0x9fe8ff, 0, 7, 1.4); scene.add(TESLA_LIGHT);
+let teslaLightK = 0;
+const _tbA = new THREE.Vector3(), _tbB = new THREE.Vector3();
+
+// верхушка катушки i в мире (для начала молнии и искр)
+function teslaTip(p, i, lv) {
+  const H = VZ.H, W = VZ.W, pv = VOXHERO.parts.body.pivot, ox = (i - (lv - 1) / 2) * 0.046 * W * H, oz = -0.095 * W * H, c = Math.cos(p.yaw), s = Math.sin(p.yaw);
+  return { x: p.x + ox * c + oz * s, y: p.y + (pv[1] + 0.305) * H, z: p.z - ox * s + oz * c };
+}
+// ранец на спине (вызывается из drawVoxHero после модели героя: корень _vr уже выставлен)
+function drawTeslaPack(p) {
+  const lv = devLv(p, 'tesla'); if (!lv) return;
+  const pv = VOXHERO.parts.body.pivot;
+  _gs.makeScale(VZ.W, 1, VZ.W); _gt.makeRotationX(0); _gt.setPosition(pv[0] * VZ.W, pv[1], pv[2] * VZ.W);
+  _root.multiplyMatrices(_vr, _gt); _root.multiply(_gs);
+  const P = (col, sx, sy, sz, ox, oy, oz) => part(lin(col), 0, 0, 0, 0, sx, sy, sz, oy, oz, 0, ox);
+  P(0x3c424a, 0.125, 0.165, 0.07, 0, 0.115, -0.095);                       // корпус
+  P(0x6a727c, 0.112, 0.012, 0.062, 0, 0.2, -0.095);                        // крышка
+  P(0xd8b030, 0.1, 0.012, 0.004, 0, 0.075, -0.1325);                       // полоса опасности
+  for (const x of [-0.03, 0, 0.03]) P(0x9ff8ff, 0.014, 0.014, 0.004, x, 0.14, -0.1335);   // огоньки
+  for (let i = 0; i < lv; i++) {
+    const x = (i - (lv - 1) / 2) * 0.046;
+    P(0x2c3036, 0.028, 0.03, 0.028, x, 0.215, -0.095);                     // основание катушки
+    P(0xc07a38, 0.036, 0.01, 0.036, x, 0.245, -0.095); P(0x8a5428, 0.036, 0.01, 0.036, x, 0.262, -0.095); P(0xc07a38, 0.036, 0.01, 0.036, x, 0.279, -0.095);
+    P(0xcffcff, 0.016, 0.02, 0.016, x, 0.305, -0.095);                     // светящийся шар
+  }
+  for (const x of [-0.056, 0.056]) { P(0x9aa0a8, 0.006, 0.12, 0.006, x, 0.28, -0.12); P(0x9ff8ff, 0.012, 0.012, 0.012, x, 0.345, -0.12); }   // антенны
+  // тихое свечение на шарах; когда рядом зомби — потрескивает
+  const near = p.down ? null : nearestZombie(p.x, p.z, 6);
+  if (!p.down) for (let i = 0; i < lv; i++) {
+    const t = teslaTip(p, i, lv);
+    if (Math.random() < 0.25) spawnP({ x: t.x, y: t.y, z: t.z, s: 0.1, s1: 0.03, col: 0xa8f4ff, glow: true, life: 0.12 });
+    if (near && Math.random() < 0.06) spawnP({ x: t.x + rnd(-0.08, 0.08), y: t.y + rnd(-0.04, 0.12), z: t.z + rnd(-0.08, 0.08), vy: 0.6, s: 0.04, col: 0xffffff, glow: true, life: 0.1 });
+  }
+}
+
+// ломаная молния от a к b: ядро (белое) и ореол (голубой, сложение)
+function addBolt(a, b, thin) {
+  const len = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z), n = clamp(Math.ceil(len / 0.4), 4, 14);
+  const core = new THREE.MeshBasicMaterial({ color: 0xf6feff, transparent: true, depthWrite: false }), glow = new THREE.MeshBasicMaterial({ color: 0x4cc4ff, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
+  const B = { a, b, n, thin, t: 0, jt: 0, life: thin ? 0.2 : 0.34, core, glow, cm: [], gm: [], amp: Math.min(0.22, 0.06 + len * 0.04) };
+  for (let i = 0; i < n; i++) {
+    const c = new THREE.Mesh(boxGeo, core), g = new THREE.Mesh(boxGeo, glow);
+    for (const m of [c, g]) { m.frustumCulled = false; m.renderOrder = 7; scene.add(m); }
+    B.cm.push(c); B.gm.push(g);
+  }
+  layoutBolt(B); TBOLTS.push(B);
+  if (!thin && B.n > 5) for (let k = 0; k < 2; k++) {                     // боковые ответвления
+    const f = 0.3 + 0.4 * Math.random(), s = B.pts[Math.floor(f * B.n)] || a;
+    addBolt(s, { x: s.x + rnd(-0.9, 0.9), y: s.y + rnd(-0.5, 0.5), z: s.z + rnd(-0.9, 0.9) }, true);
+  }
+}
+function layoutBolt(B) {
+  const pts = [{ x: B.a.x, y: B.a.y, z: B.a.z }];
+  for (let i = 1; i < B.n; i++) { const f = i / B.n, k = B.amp * (1 - Math.abs(f - 0.5) * 0.6); pts.push({ x: B.a.x + (B.b.x - B.a.x) * f + rnd(-k, k), y: B.a.y + (B.b.y - B.a.y) * f + rnd(-k, k), z: B.a.z + (B.b.z - B.a.z) * f + rnd(-k, k) }); }
+  pts.push({ x: B.b.x, y: B.b.y, z: B.b.z }); B.pts = pts;
+  const wc = B.thin ? 0.03 : 0.045, wg = B.thin ? 0.09 : 0.15;
+  for (let i = 0; i < B.n; i++) {
+    _tbA.set(pts[i].x, pts[i].y, pts[i].z); _tbB.set(pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
+    const len = _tbA.distanceTo(_tbB) + 0.02;
+    for (const [m, w] of [[B.cm[i], wc], [B.gm[i], wg]]) { m.position.copy(_tbA).add(_tbB).multiplyScalar(0.5); m.lookAt(_tbB); m.scale.set(w, w, len); }
+  }
+}
+function updateTeslaFx(dt) {
+  for (let i = TBOLTS.length - 1; i >= 0; i--) {
+    const B = TBOLTS[i]; B.t += dt; B.jt += dt;
+    if (B.t >= B.life) { for (const m of [...B.cm, ...B.gm]) scene.remove(m); B.core.dispose(); B.glow.dispose(); TBOLTS.splice(i, 1); continue; }
+    if (B.jt > 0.045) { B.jt = 0; layoutBolt(B); }                                   // мерцает: каждые ~45 мс форма новая
+    const k = 1 - B.t / B.life; B.core.opacity = Math.min(1, 0.35 + k * 1.2); B.glow.opacity = 0.55 * k + 0.1;
+  }
+  teslaLightK = Math.max(0, teslaLightK - dt * 4); TESLA_LIGHT.intensity = teslaLightK * 6;
+}
+function teslaFlash(t) { for (let i = 0; i < 8; i++) spawnP({ x: t.x, y: t.y, z: t.z, vx: rnd(-1.5, 1.5), vy: rnd(0, 2), vz: rnd(-1.5, 1.5), s: 0.07, s1: 0.01, col: 0xcffcff, glow: true, life: 0.25, drag: 0.9 }); }
+function teslaImpact(z) {
+  const y = z.y + 0.75; sparks(z.x, y, z.z);
+  for (let i = 0; i < 8; i++) spawnP({ x: z.x, y, z: z.z, vx: rnd(-2.5, 2.5), vy: rnd(0.5, 3), vz: rnd(-2.5, 2.5), s: 0.06, s1: 0.01, col: 0xbff4ff, glow: true, life: 0.3, drag: 0.92 });
+  TESLA_LIGHT.position.set(z.x, y + 0.2, z.z); teslaLightK = 1; z.flash = 0.25;
+}
+function clearTeslaFx() { for (const B of TBOLTS) { for (const m of [...B.cm, ...B.gm]) scene.remove(m); B.core.dispose(); B.glow.dispose(); } TBOLTS.length = 0; teslaLightK = 0; TESLA_LIGHT.intensity = 0; }
+Object.assign(SFX, {
+  zap() { if (!soundOn() || !canPlay('zap', 90)) return; noiseHit({ dur: 0.18, type: 'highpass', freq: 3200, q: 0.8, vol: 0.28 }); tone({ f0: 2400, f1: 260, dur: 0.22, vol: 0.2, type: 'sawtooth' }); tone({ f0: 90, f1: 60, dur: 0.25, vol: 0.25 }); },
+});
+</script>
+<script>'use strict';
 /* ---------- 16. Интерфейс: меню (число игроков, ствол каждому), HUD каждого игрока со своей стороны, пауза, конец ---------- */
 const $ = id => document.getElementById(id);
 const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -5605,7 +5729,7 @@ function touchItems(p, sl) {
 }
 function hudBuild() {
   tItemsKey = ''; if ($('tItems')) $('tItems').innerHTML = '';
-  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate">${players.length > 1 ? `<div class="ph"><span class="pn">ИГРОК ${i + 1}</span></div>` : ''}<div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="mel"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div></div>`).join('');
+  $('huds').innerHTML = players.map((p, i) => `<div class="hud c${i}" id="hud${i}" style="--pc:${PLAYER_CSS[i]}"><div class="plate">${players.length > 1 ? `<div class="ph"><span class="pn">ИГРОК ${i + 1}</span></div>` : ''}<div class="cls"></div><div class="gun"></div><div class="hp"></div><div class="bar stam"><i></i></div><div class="ammoRow"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div><div class="items"></div><div class="mel"></div><div class="devs"></div><div class="msg"></div><div class="down"></div></div><div class="abil"></div></div>`).join('');
   hudLast = {}; hudApplyLayout();
 }
 let hudLast = {};
@@ -5618,7 +5742,7 @@ function hud() {
     hudSet(q('.hp'), K + 'hp', heartsHtml(p), 'innerHTML');
     hudSet(q('.stam'), K + 'st', (p.stam * 100).toFixed(0) + '%', 'width'); q('.stam').classList.toggle('lock', p.stamLock);
     hudSet(q('.cls'), K + 'cls', `${CLASSES[p.gun].name}<small>${WEAPONS[p.gun].name}</small>`, 'innerHTML');
-    hudSet(q('.gun'), K + 'gun', [p.gun === 'mg' && p.spin > 0.05 ? `раскрутка ${Math.round(p.spin * 100)}%` : '', L(p, 'ri_ubgl') ? `подствольник ${'●'.repeat(p.ubglC || 0)}${'○'.repeat(ubglMax(p) - (p.ubglC || 0))}` : '', p.handN > 0 ? `ловкость ×${p.handN}` : '', p.curse ? '☠ ' + CURSES[p.curse].name : '',
+    hudSet(q('.gun'), K + 'gun', [p.gun === 'mg' && p.spin > 0.05 ? `раскрутка ${Math.round(p.spin * 100)}%` : '', '', p.handN > 0 ? `ловкость ×${p.handN}` : '', p.curse ? '☠ ' + CURSES[p.curse].name : '',
       p.gun === 'crossbow' ? `колчан ${p.quiver}${p.quiver <= 0 && p.ammo <= 0 ? ' (болт через ' + Math.ceil(3 - p.boltT) + ' с)' : ''}` : ''].filter(Boolean).join(' · '));
     const key = p.ammo + '/' + ws.mag;
     if (hudLast[K + 'am'] !== key) { hudLast[K + 'am'] = key; const el = q('.ammo'); el.classList.toggle('many', ws.mag > 40); q('.am').textContent = key;
@@ -5634,6 +5758,7 @@ function hud() {
     const devHtml = Object.keys(p.dev || {}).map(id => { const st = devState(p, id); return `<div class="dev" title="${DEVICES[id].name} ур.${p.dev[id]}">${pixIcon(id, 22)}${pips(p.dev[id], devMaxOf(id))}${st ? `<em>${st}</em>` : ''}</div>`; }).join('')
       + Object.keys(p.att || {}).map(id => `<div class="dev att" title="${ATTACH[id].name}">${pixIcon(id, 20)}</div>`).join('');
     hudSet(q('.devs'), K + 'dv', devHtml, 'innerHTML');
+    hudSet(q('.abil'), K + 'ab', abilHtml(p), 'innerHTML');
     { const mel = q('.mel');                                                                    // ближний бой: иконка, клавиша, кольцо перезарядки
       if (p.melee) { const st = meleeStat(p), cd = Math.max(0, p.meleeCd);
         hudSet(mel, K + 'ml', `<div class="meli${cd > 0 ? ' cool' : ' ready'}"><i class="kc"></i>${pixIcon(p.melee, 28)}<span class="nm"><em>${MELEE[p.melee].name}</em><small>${cd > 0 ? Math.ceil(cd) + ' с' : 'готов'}</small></span><u>${meleeKey(p)}</u></div>`, 'innerHTML');
@@ -5659,7 +5784,7 @@ const START = MAPDEF.start;                   // двор перед главн�
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll(); moodStart();
-  clearMobs(); splitEnd();
+  clearMobs(); splitEnd(); clearTeslaFx();
   Object.assign(G, { killsBy: {}, bossKills: 0, nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z; eventsReset();
@@ -5738,7 +5863,7 @@ function tick(dt, T) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); if (!SPLIT.on) tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); eventsTick(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); updateTeslaFx(dt); eventsTick(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }
