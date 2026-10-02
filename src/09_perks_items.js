@@ -312,7 +312,7 @@ function useItem(p, id, c, A) {
   if (ITEMS[id].throw) {
     const t = throwPoint(p, c, A, S.range * (nimble ? 1.3 : 1)), mz = muzzleOf(p), d = Math.hypot(t.x - mz.x, t.z - mz.z);
     THROWN.push({ id, owner: p, S, x0: mz.x, y0: mz.y, z0: mz.z, x1: t.x, y1: t.y, z1: t.z, x: mz.x, y: mz.y, z: mz.z, t: 0, dur: (0.35 + d * 0.06) * (nimble ? 0.75 : 1), arc: 0.8 + d * 0.12 });
-    SFX.throwIt();
+    SFX.throwIt(); p.throwA = 0.35;
   } else if (id === 'turret') {
     let x = p.x + Math.sin(p.yaw) * 1.1, z = p.z + Math.cos(p.yaw) * 1.1;
     if (blocked(x, z, p.y, 0.2)) { x = p.x; z = p.z; }

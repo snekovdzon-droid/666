@@ -314,7 +314,7 @@ function hurtPlayer(p, src) {
     for (let k = 0; k < 6; k++) spawnP({ x: p.x, y: p.y + 0.8, z: p.z, vx: rnd(-1.5, 1.5), vy: rnd(0.5, 2), vz: rnd(-1.5, 1.5), s: 0.06, s1: 0.01, col: 0x7aa8ff, life: 0.4 });
     return;
   }
-  SFX.hurt();
+  SFX.hurt(); p.hurtA = 0.3;
   p.hp--; if (p.rs) p.rs.taken++; p.inv = CFG.INVULN * (1 + 0.5 * L(p, 'skin')); G.hurtFx = 1; shake = Math.max(shake, 0.25); rumble(p, 0.9, 200);
   blood(p.x, p.y + 0.7, p.z, 0, 0, 6);
   if (src && p.cls === 'bouncer') { const dx = src.x - p.x, dz = src.z - p.z, d = Math.hypot(dx, dz) || 1; src.kx += dx / d * 7; src.kz += dz / d * 7; src.stunT = Math.max(src.stunT || 0, 0.4); }   // Вышибала: укусивший отлетает

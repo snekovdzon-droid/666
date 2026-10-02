@@ -93,7 +93,7 @@ function drawChar(c, t) {
 }
 // ствол в руках героя (корень _root уже выставлен)
 function drawHeroGun(c) {
-  const gp = c.pitch || 0, kick = c.kick || 0, V = gunVis(c), rdip = Math.sin((c.reloadK || 0) * Math.PI) * 0.6;
+  const gp = c.pitch || 0, kick = c.kick || 0, V = gunVis(c), rdip = c.an && c.an.pose ? c.an.pose.dip : Math.sin((c.reloadK || 0) * Math.PI) * 0.6;
   const back = kick * 0.1, gx = c.lv && oneHand(c) ? REV_X : HAND_X, twin = !!c.lv && twinGuns(c);
   for (const [col, x, y, z, w, h, l] of V.parts) part(col, gx, HAND_Y, HAND_Z, -gp + rdip, w * 1.1, h * 1.1, l * 1.1, y, z - back, 0, x);
   if (twin) for (const [col, x, y, z, w, h, l] of V.parts) part(col, -gx, HAND_Y, HAND_Z, -gp + rdip, w * 1.1, h * 1.1, l * 1.1, y, z - back, 0, x);   // «Два кольта»: второй в левой
@@ -108,9 +108,10 @@ function attParts(c, V) {
   return out;
 }
 function drawHeroGunOnly(c) {                         // для воксельного героя: только ствол, корень — позиция героя
-  _q.setFromEuler(_e.set((c.fall || 0) + (c.sprinting ? 0.1 : 0), c.yaw, 0, 'YXZ'));
-  _root.compose(_v.set(c.x, c.y, c.z), _q, _s.set(1, 1, 1));
-  if (!c.down) drawHeroGun(c);
+  const P = c.an && c.an.pose;
+  if (P) { _q.setFromEuler(_e.set(P.lean, c.yaw, P.roll, 'YXZ')); _root.compose(_v.set(c.x, c.y + P.dy * VZ.H, c.z), _q, _s.set(1, 1, 1)); }
+  else { _q.setFromEuler(_e.set((c.fall || 0) + (c.sprinting ? 0.1 : 0), c.yaw, 0, 'YXZ')); _root.compose(_v.set(c.x, c.y, c.z), _q, _s.set(1, 1, 1)); }
+  if (!c.down && !(P && P.hideGun)) drawHeroGun(c);
 }
 function drawDownPistol(c) {                          // пистолет в руке упавшего игрока (кооп)
   _q.setFromEuler(_e.set(0, c.yaw, 0, 'YXZ'));
@@ -319,18 +320,31 @@ function drawVoxZombie(c) {
   const fat = c.form === 'fat', arm = c.form === 'armored', sw1 = fat && c.swell ? 1 + c.swell * 0.55 : 1;
   const H = VZ.H * (c.form === 'run' ? 0.95 : fat ? 1.05 : arm ? 1.04 : FORM_H[c.form] || 1) * (fat ? Math.sqrt(sw1) : 1), crawl = c.form === 'crawl', run = c.form === 'run';
   const sw0 = c.moving ? Math.sin(c.phase) : 0, sw = sw0 * (run ? 1.0 : 0.6);
-  let lean = c.fall || 0, x = c.x, y = c.y - (c.sink || 0), z = c.z;
-  if (!c.dead) { lean += c.lean || 0; if (run) lean += 0.28; if (c.hurtT > 0) lean -= 0.35 * c.hurtT / 0.16; if (c.atkT > 0) lean += 0.25 * Math.sin((1 - c.atkT / 0.45) * Math.PI); }
+  let lean = c.fall || 0, x = c.x, y = c.y - (c.sink || 0), z = c.z, roll = c.roll || 0;
+  const gait = fat || arm ? 0 : (c.gait || 0), age = c.born === undefined ? 9 : G.t - c.born, rise = !c.dead && !crawl && age < 0.9 ? 1 - ss(0, 0.9, age) : 0;   // gait: 0 бредёт, 1 хромает, 2 тянет руки, 3 рывками
+  if (!c.dead) {
+    lean += c.lean || 0; if (run) lean += 0.28; if (c.hurtT > 0) lean -= 0.35 * c.hurtT / 0.16;
+    if (c.atkT > 0) { const k = Math.sin((1 - c.atkT / 0.45) * Math.PI); lean += 0.25 * k; x += Math.sin(c.yaw) * 0.22 * k; z += Math.cos(c.yaw) * 0.22 * k; }   // рывок при укусе
+    if (c.moving) { roll += Math.sin(c.phase * 0.5) * (gait === 1 ? 0.1 : run ? 0.05 : 0.04); y += Math.abs(Math.sin(c.phase)) * H * (run ? 0.03 : 0.015); if (gait === 3) lean += 0.16 * Math.max(0, Math.sin(c.phase * 0.5)); if (gait === 1) lean += 0.08; }
+    if (rise > 0) { y -= rise * H * 1.15; lean -= rise * 0.5; }                                                                                  // выбирается из земли
+  }
   if (crawl) { lean = Math.PI / 2 - 0.08; y += 0.1; x -= Math.sin(c.yaw) * H * 0.45; z -= Math.cos(c.yaw) * H * 0.45; }
-  _q.setFromEuler(_e.set(lean, c.yaw, c.roll || 0, 'YXZ'));
+  _q.setFromEuler(_e.set(lean, c.yaw, roll, 'YXZ'));
   _vr.compose(_v.set(x, y, z), _q, _s.set(H, H, H));
   const ang = {};
   if (crawl) { const a = Math.sin(c.phase * 0.8) * 0.5; ang.armA = -Math.PI + 0.3 + a; ang.armB = -Math.PI + 0.3 - a; ang.legA = a * 0.2; ang.legB = -a * 0.2; ang.head = -0.9; }
   else {
     ang.legA = sw; ang.legB = -sw; ang.head = c.nod || 0;
+    if (gait === 1 && !run) { ang.legA = sw0 * 0.75; ang.legB = -sw0 * 0.25; ang.head += 0.18; }                // хромает: вторая нога волочится
+    if (gait === 2 && !run) { ang.legA = sw0 * 0.5; ang.legB = -sw0 * 0.5; ang.head -= 0.12; }
     let r1, r2;
-    if (run) { r1 = -0.5 + sw0 * 0.9; r2 = -0.5 - sw0 * 0.9; } else { r1 = -1.35 + Math.sin(c.phase * 0.5) * 0.12; r2 = r1 + 0.1; }
+    if (run) { r1 = -0.5 + sw0 * 0.9; r2 = -0.5 - sw0 * 0.9; }
+    else if (gait === 1) { r1 = -0.9 + sw0 * 0.35; r2 = -1.55; }
+    else if (gait === 2) { r1 = -1.62 + Math.sin(c.phase * 0.5) * 0.05; r2 = -1.58 - Math.sin(c.phase * 0.5) * 0.05; }
+    else if (gait === 3) { r1 = -1.0 + sw0 * 0.7; r2 = -1.0 - sw0 * 0.7; }
+    else { r1 = -1.35 + Math.sin(c.phase * 0.5) * 0.12; r2 = r1 + 0.1; }
     if (c.atkT > 0) { const k = Math.sin((1 - c.atkT / 0.45) * Math.PI); r1 -= k * 0.6; r2 -= k * 0.5; }
+    if (rise > 0) { r1 += (-2.8 - r1) * rise; r2 += (-2.8 - r2) * rise; ang.head = -0.4 * rise; }               // руки вверх, пока вылезает
     if (c.raise > 0) { r1 += (-2.7 - r1) * c.raise; r2 += (-2.7 - r2) * c.raise; ang.head = -0.55 * c.raise; }   // замах, крик, рёв
     if (c.dead) { r1 = r2 = -0.3; }
     ang.armA = r1; ang.armB = r2;
@@ -376,15 +390,10 @@ function heroHands() {                                  // где хват ор�
 }
 function drawVoxHero(p) {
   heroHands();
-  const H = VZ.H, sw = p.moving ? Math.sin(p.phase) * (p.sprinting ? 0.9 : 0.6) : 0;
-  const lean = (p.fall || 0) + (p.sprinting ? 0.1 : 0);
-  _q.setFromEuler(_e.set(lean, p.yaw, 0, 'YXZ'));
-  _vr.compose(_v.set(p.x, p.y, p.z), _q, _s.set(H, H, H));
-  const gp = p.pitch || 0, kick = p.kick || 0, rdip = Math.sin((p.reloadK || 0) * Math.PI) * 0.6;
-  const ang = { legA: sw, legB: -sw, head: -gp * 0.3 }, yaw = {};
-  if (p.down) { ang.armA = ang.armB = -0.2; }
-  else if (oneHand(p)) { const tw = twinGuns(p); ang.armA = -1.5 - gp + kick * 0.3 + rdip; ang.armB = tw ? ang.armA : -0.15 - sw * 0.5; yaw.armA = 0.05; if (tw) yaw.armB = -0.05; }
-  else { ang.armA = -1.45 - gp + kick * 0.3 + rdip; ang.armB = -1.3 - gp + kick * 0.2 + rdip; yaw.armA = 0.18; yaw.armB = -0.42; }
+  const H = VZ.H, P = heroPose(p); (p.an || (p.an = {})).pose = P;
+  _q.setFromEuler(_e.set(P.lean, p.yaw, P.roll, 'YXZ'));
+  _vr.compose(_v.set(p.x, p.y + P.dy * H, p.z), _q, _s.set(H, H, H));
+  const ang = P.ang, yaw = P.yaw;
   voxEmit(VOXHEROES[p.idx % VOXHEROES.length], ang, yaw, 1);
   drawGear(p, ang, yaw);
   drawTeslaPack(p);

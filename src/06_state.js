@@ -184,7 +184,7 @@ function spawnZombie(forceType, at, crawl, ignoreCap) {
     phase: Math.random() * 6, moving: true, flash: 0, kx: 0, kz: 0, dead: false, deadT: 0, fall: 0, atkT: 0, hurtT: 0, nod: 0,
     slideT: 0, side: 1, slowT: 0, slowMul: 1, stunT: 0, burnT: 0, bleedT: 0, dotT: 0 };
   if (MOB_INIT[type]) MOB_INIT[type](z);                                  // особые мобы: свои поля (щит, масть, запасы)
-  z.mhp = z.hp;                                                           // начальное здоровье — для расчёта «перебора» урона (разлёт частей)
+  z.mhp = z.hp; z.born = G.t; z.gait = Math.floor(Math.random() * 4);                                                           // начальное здоровье — для расчёта «перебора» урона (разлёт частей)
   zombies.push(z);
   return z;
 }

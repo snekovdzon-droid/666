@@ -20,6 +20,7 @@ function gravity(e, dt, r) {
 let shake = 0;
 function updatePlayer(p, dt) {
   if (p.inv > 0) p.inv -= dt;
+  animPlayer(p, dt);                                                     // скорость, ноги, приземление для анимации
   if (p.down) { p.fall = Math.max(-Math.PI / 2, (p.fall || 0) - dt * 6); p.moving = false; gravity(p, dt, p.r); if (players.length > 1 && G.state === 'play') updateDownPistol(p, dt); return; }
   const c = readControl(p), B = WEAPONS[p.gun];
   if (updateClimb(p, c, dt)) return;                                     // лестница: лезем, остальное ждёт
@@ -266,7 +267,7 @@ function updateRevive(dt) {
     if (helper) {
       p.reviveT += dt * (L(helper, 'medic') ? 2 : 1);
       if (p.reviveT >= CFG.REVIVE_TIME) {
-        p.down = false; p.reviveT = 0; p.fall = 0; p.hp = L(helper, 'firstaid') ? 2 : 1; p.inv = 2; p.ammo = wStat(p).mag; if (helper.rs) helper.rs.revives++;
+        p.down = false; p.reviveT = 0; p.hp = L(helper, 'firstaid') ? 2 : 1; p.inv = 2; p.ammo = wStat(p).mag; if (helper.rs) helper.rs.revives++;
         for (let i = 0; i < 16; i++) spawnP({ x: p.x, y: p.y + 0.5, z: p.z, vx: rnd(-1.5, 1.5), vy: rnd(1, 3), vz: rnd(-1.5, 1.5), s: 0.07, s1: 0.01, col: 0x9ff0a0, glow: true, life: 0.7, drag: 0.95 });
         SFX.level();
       }
