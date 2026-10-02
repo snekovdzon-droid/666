@@ -2805,17 +2805,31 @@ function shotFeel(p, ang, use) {
   const KV = (SPLIT.on && viewFor(p)) || CAM; KV.kx -= dx * F.cam * 0.02; KV.kz -= dz * F.cam * 0.02;
   shake = Math.max(shake, F.cam * 0.012);
   rumble(p, F.rumble[0] * (p.gun === 'mg' ? 0.5 + 0.5 * p.spin : 1), F.rumble[1]);
-  muzzleT = 0.05; muzzleLight.position.set(mz.x, mz.y, mz.z); muzzleLight.intensity = 3.5 * F.flash / 26;
-  const fs = F.flash / 26;
-  for (let i = 0; i < 4 + fs * 2; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: dx * rnd(2, 5) * fs + rnd(-0.5, 0.5), vy: rnd(-0.3, 0.8), vz: dz * rnd(2, 5) * fs + rnd(-0.5, 0.5), s: rnd(0.06, 0.12) * fs, s1: 0.01, col: 0xfff0a0, col1: 0xff7020, glow: true, life: 0.09, drag: 0.8 });
-  const heavy = p.gun === 'shotgun' || p.gun === 'sawnoff';
-  for (let i = 0, n = heavy ? 4 : p.gun === 'revolver' ? 3 : p.gun === 'crossbow' || (p.gun === 'smg' && Math.random() < 0.75) ? 0 : 1; i < n; i++)   // у ПП дым через раз — иначе закрывает героя spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: dx * 0.8 + rnd(-0.3, 0.3), vy: rnd(0.3, 0.9), vz: dz * 0.8 + rnd(-0.3, 0.3), s: 0.1, s1: heavy ? 0.55 : 0.4, col: 0xc8c4bc, col1: 0x8a8680, life: heavy ? 0.9 : 0.6, drag: 0.92 });
+  muzzleT = 0.05; muzzleLight.position.set(mz.x, mz.y, mz.z); muzzleLight.intensity = 7 * F.flash / 26;
+  const fs = F.flash / 26, W = p.gun;
+  if (F.flash > 0) {                                  // яркая вспышка: вытянутый луч вперёд, звезда, искры и тёплое ядро
+    const L = 0.9 + fs * 1.5;
+    spawnP({ x: mz.x + dx * L * 0.3, y: mz.y, z: mz.z + dz * L * 0.3, s: 0.2 * fs + 0.08, sz: L / (0.2 * fs + 0.08), ry: ang, col: 0xffffff, col1: 0xffa030, glow: true, life: 0.07 });
+    spawnP({ x: mz.x + dx * L * 0.2, y: mz.y, z: mz.z + dz * L * 0.2, s: 0.34 * fs + 0.1, sz: L * 0.6 / (0.34 * fs + 0.1), ry: ang, col: 0xffe070, col1: 0xff5010, glow: true, life: 0.09 });
+    for (const da of [0.7, -0.7]) spawnP({ x: mz.x + dx * 0.12, y: mz.y, z: mz.z + dz * 0.12, s: 0.12 * fs + 0.04, sz: 2.5 + fs * 2.5, ry: ang + da, col: 0xfff0b0, col1: 0xff8020, glow: true, life: 0.06 });
+    spawnP({ x: mz.x + dx * 0.1, y: mz.y, z: mz.z + dz * 0.1, s: 0.3 * fs + 0.14, s1: 0.04, col: 0xffffff, col1: 0xffc050, glow: true, life: 0.08 });
+    for (let i = 0, n = 3 + Math.round(fs * 4); i < n; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: dx * rnd(4, 11) + rnd(-2, 2), vy: rnd(-0.5, 1.5), vz: dz * rnd(4, 11) + rnd(-2, 2), g: 6, s: rnd(0.03, 0.06), col: 0xffd870, glow: true, life: rnd(0.12, 0.3), drag: 0.9 });
+  }
+  // дым у каждого оружия свой: дробовики — густое облако веером, винтовка — тонкая струйка, пулемёт — короткие клубки, ПП — лёгкая дымка, револьвер — круглый клуб
+  const SM = { shotgun: [7, 0.12, 0.8, 1.3, 2.6, 0.5, 0xd8d4cc, 0x8e8a84], sawnoff: [9, 0.14, 0.95, 1.5, 2.8, 0.7, 0xdcd8d0, 0x8a8680], rifle: [3, 0.07, 0.35, 1.5, 1.6, 0.1, 0xb4bcc4, 0x7c848c],
+    mg: [1, 0.09, 0.4, 0.7, 1.3, 0.35, 0xc0bcb4, 0x7a7670], smg: [1, 0.07, 0.3, 0.55, 1.0, 0.3, 0xc4c0b8, 0x84807a], revolver: [5, 0.16, 0.75, 1.1, 1.2, 0.2, 0xe0dcd4, 0x908c86] }[W];
+  if (SM && !(W === 'smg' && Math.random() < 0.5) && !(W === 'mg' && Math.random() < 0.4)) {
+    const [n, s0, s1, life, spd, spread, c0, c1] = SM;
+    for (let i = 0; i < n; i++) { const a = ang + rnd(-spread, spread), v = spd * rnd(0.4, 1) * (W === 'rifle' ? 1 + i * 0.5 : 1);
+      spawnP({ x: mz.x + dx * 0.15, y: mz.y, z: mz.z + dz * 0.15, vx: Math.sin(a) * v, vy: rnd(0.2, 0.8), vz: Math.cos(a) * v, s: s0, s1: s1 * rnd(0.7, 1.1), col: c0, col1: c1, life: life * rnd(0.8, 1.15), drag: 0.9 }); }
+    if (W === 'shotgun' || W === 'sawnoff') for (let i = 0; i < 4; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: rnd(-0.2, 0.2), vy: rnd(0.4, 0.9), vz: rnd(-0.2, 0.2), s: 0.1, s1: 0.5, col: 0xb8b4ac, col1: 0x7a7670, life: 1.6, drag: 0.96 });   // стелется у ствола
+  }
   if (F.shell) for (let i = 0; i < use; i++) spawnCasing(p, F.shell, 1);
 }
 function spawnCasing(p, type, side) {
   const a = p.yaw - Math.PI / 2 * side + rnd(-0.4, 0.4), hy = p.y + HAND_Y + 0.05, shell = type === 'shell';
-  spawnP({ x: p.x + Math.sin(a) * 0.2, y: hy, z: p.z + Math.cos(a) * 0.2, vx: Math.sin(a) * rnd(1.2, 2.2), vy: rnd(2, 3.5), vz: Math.cos(a) * rnd(1.2, 2.2), g: 16,
-    s: shell ? 0.07 : 0.05, sx: 0.8, sz: shell ? 1.7 : 1.5, ry: Math.random() * 3, col: shell ? 0xb83a2a : 0xd8b24a, life: 30, bounce: 1, stay: true, snd: type });
+  spawnP({ x: p.x + Math.sin(a) * 0.2, y: hy, z: p.z + Math.cos(a) * 0.2, vx: Math.sin(a) * rnd(1.8, 3.2), vy: rnd(2.5, 4.2), vz: Math.cos(a) * rnd(1.8, 3.2), g: 16,
+    s: shell ? 0.12 : 0.085, sx: 0.8, sz: shell ? 1.8 : 1.6, ry: Math.random() * 3, rx: Math.random() * 3, col: shell ? 0xe03a24 : 0xffd23c, life: 30, bounce: 1, stay: true, snd: type });
 }
 // Перезарядка закончилась: у арбалета болты берутся из колчана (нет болтов — ждём)
 function loadMag(p, ws) {
@@ -6423,6 +6437,7 @@ function fogTexture() {
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 }
 function initFog() {
+  return;                                              // туман убран: на экране его не было видно
   if (!MOOD.on || QID === 'low' || FOGL) return;
   const base = fogTexture(); FOGL = [];
   const defs = [{ y: 0.32, rep: 3, op: 0.2, sp: [0.006, 0.002] }, { y: 0.85, rep: 2, op: 0.14, sp: [-0.004, 0.005] }];
@@ -6443,6 +6458,7 @@ function moodTick(dt) {
     L.tex.offset.set(px / 130 * L.d.rep + L.sx, -pz / 130 * L.d.rep + L.sz);          // туман привязан к миру, а не к камере
     L.m.material.color.setRGB(0.85 - 0.5 * n, 0.78 - 0.45 * n, 0.69 - 0.38 * n); L.m.material.opacity = L.d.op * (1 - 0.35 * n);
   }
+  return;                                              // летающая пыль и пепел убраны
   ashAcc += (QID === 'low' ? 6 : QID === 'medium' ? 14 : 22) * dt;
   while (ashAcc >= 1) {
     ashAcc -= 1;

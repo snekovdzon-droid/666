@@ -76,6 +76,7 @@ function fogTexture() {
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 }
 function initFog() {
+  return;                                              // туман убран: на экране его не было видно
   if (!MOOD.on || QID === 'low' || FOGL) return;
   const base = fogTexture(); FOGL = [];
   const defs = [{ y: 0.32, rep: 3, op: 0.2, sp: [0.006, 0.002] }, { y: 0.85, rep: 2, op: 0.14, sp: [-0.004, 0.005] }];
@@ -96,6 +97,7 @@ function moodTick(dt) {
     L.tex.offset.set(px / 130 * L.d.rep + L.sx, -pz / 130 * L.d.rep + L.sz);          // туман привязан к миру, а не к камере
     L.m.material.color.setRGB(0.85 - 0.5 * n, 0.78 - 0.45 * n, 0.69 - 0.38 * n); L.m.material.opacity = L.d.op * (1 - 0.35 * n);
   }
+  return;                                              // летающая пыль и пепел убраны
   ashAcc += (QID === 'low' ? 6 : QID === 'medium' ? 14 : 22) * dt;
   while (ashAcc >= 1) {
     ashAcc -= 1;
