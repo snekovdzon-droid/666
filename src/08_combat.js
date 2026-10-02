@@ -249,7 +249,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   if (z.kres) knock *= z.kres;
   if (z.markT > 0) dmg *= 1.15;                                                         // метка трассера
   const _rs = ATTR && ATTR.rs; if (_rs) _rs.dmg += Math.min(dmg, Math.max(0, z.hp));           // нанесённый урон — реально снятое здоровье
-  z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
+  gibTrack(z, dmg); z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
   z.kx += dx * knock * 8; z.kz += dz * knock * 8;
   const by = hy !== undefined ? hy : z.y + 0.6;
   if (dx || dz) { blood(z.x, by, z.z, dx, dz, 4); if (Math.random() < 0.5) bloodDecal(z.x + dx * 0.3, z.z + dz * 0.3, 0.2, dx, dz); }
@@ -263,6 +263,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   gems.push({ x: z.x, y: z.y, z: z.z, v: T.xp * backMul(), pull: false, t: Math.random() * 6, vy: 2.5 });
   if (z.type === 'warden') wardenDown(z);
   if (T.fat) { z.swell = z.popNow ? 0.999 : 0.001; z.flash = 0; return; }                                    // толстяк раздувается и взрывается
+  if (maybeGib(z, dx, dz, knock)) return;                                                 // мощное убийство — тело разлетается на части
   const sp = Math.min(7, 1.5 + knock * 10) * rnd(0.8, 1.2) * 0.35;                        // труп отлетает по направлению удара
   z.cvx = dx * sp; z.cvz = dz * sp; z.vy = 1.2 + knock * 3;
   z.yaw = Math.atan2(-dx, -dz); z.flip = Math.random() < 0.25 ? 1 : -1;
@@ -283,12 +284,14 @@ function explodeBase(x, y, z, dmg, R, o = {}) {
   if (GAS.length) igniteGasAt(x, z, R);                                                    // взрыв поджигает бензин
   boomFx(x, y, z, R, o.gore); SFX.boom(R / 1.5);
   if (o.hurts) for (const p of players) if (p !== o.skip && !p.down && p.inv <= 0 && Math.abs(p.y - y) < 1.5 && Math.hypot(p.x - x, p.z - z) < R && !(o.owner && L(p, 'fireproof'))) hurtPlayer(p);   // костюм спасает и от снаряжения напарника
+  GIBF.boom = true;
   forNear(x, z, e => {
     if (e.dead || Math.abs(e.y - y) > 1.5) return;
     const dx = e.x - x, dz = e.z - z, d = Math.hypot(dx, dz); if (d >= R) return;
     damageZombie(e, dmg, dx / (d || 1), dz / (d || 1), 0.35 * (o.knock || 1), undefined, true);
     if (o.stun) e.stunT = Math.max(e.stunT || 0, o.stun);
   }, R + 1);
+  GIBF.boom = false;
 }
 function hurtPlayer(p, src) {
   if (src && p.shield) {                                                                 // «Тяжёлая стойка»: щит поглощает укус, укусивший отлетает

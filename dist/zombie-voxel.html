@@ -2435,6 +2435,7 @@ function spawnZombie(forceType, at, crawl, ignoreCap) {
     phase: Math.random() * 6, moving: true, flash: 0, kx: 0, kz: 0, dead: false, deadT: 0, fall: 0, atkT: 0, hurtT: 0, nod: 0,
     slideT: 0, side: 1, slowT: 0, slowMul: 1, stunT: 0, burnT: 0, bleedT: 0, dotT: 0 };
   if (MOB_INIT[type]) MOB_INIT[type](z);                                  // особые мобы: свои поля (щит, масть, запасы)
+  z.mhp = z.hp;                                                           // начальное здоровье — для расчёта «перебора» урона (разлёт частей)
   zombies.push(z);
   return z;
 }
@@ -2909,7 +2910,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   if (z.kres) knock *= z.kres;
   if (z.markT > 0) dmg *= 1.15;                                                         // метка трассера
   const _rs = ATTR && ATTR.rs; if (_rs) _rs.dmg += Math.min(dmg, Math.max(0, z.hp));           // нанесённый урон — реально снятое здоровье
-  z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
+  gibTrack(z, dmg); z.hp -= dmg; z.flash = 0.08; if (dmg >= 3) z.hurtT = 0.16;
   z.kx += dx * knock * 8; z.kz += dz * knock * 8;
   const by = hy !== undefined ? hy : z.y + 0.6;
   if (dx || dz) { blood(z.x, by, z.z, dx, dz, 4); if (Math.random() < 0.5) bloodDecal(z.x + dx * 0.3, z.z + dz * 0.3, 0.2, dx, dz); }
@@ -2923,6 +2924,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   gems.push({ x: z.x, y: z.y, z: z.z, v: T.xp * backMul(), pull: false, t: Math.random() * 6, vy: 2.5 });
   if (z.type === 'warden') wardenDown(z);
   if (T.fat) { z.swell = z.popNow ? 0.999 : 0.001; z.flash = 0; return; }                                    // толстяк раздувается и взрывается
+  if (maybeGib(z, dx, dz, knock)) return;                                                 // мощное убийство — тело разлетается на части
   const sp = Math.min(7, 1.5 + knock * 10) * rnd(0.8, 1.2) * 0.35;                        // труп отлетает по направлению удара
   z.cvx = dx * sp; z.cvz = dz * sp; z.vy = 1.2 + knock * 3;
   z.yaw = Math.atan2(-dx, -dz); z.flip = Math.random() < 0.25 ? 1 : -1;
@@ -2943,12 +2945,14 @@ function explodeBase(x, y, z, dmg, R, o = {}) {
   if (GAS.length) igniteGasAt(x, z, R);                                                    // взрыв поджигает бензин
   boomFx(x, y, z, R, o.gore); SFX.boom(R / 1.5);
   if (o.hurts) for (const p of players) if (p !== o.skip && !p.down && p.inv <= 0 && Math.abs(p.y - y) < 1.5 && Math.hypot(p.x - x, p.z - z) < R && !(o.owner && L(p, 'fireproof'))) hurtPlayer(p);   // костюм спасает и от снаряжения напарника
+  GIBF.boom = true;
   forNear(x, z, e => {
     if (e.dead || Math.abs(e.y - y) > 1.5) return;
     const dx = e.x - x, dz = e.z - z, d = Math.hypot(dx, dz); if (d >= R) return;
     damageZombie(e, dmg, dx / (d || 1), dz / (d || 1), 0.35 * (o.knock || 1), undefined, true);
     if (o.stun) e.stunT = Math.max(e.stunT || 0, o.stun);
   }, R + 1);
+  GIBF.boom = false;
 }
 function hurtPlayer(p, src) {
   if (src && p.shield) {                                                                 // «Тяжёлая стойка»: щит поглощает укус, укусивший отлетает
@@ -4949,7 +4953,7 @@ function mmLeave() { G.nightT = 0; }
 function mmPanel(name) {
   MM.panel = name; const el = $('mmPanel'); $('mmBtns').style.display = name ? 'none' : 'block'; el.style.display = name ? 'block' : 'none';
   if (name === 'settings') {
-    el.innerHTML = `<h3>Настройки</h3><button data-s="quality">Графика: ${QPRE[QID].name}</button><p style="opacity:.7;font-size:12px;margin:2px 0 8px">${QDESC[QID]}</p><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
+    el.innerHTML = `<h3>Настройки</h3><button data-s="quality">Графика: ${QPRE[QID].name}</button><p style="opacity:.7;font-size:12px;margin:2px 0 8px">${QDESC[QID]}</p><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="gibs">Разлёт частей: ${GIBS_ON ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
   } else if (name === 'mapedit') {
     el.innerHTML = mapEditPanelHtml();
   } else if (name === 'exit') {
@@ -4960,6 +4964,7 @@ function mmPanel(name) {
 function mmSetting(s) {
   SFX.click();
   if (s === 'sound') { setSound(!Sound.on); $('optSound').checked = Sound.on; mmPanel('settings'); }
+  else if (s === 'gibs') { GIBS_ON = !GIBS_ON; lsSet('gibs', GIBS_ON); mmPanel('settings'); }
   else if (s === 'quality') { const o = ['high', 'medium', 'low', 'auto']; lsSet('quality', o[(o.indexOf(QID) + 1) % o.length]); location.reload(); }
   else if (s === 'full') goFullscreen();
   else if (s === 'hud') heOpen();
@@ -5652,6 +5657,88 @@ Object.assign(SFX, {
 });
 </script>
 <script>'use strict';
+/* ---------- Разлёт частей: при мощном убийстве (дробь в упор, крупный калибр, взрыв) зомби разлетается на части тела ----------
+   Голова, торс, руки и ноги — настоящие части воксельной модели: летят, кувыркаются, отскакивают, оставляют кровавый след и лужи,
+   лежат на земле ~15 с и уходят в землю. Шанс растёт с «перебором» урона за последние 0,3 с относительно здоровья зомби. Включается в Настройках. */
+const GIBS = [], GIBF = { boom: false };
+let GIBS_ON = lsGet('gibs', true);
+const GIB_MAX = IS_TOUCH ? 36 : 80, _gq = new THREE.Quaternion(), _gdq = new THREE.Quaternion(), _gax = new THREE.Vector3(), _gz = new THREE.Matrix4().makeScale(0, 0, 0), _gtr = new THREE.Matrix4();
+
+// копим урон за короткое окно (вызывается из damageZombie)
+function gibTrack(z, dmg) { z.rw = (G.t - (z.rwT === undefined ? -9 : z.rwT) < 0.3 ? (z.rw || 0) : 0) + dmg; z.rwT = G.t; }
+// решение при смерти: true — тело разлетелось
+function maybeGib(z, dx, dz, knock) {
+  if (!GIBS_ON || z.gone) return false;
+  const T = ZOMBIES[z.type]; if (T.boss || T.fat) return false;
+  const ratio = (z.rw || 0) / Math.max(1, z.mhp || 1);
+  const chance = GIBF.boom ? (ratio > 0.4 ? 1 : 0.35) : clamp((ratio - 1.15) * 1.1, 0, 0.9);
+  if (Math.random() >= chance) return false;
+  gibZombie(z, dx, dz, clamp(ratio, 0.8, 3)); return true;
+}
+function formScale(z) {
+  const arm = z.form === 'armored', run = z.form === 'run';
+  return { H: VZ.H * (run ? 0.95 : arm ? 1.04 : FORM_H[z.form] || 1), w: arm ? 1.12 : FORM_W[z.form] || 1 };
+}
+function gibZombie(z, dx, dz, ratio) {
+  z.gone = true; z.sinkT = 9; z.sink = 9;                                  // тело убираем, остаются части
+  const dl = Math.hypot(dx, dz) || 1, ux = dx ? dx / dl : Math.cos(z.yaw + 1.57), uz = dz ? dz / dl : Math.sin(z.yaw + 1.57), spd = clamp(2.5 + ratio * 2.6, 3.5, 9.5);
+  blood(z.x, z.y + 0.7, z.z, ux, uz, 22); bloodDecal(z.x, z.z, 0.55, ux, uz);
+  SFX.gib(); shake = Math.max(shake, 0.12);
+  for (let i = 0; i < 9; i++) spawnP({ x: z.x, y: z.y + 0.7, z: z.z, vx: ux * rnd(2, 7) + rnd(-2, 2), vy: rnd(2, 6), vz: uz * rnd(2, 7) + rnd(-2, 2), g: 16, s: rnd(0.07, 0.13), col: z.look[i % 3] ?? 0x8a1010, life: 10, bounce: 1, rx: rnd(0, 3) });   // мелкие куски
+  if (!isVoxZ(z)) return;                                                  // собака и прочие «из коробок» — только мелкие куски
+  const M = VOXMS[z.vm % VOXMS.length], { H, w } = formScale(z), W = VZ.W * w, c = Math.cos(z.yaw), s = Math.sin(z.yaw);
+  for (const k of VOX_PARTS) {
+    if (k !== 'body' && Math.random() < (k === 'head' ? 0.2 : 0.3)) continue;                    // часть «испарилась» в кровь
+    const pv = M.parts[k].pivot, B = M.box[k], lx = (pv[0] + B.c.x) * W * H, ly = (pv[1] + B.c.y) * H, lz = (pv[2] + B.c.z) * W * H;
+    const g = { M, k, H, W, c: B.c, r: Math.max(0.12, Math.max(B.s.x * W, B.s.y, B.s.z * W) * H * 0.4),
+      pos: new THREE.Vector3(z.x + lx * c + lz * s, z.y + ly, z.z - lx * s + lz * c), q: new THREE.Quaternion().setFromAxisAngle(_gax.set(0, 1, 0), z.yaw),
+      vel: new THREE.Vector3(ux * spd * rnd(0.6, 1.2) + rnd(-2, 2), rnd(2.5, 6.5) * (k === 'body' ? 0.7 : 1), uz * spd * rnd(0.6, 1.2) + rnd(-2, 2)),
+      av: new THREE.Vector3(rnd(-12, 12), rnd(-12, 12), rnd(-12, 12)), t: 0, life: rnd(13, 18), rest: 0, bounces: 0, sink: 0 };
+    GIBS.push(g);
+  }
+  while (GIBS.length > GIB_MAX) GIBS.shift();
+}
+function updateGibs(dt) {
+  for (let i = GIBS.length - 1; i >= 0; i--) {
+    const g = GIBS[i]; g.t += dt;
+    if (g.t > g.life) { g.sink += dt * 0.6; if (g.sink > 0.5) { GIBS.splice(i, 1); continue; } }
+    if (g.rest > 0.6) continue;                                            // улеглась
+    g.vel.y -= 15 * dt;
+    const nx = g.pos.x + g.vel.x * dt, nz = g.pos.z + g.vel.z * dt;
+    if (!blocked(nx, g.pos.z, g.pos.y - g.r * 0.5, 0.12)) g.pos.x = nx; else g.vel.x *= -0.3;
+    if (!blocked(g.pos.x, nz, g.pos.y - g.r * 0.5, 0.12)) g.pos.z = nz; else g.vel.z *= -0.3;
+    g.pos.y += g.vel.y * dt;
+    const fl = floorAt(g.pos.x, g.pos.z, g.pos.y + g.r), low = fl + g.r * 0.8;
+    const sp = g.vel.length();
+    if (g.pos.y < low) {
+      g.pos.y = low;
+      if (g.vel.y < -1.5) {                                                // удар о землю: отскок, брызги, пятно
+        g.vel.y *= -0.32; g.vel.x *= 0.65; g.vel.z *= 0.65; g.av.multiplyScalar(0.55); g.bounces++;
+        if (g.bounces <= 2) { bloodDecal(g.pos.x, g.pos.z, 0.28 + 0.1 * Math.random(), g.vel.x, g.vel.z); blood(g.pos.x, fl + 0.15, g.pos.z, g.vel.x * 0.1, g.vel.z * 0.1, 5); }
+      } else {
+        g.vel.y = 0; const f = Math.exp(-7 * dt); g.vel.x *= f; g.vel.z *= f; g.av.multiplyScalar(Math.exp(-6 * dt));
+        if (Math.hypot(g.vel.x, g.vel.z) + g.av.length() * 0.1 < 0.5) g.rest += dt; else g.rest = 0;
+      }
+    } else if (sp > 2.5 && Math.random() < dt * 28) spawnP({ x: g.pos.x, y: g.pos.y, z: g.pos.z, vx: rnd(-0.4, 0.4), vy: rnd(-0.2, 0.5), vz: rnd(-0.4, 0.4), g: 14, s: rnd(0.04, 0.07), col: 0x8a1010, life: 0.6 });   // капает кровь
+    const w = g.av.length(); if (w > 0.01) { _gdq.setFromAxisAngle(_gax.copy(g.av).normalize(), w * dt); g.q.premultiply(_gdq); }
+  }
+}
+// вывод частей в те же InstancedMesh, что и у зомби (рисуется одна часть из шести, остальные схлопнуты)
+function drawGibs() {
+  for (const g of GIBS) {
+    const M = g.M; if (M.n >= MAX_VZ) continue;
+    const n = M.n++;
+    _vm.compose(_v.set(g.pos.x, g.pos.y - g.sink, g.pos.z), g.q, _s.set(g.H * g.W, g.H, g.H * g.W)); _vm.multiply(_gtr.makeTranslation(-g.c.x, -g.c.y, -g.c.z));
+    for (const k of VOX_PARTS) { M.mesh[k].setMatrixAt(n, k === g.k ? _vm : _gz); _c.setRGB(1, 1, 1); M.mesh[k].setColorAt(n, _c); }
+    if (!VZ.fullShadow) { const B = M.box[g.k]; _vb.compose(B.c, _gq.identity(), B.s); _vb.premultiply(_vm); voxShadow.setMatrixAt(VZ.pn++, _vb); }
+  }
+}
+function clearGibs() { GIBS.length = 0; }
+Object.assign(SFX, {
+  gib() { if (!soundOn() || !canPlay('gib', 60)) return; noiseHit({ dur: 0.3, type: 'lowpass', freq: 650, vol: 0.45, sweep: 200 }); thud(70, 0.5, 0, 0.12); noiseHit({ dur: 0.12, type: 'bandpass', freq: 1800, q: 1, vol: 0.12 }); },
+});
+</script>
+<script>'use strict';
 /* ---------- 16. Интерфейс: меню (число игроков, ствол каждому), HUD каждого игрока со своей стороны, пауза, конец ---------- */
 const $ = id => document.getElementById(id);
 const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -5788,7 +5875,7 @@ const START = MAPDEF.start;                   // двор перед главн�
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll(); moodStart();
-  clearMobs(); splitEnd(); clearTeslaFx();
+  clearMobs(); splitEnd(); clearTeslaFx(); clearGibs();
   Object.assign(G, { killsBy: {}, bossKills: 0, nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z; eventsReset();
@@ -5867,7 +5954,7 @@ function tick(dt, T) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); if (!SPLIT.on) tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); updateTeslaFx(dt); eventsTick(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); updateTeslaFx(dt); updateGibs(dt); eventsTick(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }
@@ -5883,7 +5970,7 @@ function render(T) {
   chN = 0; voxFrameBegin();
   for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
   for (const z of zombies) if (isVoxZ(z)) drawVoxZombie(z); else drawChar(z, T);
-  if (G.state === 'main') mmDraw();
+  if (G.state === 'main') mmDraw(); else drawGibs();
   voxFrameEnd(); drawMarkers(T);
   charMesh.count = chN; charMesh.instanceMatrix.needsUpdate = true; charMesh.instanceColor.needsUpdate = true;
   if (SPLIT.on && G.state !== 'main') {

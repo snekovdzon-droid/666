@@ -135,7 +135,7 @@ const START = MAPDEF.start;                   // двор перед главн�
 function clearRun() {
   zombies.length = 0; bullets.length = 0; gems.length = 0; parts.length = 0; fireStrips.length = 0; UBGL.length = 0; clearBolts(); clearItems(); clearDevices();
   dctx.clearRect(0, 0, GW, GW); for (const s of SCORCHES) scorch(s[0], s[1], s[2]); decalMarkAll(); moodStart();
-  clearMobs(); splitEnd(); clearTeslaFx();
+  clearMobs(); splitEnd(); clearTeslaFx(); clearGibs();
   Object.assign(G, { killsBy: {}, bossKills: 0, nextPack: 200, bossN: 0, boss: null, pickQueue: [], t: 0, kills: 0, spawnAcc: 0, nextHorde: 60, xp: 0, level: 1, win: false, hurtFx: 0, lvlFx: 0, nightT: 0, paused: false });
   players.length = 0; players.push(player = makePlayer(0, G.gun, START.x, START.z));
   CAM.x = START.x; CAM.z = START.z; eventsReset();
@@ -214,7 +214,7 @@ function tick(dt, T) {
     zgridBuild();
     if (run) { for (const p of players) updatePlayer(p, dt); if (!SPLIT.on) tether(); updateRevive(dt); }
     else for (const p of players) { if (p.inv > 0) p.inv -= dt; if (p.down) updatePlayer(p, dt); p.moving = false; }
-    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); updateTeslaFx(dt); eventsTick(dt);
+    updateBullets(dt); updateZombies(dt); updateSwells(dt); updateFireStrips(dt); updateUbglFlight(dt); updateBolts(dt); updateItems(dt); updateDevices(dt); updateMobFx(dt); updateGates(dt); updateTeslaFx(dt); updateGibs(dt); eventsTick(dt);
   } else if (G.state === 'menu' && player) {                // в меню герой крутится на месте и показывает ствол
     player.yaw += dt * 0.6; player.pitch = 0; player.kick *= 0.9;
   }
@@ -230,7 +230,7 @@ function render(T) {
   chN = 0; voxFrameBegin();
   for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
   for (const z of zombies) if (isVoxZ(z)) drawVoxZombie(z); else drawChar(z, T);
-  if (G.state === 'main') mmDraw();
+  if (G.state === 'main') mmDraw(); else drawGibs();
   voxFrameEnd(); drawMarkers(T);
   charMesh.count = chN; charMesh.instanceMatrix.needsUpdate = true; charMesh.instanceColor.needsUpdate = true;
   if (SPLIT.on && G.state !== 'main') {

@@ -39,7 +39,7 @@ function mmLeave() { G.nightT = 0; }
 function mmPanel(name) {
   MM.panel = name; const el = $('mmPanel'); $('mmBtns').style.display = name ? 'none' : 'block'; el.style.display = name ? 'block' : 'none';
   if (name === 'settings') {
-    el.innerHTML = `<h3>Настройки</h3><button data-s="quality">Графика: ${QPRE[QID].name}</button><p style="opacity:.7;font-size:12px;margin:2px 0 8px">${QDESC[QID]}</p><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
+    el.innerHTML = `<h3>Настройки</h3><button data-s="quality">Графика: ${QPRE[QID].name}</button><p style="opacity:.7;font-size:12px;margin:2px 0 8px">${QDESC[QID]}</p><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="gibs">Разлёт частей: ${GIBS_ON ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
   } else if (name === 'mapedit') {
     el.innerHTML = mapEditPanelHtml();
   } else if (name === 'exit') {
@@ -50,6 +50,7 @@ function mmPanel(name) {
 function mmSetting(s) {
   SFX.click();
   if (s === 'sound') { setSound(!Sound.on); $('optSound').checked = Sound.on; mmPanel('settings'); }
+  else if (s === 'gibs') { GIBS_ON = !GIBS_ON; lsSet('gibs', GIBS_ON); mmPanel('settings'); }
   else if (s === 'quality') { const o = ['high', 'medium', 'low', 'auto']; lsSet('quality', o[(o.indexOf(QID) + 1) % o.length]); location.reload(); }
   else if (s === 'full') goFullscreen();
   else if (s === 'hud') heOpen();
