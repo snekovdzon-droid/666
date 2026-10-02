@@ -3,6 +3,7 @@
 const muzzleLight = new THREE.PointLight(0xffd090, 0, 6, 2); scene.add(muzzleLight);
 let muzzleT = 0;
 function muzzleOf(p) {
+  const gp0 = gunPoint(p, 'muz'); if (gp0) return gp0;
   const V = gunVis(p), gx = oneHand(p) ? REV_X * (p.twinSide || 1) : HAND_X, m = (V.muz + (p.att && p.att.barrel && !p.hand ? 0.17 : 0)) * 1.1 - p.kick * 0.1;   // удлинённый ствол — срез дальше
   const lx = gx, ly = HAND_Y + Math.sin(p.pitch) * m, lz = HAND_Z + Math.cos(p.pitch) * m, c = Math.cos(p.yaw), s = Math.sin(p.yaw);
   return { x: p.x + lx * c + lz * s, y: p.y + ly, z: p.z - lx * s + lz * c };
@@ -159,8 +160,9 @@ function shotFeel(p, ang, use) {
   if (F.shell) for (let i = 0; i < use; i++) spawnCasing(p, F.shell, 1);
 }
 function spawnCasing(p, type, side) {
+  const ej = gunPoint(p, 'eject');
   const a = p.yaw - Math.PI / 2 * side + rnd(-0.4, 0.4), hy = p.y + HAND_Y + 0.05, shell = type === 'shell';
-  spawnP({ x: p.x + Math.sin(a) * 0.2, y: hy, z: p.z + Math.cos(a) * 0.2, vx: Math.sin(a) * rnd(1.8, 3.2), vy: rnd(2.5, 4.2), vz: Math.cos(a) * rnd(1.8, 3.2), g: 16,
+  spawnP({ x: ej ? ej.x : p.x + Math.sin(a) * 0.2, y: ej ? ej.y : hy, z: ej ? ej.z : p.z + Math.cos(a) * 0.2, vx: Math.sin(a) * rnd(1.8, 3.2), vy: rnd(2.5, 4.2), vz: Math.cos(a) * rnd(1.8, 3.2), g: 16,
     s: shell ? 0.12 : 0.085, sx: 0.8, sz: shell ? 1.8 : 1.6, ry: Math.random() * 3, rx: Math.random() * 3, col: shell ? 0xe03a24 : 0xffd23c, life: 30, bounce: 1, stay: true, snd: type });
 }
 // Перезарядка закончилась: у арбалета болты берутся из колчана (нет болтов — ждём)

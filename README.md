@@ -30,3 +30,6 @@
 
 ## Звуки оружия
 Записи выстрелов и перезарядок — Snake's Authentic Gun Sounds (1 и 2), автор Snake / F8 Studios, itch.io (https://f8studios.itch.io/snakes-authentic-gun-sounds), свободная лицензия. Нарезаны и сжаты скриптом `tools/gen_sounds.py` (`assets/sounds/*.mp3` → `src/02b_sound_assets.js`). В настройках можно вернуться к синтезированным звукам.
+
+## Воксельные стволы
+Модели из Meshy (`.glb`) превращаются в маленькие `.vox` скриптом `node tools/glb2vox.js <папка с g_<id>.glb>`: вокселизация, палитра игры (4 тона стали, 2 тона дерева), сглаживание пятен. Результат: `assets/guns/<id>.vox` (открываются в MagicaVoxel) и `src/02c_gun_assets.js` (вшит в игру). Точки хвата, цевья, дула и выброса гильз, размер и длина ствола лежат в `assets/guns/guns.json`; предпросмотр — `node tools/gunview.js out.png revolver,rifle`. Загрузка и хват — `src/11k_guns.js`.

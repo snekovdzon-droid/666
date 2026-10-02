@@ -41,6 +41,10 @@ function animPlayer(p, dt) {
   if (!p.down && p.fall < 0) p.fall = Math.min(0, p.fall + dt * 4.5);       // встаёт после нокдауна
   const rk = p.reloadK || 0;
   if (rk <= 0 || rk > 0.9) A.magDone = false;
+  // ствол поднят, пока стреляешь, перезаряжаешься, бьёшь; в остальное время и на спринте — опущен
+  if (A.ready === undefined) A.ready = 1;
+  const up = !p.sprinting && !p.down && (p.firing || G.t - (p.lastShot === undefined ? -9 : p.lastShot) < 1.4 || rk > 0 || p.meleeSw || p.throwA > 0);
+  A.ready += ((up ? 1 : 0) - A.ready) * Math.min(1, dt * (up ? 14 : 3.5));
   return A;
 }
 
@@ -71,20 +75,29 @@ function heroPose(p) {
   }
   P.dip = rdip;
   const hand = oneHand(p), tw = hand && twinGuns(p), rest = Math.sin(G.t * 2.2) * 0.015 * (spd < 0.1 ? 1 : 0);
-  if (hand) {
+  const HD = !p.hand ? gunHold(p, A.ready === undefined ? 1 : A.ready, gp, kick, rdip) : null;
+  if (HD) {                                                                                      // воксельный ствол: руки тянутся к рукояти и цевью
+    P.hold = HD; P.sc = { armA: HD.armA.sc, armB: 1 };
+    const wIK = k > 0 && bOv !== null ? 1 - ss(0, 0.1, k) * (1 - ss(0.9, 1, k)) : 1;           // середина перезарядки: вторая рука занята своим делом
+    a.armA = HD.armA.a + rest; y.armA = HD.armA.yaw;
+    if (HD.armB) {
+      a.armB = wIK < 1 ? bOv * (1 - wIK) + HD.armB.a * wIK : HD.armB.a; y.armB = wIK < 1 ? byOv * (1 - wIK) + HD.armB.yaw * wIK : HD.armB.yaw; P.sc.armB = wIK < 1 ? 1 + (HD.armB.sc - 1) * wIK : HD.armB.sc;
+    } else { a.armB = bOv !== null ? bOv : -0.15 - Math.sin(ph) * 0.5 * spd * A.legDir; if (byOv !== null) y.armB = byOv; }
+    P.dip = 0;
+  } else if (hand) {
     a.armA = -1.5 - gp + kick * 0.3 + rdip + rest; y.armA = 0.05;
     a.armB = tw ? a.armA : (bOv !== null ? bOv : -0.15 - Math.sin(ph) * 0.5 * spd * A.legDir); if (tw) y.armB = -0.05; else if (byOv !== null) y.armB = byOv;
   } else {
-    a.armA = -1.45 - gp + kick * 0.3 + rdip + rest + Math.sin(ph * 2) * 0.02 * spd; a.armB = (bOv !== null ? bOv : -1.3 - gp + kick * 0.2 + rest) + (bOv === null ? rdip : 0) ; y.armA = 0.18; y.armB = byOv !== null ? byOv : -0.42;
+    a.armA = -1.45 - gp + kick * 0.3 + rdip + rest + Math.sin(ph * 2) * 0.02 * spd; a.armB = (bOv !== null ? bOv : -1.3 - gp + kick * 0.2 + rest) + (bOv === null ? rdip : 0); y.armA = 0.18; y.armB = byOv !== null ? byOv : -0.42;
   }
   if (p.throwA > 0) {                                                                             // бросок: замах и выброс
     const t = 1 - p.throwA / 0.35;
-    a.armA = kf([[0, a.armA], [.35, -2.7], [.6, -0.7], [1, a.armA]], t); P.lean += 0.16 * Math.sin(t * Math.PI); P.dip = 0;
+    a.armA = kf([[0, a.armA], [.35, -2.7], [.6, -0.7], [1, a.armA]], t); y.armA = 0; P.lean += 0.16 * Math.sin(t * Math.PI); P.dip = 0; if (P.sc) P.sc.armA = 1; if (P.hold) P.hold.handA = null;
   }
   const sw2 = p.meleeSw;
   if (sw2) {                                                                                      // удар: рывок вперёд и замах
     const t = clamp(sw2.t / sw2.dur, 0, 1);
-    a.armA = kf([[0, -2.5], [.3, -2.6], [.6, -0.5], [1, -1.0]], t); a.armB = kf([[0, -2.2], [.3, -2.4], [.6, -0.6], [1, -1.0]], t); P.lean += 0.4 * Math.sin(t * Math.PI); P.dy -= 0.03 * Math.sin(t * Math.PI);
+    a.armA = kf([[0, -2.5], [.3, -2.6], [.6, -0.5], [1, -1.0]], t); a.armB = kf([[0, -2.2], [.3, -2.4], [.6, -0.6], [1, -1.0]], t); y.armA = y.armB = 0; if (P.sc) P.sc.armA = P.sc.armB = 1; P.hold = null; P.lean += 0.4 * Math.sin(t * Math.PI); P.dy -= 0.03 * Math.sin(t * Math.PI);
   }
   return P;
 }

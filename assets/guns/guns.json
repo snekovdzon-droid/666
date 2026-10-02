@@ -1,0 +1,183 @@
+{
+ "revolver": {
+  "N": 21,
+  "axis": "x",
+  "flip": true,
+  "len": 0.36,
+  "stance": "pistol",
+  "grip": [
+   2.5,
+   4.0
+  ],
+  "fore": [
+   5,
+   2.5
+  ],
+  "muz": [
+   22.5,
+   12
+  ],
+  "eject": [
+   11,
+   9
+  ]
+ },
+ "uzi": {
+  "N": 22,
+  "axis": "x",
+  "flip": true,
+  "len": 0.38,
+  "stance": "pistol",
+  "grip": [
+   12,
+   5
+  ],
+  "fore": [
+   13.5,
+   3
+  ],
+  "muz": [
+   23.5,
+   13
+  ],
+  "eject": [
+   14,
+   12
+  ]
+ },
+ "smg": {
+  "N": 31,
+  "axis": "x",
+  "flip": true,
+  "len": 0.52,
+  "stance": "smg",
+  "grip": [
+   9,
+   7
+  ],
+  "fore": [
+   21.5,
+   6
+  ],
+  "muz": [
+   31.5,
+   16
+  ],
+  "eject": [
+   21,
+   17
+  ]
+ },
+ "sawnoff": {
+  "N": 34,
+  "axis": "x",
+  "flip": true,
+  "len": 0.58,
+  "stance": "pistol",
+  "grip": [
+   3.5,
+   3.5
+  ],
+  "fore": [
+   25,
+   6.5
+  ],
+  "muz": [
+   35.5,
+   10
+  ],
+  "eject": [
+   22,
+   10
+  ]
+ },
+ "rifle": {
+  "N": 53,
+  "axis": "x",
+  "flip": true,
+  "len": 0.9,
+  "stance": "long",
+  "grip": [
+   15,
+   8
+  ],
+  "fore": [
+   38,
+   12.5
+  ],
+  "muz": [
+   52.5,
+   14.5
+  ],
+  "eject": [
+   30,
+   15
+  ]
+ },
+ "shotgun": {
+  "N": 56,
+  "axis": "x",
+  "flip": true,
+  "len": 0.95,
+  "stance": "long",
+  "grip": [
+   16,
+   8.5
+  ],
+  "fore": [
+   40,
+   8.5
+  ],
+  "muz": [
+   57.5,
+   11.5
+  ],
+  "eject": [
+   31,
+   12
+  ]
+ },
+ "mg": {
+  "N": 59,
+  "axis": "x",
+  "flip": true,
+  "len": 1.0,
+  "stance": "long",
+  "grip": [
+   15.5,
+   4
+  ],
+  "fore": [
+   42,
+   4
+  ],
+  "muz": [
+   60.5,
+   9.5
+  ],
+  "eject": [
+   25,
+   9
+  ]
+ },
+ "crossbow": {
+  "N": 41,
+  "axis": "x",
+  "flip": true,
+  "len": 0.7,
+  "stance": "long",
+  "grip": [
+   12.5,
+   3
+  ],
+  "fore": [
+   28,
+   3
+  ],
+  "muz": [
+   40.5,
+   8
+  ],
+  "eject": null
+ }
+}

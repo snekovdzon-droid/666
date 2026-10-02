@@ -1,0 +1,31 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#8a8a8a"><canvas id=c width=900 height=300></canvas>
+<script src="../vendor/three.min.js"></script><script src="../vendor/gltf-meshopt.js"></script>
+<script>
+// Вокселизация GLB-модели оружия (запускается из tools/glb2vox.js): поверхность → воксели, цвет — среднее по текстуре в вокселе
+window.voxelize = async function (url, N, axis) {
+  const buf = await (await fetch(url)).arrayBuffer();
+  const g = await new Promise((ok, bad) => new GLTFLoader().parse(buf, '', ok, bad));
+  let m = null; g.scene.traverse(o => { if (o.isMesh && !m) m = o; });
+  const img = m.material.map.image, cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+  const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0); const px = cx.getImageData(0, 0, cv.width, cv.height).data;
+  const pos = m.geometry.attributes.position, uv = m.geometry.attributes.uv, idx = m.geometry.index ? m.geometry.index.array : null;
+  const bb = new THREE.Box3().setFromBufferAttribute(pos), sz = bb.getSize(new THREE.Vector3());
+  const L = axis === 'z' ? sz.z : sz.x, vs = L / N, cells = new Map();
+  const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), tri = idx ? idx.length / 3 : pos.count / 3;
+  for (let t = 0; t < tri; t++) {
+    const ia = idx ? idx[t * 3] : t * 3, ib = idx ? idx[t * 3 + 1] : t * 3 + 1, ic = idx ? idx[t * 3 + 2] : t * 3 + 2;
+    A.fromBufferAttribute(pos, ia); B.fromBufferAttribute(pos, ib); C.fromBufferAttribute(pos, ic);
+    const area = B.clone().sub(A).cross(C.clone().sub(A)).length() / 2, n = Math.max(1, Math.min(400, Math.ceil(area / (vs * vs) * 14)));
+    for (let s = 0; s < n; s++) {
+      let u = Math.random(), v = Math.random(); if (u + v > 1) { u = 1 - u; v = 1 - v; } const w = 1 - u - v;
+      const x = A.x * w + B.x * u + C.x * v, y = A.y * w + B.y * u + C.y * v, z = A.z * w + B.z * u + C.z * v;
+      const tu = uv.getX(ia) * w + uv.getX(ib) * u + uv.getX(ic) * v, tv = uv.getY(ia) * w + uv.getY(ib) * u + uv.getY(ic) * v;
+      const X = Math.floor((x - bb.min.x) / vs), Y = Math.floor((y - bb.min.y) / vs), Z = Math.floor((z - bb.min.z) / vs), k = X + ',' + Y + ',' + Z;
+      const pi = ((Math.min(cv.height - 1, Math.floor((1 - tv) * cv.height)) % cv.height) * cv.width + (Math.floor(tu * cv.width) % cv.width)) * 4;
+      let e = cells.get(k); if (!e) { e = { x: X, y: Y, z: Z, r: 0, g: 0, b: 0, n: 0 }; cells.set(k, e); }
+      e.r += px[pi]; e.g += px[pi + 1]; e.b += px[pi + 2]; e.n++;
+    }
+  }
+  return { ext: [sz.x, sz.y, sz.z], vs, vox: [...cells.values()].map(e => [e.x, e.y, e.z, Math.round(e.r / e.n), Math.round(e.g / e.n), Math.round(e.b / e.n)]) };
+};
+</script>

@@ -227,8 +227,9 @@ function tick(dt, T) {
 }
 function render(T) {
   updateFade();
-  chN = 0; voxFrameBegin();
+  chN = 0; voxFrameBegin(); gunsFrameBegin();
   for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
+  gunsFrameEnd();
   for (const z of zombies) if (isVoxZ(z)) drawVoxZombie(z); else drawChar(z, T);
   if (G.state === 'main') mmDraw(); else drawGibs();
   voxFrameEnd(); drawMarkers(T);

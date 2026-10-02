@@ -111,6 +111,7 @@ function drawHeroGunOnly(c) {                         // для воксельн
   const P = c.an && c.an.pose;
   if (P) { _q.setFromEuler(_e.set(P.lean, c.yaw, P.roll, 'YXZ')); _root.compose(_v.set(c.x, c.y + P.dy * VZ.H, c.z), _q, _s.set(1, 1, 1)); }
   else { _q.setFromEuler(_e.set((c.fall || 0) + (c.sprinting ? 0.1 : 0), c.yaw, 0, 'YXZ')); _root.compose(_v.set(c.x, c.y, c.z), _q, _s.set(1, 1, 1)); }
+  if (P && P.hold && !c.down && !P.hideGun) { drawGunAndHands(c, P.hold); return; }
   if (!c.down && !(P && P.hideGun)) drawHeroGun(c);
 }
 function drawDownPistol(c) {                          // пистолет в руке упавшего игрока (кооп)
@@ -365,7 +366,7 @@ function zedGear(M, ang, wMul, fat, c) {
   const b = at('body'); part(lin(0x2e3428), 0, 0, 0, 0, b.s.x * 1.12, b.s.y * 0.72, b.s.z * 1.25, b.c.y + b.s.y * 0.1, b.c.z, 0, b.c.x);        // бронежилет
 }
 // Вывести одну модель: корень уже в _vr; ang — поворот частей вокруг X, yaw — вокруг Y (руки к оружию)
-function voxEmit(M, ang, yaw, fl, wMul = 1) {
+function voxEmit(M, ang, yaw, fl, wMul = 1, sc = null) {
   if (M.n >= MAX_VZ) return;
   const n = M.n++, W = VZ.W * wMul;
   _vs.makeScale(W, 1, W);
@@ -373,6 +374,7 @@ function voxEmit(M, ang, yaw, fl, wMul = 1) {
     const pv = M.parts[k].pivot;
     if (yaw && yaw[k]) _vl.makeRotationFromEuler(_e.set(ang[k] || 0, yaw[k], 0, 'YXZ')); else _vl.makeRotationX(ang[k] || 0);
     _vl.setPosition(pv[0] * W, pv[1], pv[2] * W);   // пропорции: ширина и толщина ×W
+    if (sc && sc[k]) _vs.makeScale(W, sc[k], W); else if (sc) _vs.makeScale(W, 1, W);   // руки героя тянутся к рукояти и цевью
     _vm.multiplyMatrices(_vr, _vl); _vm.multiply(_vs);
     M.mesh[k].setMatrixAt(n, _vm); _c.setRGB(fl, fl, fl); M.mesh[k].setColorAt(n, _c);
     if (!VZ.fullShadow) { const B = M.box[k]; _vb.compose(B.c, _q.identity(), B.s); _vb.premultiply(_vm); voxShadow.setMatrixAt(VZ.pn++, _vb); }
@@ -394,7 +396,7 @@ function drawVoxHero(p) {
   _q.setFromEuler(_e.set(P.lean, p.yaw, P.roll, 'YXZ'));
   _vr.compose(_v.set(p.x, p.y + P.dy * H, p.z), _q, _s.set(H, H, H));
   const ang = P.ang, yaw = P.yaw;
-  voxEmit(VOXHEROES[p.idx % VOXHEROES.length], ang, yaw, 1);
+  voxEmit(VOXHEROES[p.idx % VOXHEROES.length], ang, yaw, 1, 1, P.sc);
   drawGear(p, ang, yaw);
   drawTeslaPack(p);
 }
