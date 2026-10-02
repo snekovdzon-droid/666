@@ -209,10 +209,11 @@ function updateSky(dt) {
   const k = clamp((G.t - 60) / (RUN_TIME * 0.85 - 60), 0, 1), target = Math.max(G.nightT, k * k * (3 - 2 * k), EV.blackout ? 0.95 : 0);   // первая минута — закат, дальше плавно темнеет, полная ночь к ~17-й минуте
   G.night += (target - G.night) * Math.min(1, dt * 1.5);
   const n = G.night;
-  sun.intensity = 1.15 * (1 - n) + 0.1 * n;
+  sun.intensity = 1.15 * (1 - n) + 0.06 * n;
   sun.color.setRGB(1, 0.8 - n * 0.2, 0.58 + n * 0.3);
-  hemi.intensity = 0.5 - n * 0.34; hemi.color.setRGB(1 - n * 0.55, 0.88 - n * 0.45, 0.75 - n * 0.2);
-  scene.background.setRGB(0.13 - n * 0.09, 0.1 - n * 0.06, 0.09 - n * 0.03); scene.fog.color.copy(scene.background);
+  hemi.intensity = 0.5 - n * 0.37; hemi.color.setRGB(1 - n * 0.6, 0.88 - n * 0.5, 0.75 - n * 0.2); hemi.groundColor.setHex(0x3a3028).multiplyScalar(1 - 0.5 * n);   // ночь темнее: почти только лампы, фонари и огонь
+  renderer.toneMappingExposure = 1 - 0.08 * n;
+  scene.background.setRGB(0.13 - n * 0.115, 0.1 - n * 0.087, 0.09 - n * 0.065); scene.fog.color.copy(scene.background);
   for (const m of winMats) m.emissiveIntensity = 0.25 + n * 1.1 * evLights();
   for (const L of lamps) { const nl = n * lampOn(L); L.bulb.material.color.setRGB(0.4 + nl * 0.6, 0.39 + nl * 0.55, 0.3 + nl * 0.45); }
   setLampLights(CAM.x, CAM.z); evSkyFx(n);
