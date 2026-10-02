@@ -422,7 +422,7 @@ const DEVICES = {
   magnet: { name:'Магнитный пояс',  lv:['Опыт притягивается с +50% расстояния', '+100%', 'Притягивает и ящики, и предметы с земли (4 клетки)'] },
   inject: { name:'Автоинжектор',    lv:['Один раз спасает от смерти: встаёшь с 1 сердцем', 'Встаёшь с 2 сердцами', 'Перезаряжается за 4 минуты'] },
   hook:   { name:'Крюк-кошка',      lv:['Рывок крюком туда, куда смотришь (G / A / кнопка), перезарядка 1 мин', 'Перезарядка 45 с', 'Крюк цепляется за крыши — забираешься наверх; перезарядка 30 с'] },
-  tesla:  { name:'Тесла-ранец',     lv:['Молния по ближайшему зомби раз в 3 с (25 урона)', 'Молния прыгает ещё на двоих', 'Раз в 2 с, прыгает на четверых'] },
+  tesla:  { name:'Тесла-ранец',     lv:['Редкая мощная молния по ближайшему зомби раз в 6 с (50 урона)', 'Молния прыгает ещё на двоих', 'Раз в 4 с, прыгает на четверых'] },
 };
 const DEV_IDS = Object.keys(DEVICES), DEV_MAX = 3, devMaxOf = id => id === 'dog' ? 4 : DEV_MAX;   // у собаки четыре уровня
 // Обвесы (батч 8): только плюсы, можно поставить все, получаются в забеге (карточки и большие ящики), видны на стволе
@@ -4144,10 +4144,10 @@ function updateTesla(p, dt) {
   const lv = devLv(p, 'tesla'); if (!lv || p.down) return;
   if ((p.teslaT = (p.teslaT || 0) - dt) > 0) return;
   const first = nearestZombie(p.x, p.z, 5); if (!first) return;
-  p.teslaT = lv >= 3 ? 2 : 3;
+  p.teslaT = lv >= 3 ? 4 : 6;                                   // молнии редкие, но сильные (раньше 25 урона каждые 3 / 2 с)
   const hops = lv >= 3 ? 4 : lv >= 2 ? 2 : 0, hit = new Set();
   const tip = teslaTip(p, Math.floor(Math.random() * lv), lv);
-  let a = tip, z = first, dmg = 25 * p.st.dmg;
+  let a = tip, z = first, dmg = 50 * p.st.dmg;
   teslaFlash(tip);
   for (let k = 0; k <= hops && z; k++) {
     const b = { x: z.x, y: z.y + 0.75, z: z.z };
@@ -5595,32 +5595,36 @@ function drawTeslaPack(p) {
   const near = p.down ? null : nearestZombie(p.x, p.z, 6);
   if (!p.down) for (let i = 0; i < lv; i++) {
     const t = teslaTip(p, i, lv);
-    if (Math.random() < 0.25) spawnP({ x: t.x, y: t.y, z: t.z, s: 0.1, s1: 0.03, col: 0xa8f4ff, glow: true, life: 0.12 });
-    if (near && Math.random() < 0.06) spawnP({ x: t.x + rnd(-0.08, 0.08), y: t.y + rnd(-0.04, 0.12), z: t.z + rnd(-0.08, 0.08), vy: 0.6, s: 0.04, col: 0xffffff, glow: true, life: 0.1 });
+    if (Math.random() < 0.08) spawnP({ x: t.x, y: t.y, z: t.z, s: 0.07, s1: 0.02, col: 0xa8f4ff, glow: true, life: 0.1 });
+    if (near && Math.random() < 0.025) spawnP({ x: t.x + rnd(-0.08, 0.08), y: t.y + rnd(-0.04, 0.12), z: t.z + rnd(-0.08, 0.08), vy: 0.6, s: 0.04, col: 0xffffff, glow: true, life: 0.1 });
   }
 }
 
-// ломаная молния от a к b: ядро (белое) и ореол (голубой, сложение)
+// Молния от a к b: резкая ломаная (форма не «плывёт»), белое ядро и тонкая голубая кромка; вспыхивает дважды и гаснет за ~0,22 с
 function addBolt(a, b, thin) {
-  const len = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z), n = clamp(Math.ceil(len / 0.4), 4, 14);
-  const core = new THREE.MeshBasicMaterial({ color: 0xf6feff, transparent: true, depthWrite: false }), glow = new THREE.MeshBasicMaterial({ color: 0x4cc4ff, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending });
-  const B = { a, b, n, thin, t: 0, jt: 0, life: thin ? 0.2 : 0.34, core, glow, cm: [], gm: [], amp: Math.min(0.22, 0.06 + len * 0.04) };
+  const len = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z), n = clamp(Math.round(len / 0.55), 3, 9);
+  const core = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false }), edge = new THREE.MeshBasicMaterial({ color: 0x7fd4ff, transparent: true, depthWrite: false });
+  const B = { a, b, n, thin, t: 0, life: thin ? 0.15 : 0.22, core, edge, cm: [], gm: [], amp: thin ? 0.12 : Math.min(0.26, 0.1 + len * 0.04) };
   for (let i = 0; i < n; i++) {
-    const c = new THREE.Mesh(boxGeo, core), g = new THREE.Mesh(boxGeo, glow);
-    for (const m of [c, g]) { m.frustumCulled = false; m.renderOrder = 7; scene.add(m); }
+    const c = new THREE.Mesh(boxGeo, core), g = new THREE.Mesh(boxGeo, edge);
+    for (const m of [g, c]) { m.frustumCulled = false; m.renderOrder = 7; scene.add(m); }
     B.cm.push(c); B.gm.push(g);
   }
   layoutBolt(B); TBOLTS.push(B);
-  if (!thin && B.n > 5) for (let k = 0; k < 2; k++) {                     // боковые ответвления
-    const f = 0.3 + 0.4 * Math.random(), s = B.pts[Math.floor(f * B.n)] || a;
-    addBolt(s, { x: s.x + rnd(-0.9, 0.9), y: s.y + rnd(-0.5, 0.5), z: s.z + rnd(-0.9, 0.9) }, true);
-  }
+  if (!thin && B.n > 4) { const f = 0.35 + 0.3 * Math.random(), s = B.pts[Math.floor(f * B.n)] || a;      // одно короткое ответвление
+    addBolt(s, { x: s.x + rnd(-0.7, 0.7), y: s.y + rnd(-0.35, 0.35), z: s.z + rnd(-0.7, 0.7) }, true); }
 }
 function layoutBolt(B) {
+  const dx = B.b.x - B.a.x, dy = B.b.y - B.a.y, dz = B.b.z - B.a.z, L = Math.hypot(dx, dy, dz) || 1, d = [dx / L, dy / L, dz / L];
+  let u = [-d[2], 0, d[0]]; const ul = Math.hypot(u[0], u[2]) || 1; u = [u[0] / ul, 0, u[2] / ul];        // боковой вектор
+  const v = [d[1] * u[2], d[2] * u[0] - d[0] * u[2], -d[1] * u[0]];                                            // второй, перпендикулярный
   const pts = [{ x: B.a.x, y: B.a.y, z: B.a.z }];
-  for (let i = 1; i < B.n; i++) { const f = i / B.n, k = B.amp * (1 - Math.abs(f - 0.5) * 0.6); pts.push({ x: B.a.x + (B.b.x - B.a.x) * f + rnd(-k, k), y: B.a.y + (B.b.y - B.a.y) * f + rnd(-k, k), z: B.a.z + (B.b.z - B.a.z) * f + rnd(-k, k) }); }
+  for (let i = 1; i < B.n; i++) {
+    const f = i / B.n, k = B.amp * Math.min(1, f * 3, (1 - f) * 3) * (i % 2 ? 1 : -1) * (0.6 + 0.4 * Math.random()), k2 = B.amp * 0.5 * rnd(-1, 1);
+    pts.push({ x: B.a.x + dx * f + u[0] * k + v[0] * k2, y: B.a.y + dy * f + u[1] * k + v[1] * k2, z: B.a.z + dz * f + u[2] * k + v[2] * k2 });
+  }
   pts.push({ x: B.b.x, y: B.b.y, z: B.b.z }); B.pts = pts;
-  const wc = B.thin ? 0.03 : 0.045, wg = B.thin ? 0.09 : 0.15;
+  const px = 1 / (innerHeight / (2 * CAM.zoom * (SPLIT.on ? SPLIT.hs : 1))), wc = (B.thin ? 2 : 3.6) * px, wg = (B.thin ? 5 : 8.5) * px;   // толщина в пикселях экрана, а не в клетках: молния одинаково видна при любом зуме
   for (let i = 0; i < B.n; i++) {
     _tbA.set(pts[i].x, pts[i].y, pts[i].z); _tbB.set(pts[i + 1].x, pts[i + 1].y, pts[i + 1].z);
     const len = _tbA.distanceTo(_tbB) + 0.02;
@@ -5629,12 +5633,12 @@ function layoutBolt(B) {
 }
 function updateTeslaFx(dt) {
   for (let i = TBOLTS.length - 1; i >= 0; i--) {
-    const B = TBOLTS[i]; B.t += dt; B.jt += dt;
-    if (B.t >= B.life) { for (const m of [...B.cm, ...B.gm]) scene.remove(m); B.core.dispose(); B.glow.dispose(); TBOLTS.splice(i, 1); continue; }
-    if (B.jt > 0.045) { B.jt = 0; layoutBolt(B); }                                   // мерцает: каждые ~45 мс форма новая
-    const k = 1 - B.t / B.life; B.core.opacity = Math.min(1, 0.35 + k * 1.2); B.glow.opacity = 0.55 * k + 0.1;
+    const B = TBOLTS[i]; B.t += dt;
+    if (B.t >= B.life) { for (const m of [...B.cm, ...B.gm]) scene.remove(m); B.core.dispose(); B.edge.dispose(); TBOLTS.splice(i, 1); continue; }
+    const f = B.t / B.life, k = f < 0.3 ? 1 : f < 0.45 ? 0.2 : f < 0.65 ? 1 : (1 - f) / 0.35;                  // вспышка — провал — вспышка — угасание
+    B.core.opacity = k; B.edge.opacity = 0.6 * k;
   }
-  teslaLightK = Math.max(0, teslaLightK - dt * 4); TESLA_LIGHT.intensity = teslaLightK * 6;
+  teslaLightK = Math.max(0, teslaLightK - dt * 5); TESLA_LIGHT.intensity = teslaLightK * 6;
 }
 function teslaFlash(t) { for (let i = 0; i < 8; i++) spawnP({ x: t.x, y: t.y, z: t.z, vx: rnd(-1.5, 1.5), vy: rnd(0, 2), vz: rnd(-1.5, 1.5), s: 0.07, s1: 0.01, col: 0xcffcff, glow: true, life: 0.25, drag: 0.9 }); }
 function teslaImpact(z) {
@@ -5642,7 +5646,7 @@ function teslaImpact(z) {
   for (let i = 0; i < 8; i++) spawnP({ x: z.x, y, z: z.z, vx: rnd(-2.5, 2.5), vy: rnd(0.5, 3), vz: rnd(-2.5, 2.5), s: 0.06, s1: 0.01, col: 0xbff4ff, glow: true, life: 0.3, drag: 0.92 });
   TESLA_LIGHT.position.set(z.x, y + 0.2, z.z); teslaLightK = 1; z.flash = 0.25;
 }
-function clearTeslaFx() { for (const B of TBOLTS) { for (const m of [...B.cm, ...B.gm]) scene.remove(m); B.core.dispose(); B.glow.dispose(); } TBOLTS.length = 0; teslaLightK = 0; TESLA_LIGHT.intensity = 0; }
+function clearTeslaFx() { for (const B of TBOLTS) { for (const m of [...B.cm, ...B.gm]) scene.remove(m); B.core.dispose(); B.edge.dispose(); } TBOLTS.length = 0; teslaLightK = 0; TESLA_LIGHT.intensity = 0; }
 Object.assign(SFX, {
   zap() { if (!soundOn() || !canPlay('zap', 90)) return; noiseHit({ dur: 0.18, type: 'highpass', freq: 3200, q: 0.8, vol: 0.28 }); tone({ f0: 2400, f1: 260, dur: 0.22, vol: 0.2, type: 'sawtooth' }); tone({ f0: 90, f1: 60, dur: 0.25, vol: 0.25 }); },
 });

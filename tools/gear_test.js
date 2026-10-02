@@ -29,8 +29,12 @@ const { chromium } = require('playwright'); const path = require('path');
   await p.evaluate(() => { G.nightT = 1; player.dev = {}; giveDevice(player, 'tesla'); giveDevice(player, 'tesla'); giveDevice(player, 'tesla'); giveDevice(player, 'hook'); player.ubglC = 2; player.ubglRc = 8; player.hookCd = 20; player.yaw = -2.356; CAM.zoomT = 3.2; for (let i = 0; i < 6; i++) { const z = spawnZombie('walker', { x: player.x - 3 - i * 0.7, z: player.z - 2 - (i % 3) * 0.8 }); z.speed = 0; z.hp = 1e5; } });
   await p.waitForTimeout(2500);
   await p.mouse.move(640, 30);                        // курсор вверх по экрану → герой стоит к камере спиной
-  let seen = 0, shot = false;
-  for (let i = 0; i < 60 && !shot; i++) { const n = await p.evaluate(() => TBOLTS.length); seen = Math.max(seen, n); if (n >= 2) { await p.evaluate(() => { G.timeScale = 0.0005; for (const B of TBOLTS) B.life = 99; }); await p.waitForTimeout(2500); await p.screenshot({ path: dir + '/tesla_zap.png' }); await p.evaluate(() => { G.timeScale = 3; }); shot = true; } else await p.waitForTimeout(120); }
+  await p.evaluate(() => { G.timeScale = 0.0005; player.teslaT = 0; });      // время почти стоит: молния появляется и замирает для снимка
+  await p.waitForTimeout(3500); await p.screenshot({ path: dir + '/tesla_zap.png' });
+  const seen = await p.evaluate(() => TBOLTS.length), shot = true;
+  await p.evaluate(() => { clearTeslaFx(); CAM.zoomT = CAM.zoom = 8; player.teslaT = 0; });          // обычный масштаб игры
+  await p.waitForTimeout(3500); await p.screenshot({ path: dir + '/tesla_zap_far.png' });
+  await p.evaluate(() => { G.timeScale = 3; });
   out.tesla = { maxBolts: seen, shot };
   await p.evaluate(() => { for (const z of zombies) z.x += 40; });
   await p.waitForTimeout(800); await p.screenshot({ path: dir + '/tesla_pack.png' });

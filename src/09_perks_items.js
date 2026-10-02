@@ -963,10 +963,10 @@ function updateTesla(p, dt) {
   const lv = devLv(p, 'tesla'); if (!lv || p.down) return;
   if ((p.teslaT = (p.teslaT || 0) - dt) > 0) return;
   const first = nearestZombie(p.x, p.z, 5); if (!first) return;
-  p.teslaT = lv >= 3 ? 2 : 3;
+  p.teslaT = lv >= 3 ? 4 : 6;                                   // молнии редкие, но сильные (раньше 25 урона каждые 3 / 2 с)
   const hops = lv >= 3 ? 4 : lv >= 2 ? 2 : 0, hit = new Set();
   const tip = teslaTip(p, Math.floor(Math.random() * lv), lv);
-  let a = tip, z = first, dmg = 25 * p.st.dmg;
+  let a = tip, z = first, dmg = 50 * p.st.dmg;
   teslaFlash(tip);
   for (let k = 0; k <= hops && z; k++) {
     const b = { x: z.x, y: z.y + 0.75, z: z.z };
