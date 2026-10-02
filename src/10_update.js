@@ -61,6 +61,23 @@ function updatePlayer(p, dt) {
   p.reloadK = p.reloadT > 0 ? 1 - p.reloadT / p.reloadMax : 0;
 }
 let BURN_K = 1;                                            // искры горящих: при толпе горящих — реже у каждого
+const ZCLIMB_UP = 0.85, ZCLIMB_DOWN = 1.4;                    // скорость по лестнице, м/с: игрок лезет 3,4 — зомби втрое-вчетверо медленнее
+const canClimbZ = z => { const T = ZOMBIES[z.type]; return !(T.boss || T.fat || z.type === 'hound' || z.form === 'crawl'); };
+function zLadderStart(z) {
+  if (!canClimbZ(z)) return;
+  for (const L of LADS) {
+    if (!L.A || !L.B) continue;
+    const atBase = z.y < 0.3 && Math.hypot(z.x - L.bx, z.z - L.bz) < 0.6, atTop = Math.abs(z.y - L.H) < 0.2 && Math.hypot(z.x - L.lx, z.z - L.lz) < 0.6;
+    if (atBase && L.B.d < 1e9 && L.B.d + LAD_COST <= L.A.d + 0.01) { z.climb = { L, dir: 1 }; return; }
+    if (atTop && L.A.d < 1e9 && L.A.d + LAD_COST <= L.B.d + 0.01) { z.climb = { L, dir: -1 }; return; }
+  }
+}
+// прямая линия без стен (для рывка к игроку вплотную)
+function clearLine(x0, z0, x1, z1, y) {
+  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / 0.4);
+  for (let i = 1; i < n; i++) { const t = i / n; if (blocked(x0 + (x1 - x0) * t, z0 + (z1 - z0) * t, y, 0.22)) return false; }
+  return true;
+}
 function updateZombies(dt) {
   { let nb = 0; for (const z of zombies) if (!z.dead && z.burnT > 0) nb++; BURN_K = Math.min(1, 15 / Math.max(1, nb)); }
   G.navT -= dt;
@@ -70,6 +87,7 @@ function updateZombies(dt) {
   for (let i = zombies.length - 1; i >= 0; i--) {
     const z = zombies[i];
     if (!z.dead) continue;
+    z.climb = null;
     if (z.swell) { if (z.boomed) zombies.splice(i, 1); continue; }
     z.deadT += dt; corpses++; if (z.flash > 0) z.flash -= dt;
     z.fall = z.form === 'crawl' ? 0 : z.flip * Math.min(Math.PI / 2, z.deadT * 7);   // падает на спину (иногда ничком)
@@ -88,7 +106,7 @@ function updateZombies(dt) {
     if (target) {
       let gx = target.x, gz = target.z;
       dist = Math.hypot(target.x - z.x, target.z - z.z);
-      if (!(dist < 2.5 && Math.abs(target.y - z.y) < 0.5)) { const nd = navDir(z); if (nd) { gx = nd[0]; gz = nd[1]; } }   // перепад высот или далеко — по полю пути
+      if (!(dist < 2.5 && Math.abs(target.y - z.y) < 0.5 && clearLine(z.x, z.z, target.x, target.z, z.y))) { const nd = navDir(z); if (nd) { gx = nd[0]; gz = nd[1]; } }   // перепад высот, далеко или за стеной — по полю пути
       dx = gx - z.x; dz = gz - z.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     }
     if (z.slideT > 0) {                                                  // уткнулся — обходит боком
@@ -107,8 +125,17 @@ function updateZombies(dt) {
     if (z.stunT > 0) z.stunT -= dt;
     if (z.supT > 0) z.supT -= dt;                                        // «Прижать огнём»
     if (z.markT > 0) { z.markT -= dt; if (Math.random() < dt * 6) spawnP({ x: z.x, y: z.y + zHeight(z) + 0.1, z: z.z, vy: 0.3, s: 0.07, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.3 }); }   // метка трассера
-    const ox = z.x, oz = z.z;
-    const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
+    if (!z.climb && LADS.length) zLadderStart(z);                        // зомби лезут по лестницам, если иначе не добраться (медленно)
+    let ox = z.x, oz = z.z, step = 0, moved = 0;
+    if (z.climb) {
+      const C = z.climb, L = C.L; let v = C.dir > 0 ? ZCLIMB_UP : ZCLIMB_DOWN;
+      if (z.stunT > 0 || z.trapT > 0) v = 0; else if (z.slowT > 0) v *= z.slowMul;
+      z.y += C.dir * v * dt; z.x = L.x + L.nx * 0.4; z.z = L.z + L.nz * 0.4; z.vy = 0; dx = -L.nx; dz = -L.nz; moved = v * dt * 0.6;
+      if (z.stunT > 0) z.stunT -= dt;
+      if (z.y >= L.H && C.dir > 0) { z.x = L.lx; z.z = L.lz; z.y = L.H; z.climb = null; }
+      else if (z.y <= 0 && C.dir < 0) { z.x = L.bx; z.z = L.bz; z.y = 0; z.climb = null; }
+    } else {
+    step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
     const kv = Math.hypot(z.kx, z.kz); if (kv > 60) { z.kx *= 60 / kv; z.kz *= 60 / kv; }                 // потолок отталкивания (иначе на ×4 вылетали бы за стены)
     const wx0 = dx * step + z.kx * dt, wz0 = dz * step + z.kz * dt, nsub = Math.max(1, Math.ceil(Math.hypot(wx0, wz0) / 0.3));
     for (let q = 0; q < nsub; q++) moveEntity(z, wx0 / nsub, wz0 / nsub, z.r);
@@ -123,7 +150,8 @@ function updateZombies(dt) {
     });
     if (sx || sz) moveEntity(z, clamp(sx, -0.1, 0.1), clamp(sz, -0.1, 0.1), z.r);
     gravity(z, dt, z.r);
-    const moved = Math.hypot(z.x - ox, z.z - oz);
+    moved = Math.hypot(z.x - ox, z.z - oz);
+    }
     if (step > 0 && z.slideT <= 0 && moved < step * 0.4 && dist > 0.8) { z.slideT = 0.7; z.side = Math.random() < 0.5 ? 1 : -1; }
     if (z.flash > 0) z.flash -= dt;
     if (z.atkT > 0) z.atkT -= dt;

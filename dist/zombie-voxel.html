@@ -2122,25 +2122,54 @@ function navNode(x, z, y) {
 }
 // Поле расстояний от игроков (обход в ширину). На карте 96×96 — ~37 тыс. клеток, поэтому без новых массивов на каждом шаге
 // и не дальше NAV_MAX шагов (40 клеток): дальше зомби идут к игроку напрямую, пока не войдут в поле.
-const NAV_MAX = 160, NAV_D = [1, 0, -1, 0, 0, 1, 0, -1], NAV_D8 = [1, 0, -1, 0, 0, 1, 0, -1, 1, 1, -1, 1, 1, -1, -1, -1];
+const NAV_MAX = 700, NAV_D = [1, 0, -1, 0, 0, 1, 0, -1], NAV_D8 = [1, 0, -1, 0, 0, 1, 0, -1, 1, 1, -1, 1, 1, -1, -1, -1];
+const LAD_COST = 16;                                  // лестница для поля путей «стоит» 16 шагов (8 м): зомби лезут, только если иначе не добраться или заметно дольше
+// ближайшая опора рядом с точкой (лестницы стоят у стены, где сама клетка может не пройти проверку на зазор)
+function navNear(x, z, y) {
+  const ci = Math.floor(x / NC), cj = Math.floor(z / NC); let best = null, bd = 1e9;
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+    const a = ci + di, b = cj + dj; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+    for (const n of navCells[b * NW + a]) { const d = Math.hypot((a + 0.5) * NC - x, (b + 0.5) * NC - z) + Math.abs(n.y - y) * 3; if (d < bd && Math.abs(n.y - y) < 0.8) { bd = d; best = n; } }
+  }
+  return best;
+}
 function navField(srcs) {                // srcs: [{x, y, z}] — все живые игроки (кооп)
   const q = navQ; for (let h = 0; h < q.length; h++) q[h].d = 1e9;   // сбрасываем только то, что прошли в прошлый раз
   q.length = 0;
   for (const o of srcs) { const s = navNode(o.x, o.z, o.y); if (s) { s.n.d = 0; q.push(s.n); } }
-  for (let h = 0; h < q.length; h++) {
-    const n = q[h], nd = n.d + 1; if (nd > NAV_MAX) continue;
-    for (let k = 0; k < 8; k += 2) {
-      const a = n.i + NAV_D[k], b = n.j + NAV_D[k + 1]; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
-      const L = navCells[b * NW + a];
-      for (let t = 0; t < L.length; t++) { const m = L[t]; if (m.d > nd && Math.abs(m.y - n.y) <= STEP + 0.02) { m.d = nd; q.push(m); } }
+  const lads = typeof LADS !== 'undefined' ? LADS : [];
+  for (const L of lads) { L.A = navNear(L.bx, L.bz, 0); L.B = navNear(L.lx, L.lz, L.H); }
+  let h = 0;
+  for (;;) {
+    for (; h < q.length; h++) {
+      const n = q[h], nd = n.d + 1; if (nd > NAV_MAX) continue;
+      for (let k = 0; k < 8; k += 2) {
+        const a = n.i + NAV_D[k], b = n.j + NAV_D[k + 1]; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+        const L = navCells[b * NW + a];
+        for (let t = 0; t < L.length; t++) { const m = L[t]; if (m.d > nd && Math.abs(m.y - n.y) <= STEP + 0.02) { m.d = nd; q.push(m); } }
+      }
     }
+    let any = false;                                  // лестницы: связь низ ↔ верх
+    for (const L of lads) {
+      if (!L.A || !L.B) continue;
+      if (L.A.d + LAD_COST < L.B.d && L.A.d + LAD_COST <= NAV_MAX) { L.B.d = L.A.d + LAD_COST; q.push(L.B); any = true; }
+      if (L.B.d + LAD_COST < L.A.d && L.B.d + LAD_COST <= NAV_MAX) { L.A.d = L.B.d + LAD_COST; q.push(L.A); any = true; }
+    }
+    if (!any) break;
   }
+}
+// есть ли рядом клетка, куда можно ступить (для запрета срезать углы по диагонали)
+function navOpen(a, b, y) {
+  if (a < 0 || b < 0 || a >= NW || b >= NW) return false;
+  for (const m of navCells[b * NW + a]) if (Math.abs(m.y - y) <= STEP + 0.02) return true;
+  return false;
 }
 function navDir(e) {
   const s = navNode(e.x, e.z, e.y); if (!s) return null;
   let best = null, bd = s.n.d;
   for (let k = 0; k < 16; k += 2) {
-    const a = s.i + NAV_D8[k], b = s.j + NAV_D8[k + 1]; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+    const dx = NAV_D8[k], dz = NAV_D8[k + 1], a = s.i + dx, b = s.j + dz; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+    if (dx && dz && !(navOpen(s.i + dx, s.j, s.n.y) && navOpen(s.i, s.j + dz, s.n.y))) continue;   // по диагонали — только если оба соседа проходимы
     for (const m of navCells[b * NW + a]) if (Math.abs(m.y - s.n.y) <= STEP + 0.02 && m.d < bd) { bd = m.d; best = [(a + 0.5) * NC, (b + 0.5) * NC]; }
   }
   return best;
@@ -3276,7 +3305,12 @@ function rollChoices(p) {
   for (const id of ITEM_IDS) if (!p.known[id]) pool.push({ type: 'newitem', id });
   for (const c2 of meleeCardPool(p)) pool.push(c2);                                               // оружие ближнего боя и его улучшения             // новый предмет: открывает тип и даёт 1 заряд
   const out = [];
+  // модули ствола (ЛЦУ, фонарь, удлинённый ствол) выпадают заметно чаще остальных карточек: ~30% на уровень, после пропусков шанс растёт, после двух подряд — наверняка
+  const mods = pool.filter(c => c.type === 'att');
+  if (mods.length && Math.random() < 0.3 + 0.35 * (p.modMiss || 0)) { const c = mods[Math.floor(Math.random() * mods.length)]; out.push(pool.splice(pool.indexOf(c), 1)[0]); p.modMiss = 0; }
+  else if (mods.length) p.modMiss = (p.modMiss || 0) + 1;
   while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }   // модуль не всегда первым
   maybeCurse(p, out);                                                                  // шанс ~8%: проклятие заменяет одну из трёх карточек
   if (!out.length) out.push({ type: 'heal' });
   return out;
@@ -3313,7 +3347,7 @@ function cardHTML(p, ch, i) {
   if (ch.type === 'melee' || ch.type === 'meleeup') return meleeCardHtml(p, ch, key);
   if (ch.type === 'newitem') return { cls: 'item', html: `<span class="tag">НОВЫЙ ПРЕДМЕТ</span><b>${ITEMS[ch.id].name}</b><span>${ITEMS[ch.id].desc}</span><i>+1 заряд · подсумок ${pouchN(p)}/${pouchCap(p)} · дальше ищи на карте · ${key}</i>` };
   if (ch.type === 'itemlv') { const lv = itemLv(p, ch.id); return { cls: 'item', html: `<span class="tag">ПРЕДМЕТ</span><b>${ITEMS[ch.id].name}</b><span>${itemLvText(ch.id, lv)}</span><i>ур. ${lv} → ${lv + 1} из ${ITEM_MAX_LV} · ${key}</i>` }; }
-  if (ch.type === 'att') return { cls: 'att', html: `<span class="tag">ОБВЕС · ${WEAPONS[p.gun].name}</span><b>${ATTACH[ch.id].name}</b><span>${ATTACH[ch.id].desc}</span><i>ставится сразу · ${key}</i>` };
+  if (ch.type === 'att') return { cls: 'att', html: `<span class="tag">МОДУЛЬ · ${WEAPONS[p.gun].name}</span><b>${ATTACH[ch.id].name}</b><span>${ATTACH[ch.id].desc}</span><i>ставится сразу · ${key}</i>` };
   if (ch.type === 'dev') { const lv = devLv(p, ch.id); return { cls: 'dev', html: `<span class="tag">ДЕВАЙС${lv ? '' : (ch.id === 'dog' || ch.id === 'drone') ? ' · компаньон (только один)' : ' · новый'}</span><b>${DEVICES[ch.id].name}</b><span>${devCardText(ch.id, lv)}</span><i>ур. ${lv + 1} из ${DEV_MAX} · слотов ${devCount(p) + (lv ? 0 : 1)}/${devSlotsOf(p)} · ${key}</i>` }; }
   if (ch.type === 'back') return { cls: 'gen', html: `<span class="tag">НАЗАД</span><b>Пока не выбирать</b><span>Вернуться к обычным карточкам</span><i>${key}</i>` };
   return { cls: 'gen', html: `<span class="tag">ОБЩЕЕ</span><b>Перевязка</b><span>Всё прокачано. Лечит 2 сердца.</span><i>${key}</i>` };
@@ -4243,7 +4277,7 @@ function devCardText(id, lv) { return DEVICES[id].lv[lv]; }   // что даёт
 /* ---------- Обвесы (батч 8): ЛЦУ, подствольный фонарь, удлинённый ствол ---------- */
 const ATTV = new Map();                                   // игрок → { beam, light }
 const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, toneMapped: false, transparent: true, opacity: 0.8 });
-function giveAttach(p, id) { p.att = p.att || {}; p.att[id] = true; toast(p, 'Обвес: ' + ATTACH[id].name, '#ffd76a'); }
+function giveAttach(p, id) { p.att = p.att || {}; p.att[id] = true; toast(p, 'Модуль: ' + ATTACH[id].name, '#ffd76a'); }
 const freeAttach = p => ATT_IDS.filter(id => !(p.att && p.att[id]));
 const inBeam = (p, z) => { const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz); return d < 8 && d > 0.2 && Math.abs(z.y - p.y) < 1.5 && (dx * Math.sin(p.yaw) + dz * Math.cos(p.yaw)) / d > 0.93; };
 function updateAttach(dt) {
@@ -4338,6 +4372,23 @@ function updatePlayer(p, dt) {
   p.reloadK = p.reloadT > 0 ? 1 - p.reloadT / p.reloadMax : 0;
 }
 let BURN_K = 1;                                            // искры горящих: при толпе горящих — реже у каждого
+const ZCLIMB_UP = 0.85, ZCLIMB_DOWN = 1.4;                    // скорость по лестнице, м/с: игрок лезет 3,4 — зомби втрое-вчетверо медленнее
+const canClimbZ = z => { const T = ZOMBIES[z.type]; return !(T.boss || T.fat || z.type === 'hound' || z.form === 'crawl'); };
+function zLadderStart(z) {
+  if (!canClimbZ(z)) return;
+  for (const L of LADS) {
+    if (!L.A || !L.B) continue;
+    const atBase = z.y < 0.3 && Math.hypot(z.x - L.bx, z.z - L.bz) < 0.6, atTop = Math.abs(z.y - L.H) < 0.2 && Math.hypot(z.x - L.lx, z.z - L.lz) < 0.6;
+    if (atBase && L.B.d < 1e9 && L.B.d + LAD_COST <= L.A.d + 0.01) { z.climb = { L, dir: 1 }; return; }
+    if (atTop && L.A.d < 1e9 && L.A.d + LAD_COST <= L.B.d + 0.01) { z.climb = { L, dir: -1 }; return; }
+  }
+}
+// прямая линия без стен (для рывка к игроку вплотную)
+function clearLine(x0, z0, x1, z1, y) {
+  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / 0.4);
+  for (let i = 1; i < n; i++) { const t = i / n; if (blocked(x0 + (x1 - x0) * t, z0 + (z1 - z0) * t, y, 0.22)) return false; }
+  return true;
+}
 function updateZombies(dt) {
   { let nb = 0; for (const z of zombies) if (!z.dead && z.burnT > 0) nb++; BURN_K = Math.min(1, 15 / Math.max(1, nb)); }
   G.navT -= dt;
@@ -4347,6 +4398,7 @@ function updateZombies(dt) {
   for (let i = zombies.length - 1; i >= 0; i--) {
     const z = zombies[i];
     if (!z.dead) continue;
+    z.climb = null;
     if (z.swell) { if (z.boomed) zombies.splice(i, 1); continue; }
     z.deadT += dt; corpses++; if (z.flash > 0) z.flash -= dt;
     z.fall = z.form === 'crawl' ? 0 : z.flip * Math.min(Math.PI / 2, z.deadT * 7);   // падает на спину (иногда ничком)
@@ -4365,7 +4417,7 @@ function updateZombies(dt) {
     if (target) {
       let gx = target.x, gz = target.z;
       dist = Math.hypot(target.x - z.x, target.z - z.z);
-      if (!(dist < 2.5 && Math.abs(target.y - z.y) < 0.5)) { const nd = navDir(z); if (nd) { gx = nd[0]; gz = nd[1]; } }   // перепад высот или далеко — по полю пути
+      if (!(dist < 2.5 && Math.abs(target.y - z.y) < 0.5 && clearLine(z.x, z.z, target.x, target.z, z.y))) { const nd = navDir(z); if (nd) { gx = nd[0]; gz = nd[1]; } }   // перепад высот, далеко или за стеной — по полю пути
       dx = gx - z.x; dz = gz - z.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     }
     if (z.slideT > 0) {                                                  // уткнулся — обходит боком
@@ -4384,8 +4436,17 @@ function updateZombies(dt) {
     if (z.stunT > 0) z.stunT -= dt;
     if (z.supT > 0) z.supT -= dt;                                        // «Прижать огнём»
     if (z.markT > 0) { z.markT -= dt; if (Math.random() < dt * 6) spawnP({ x: z.x, y: z.y + zHeight(z) + 0.1, z: z.z, vy: 0.3, s: 0.07, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.3 }); }   // метка трассера
-    const ox = z.x, oz = z.z;
-    const step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
+    if (!z.climb && LADS.length) zLadderStart(z);                        // зомби лезут по лестницам, если иначе не добраться (медленно)
+    let ox = z.x, oz = z.z, step = 0, moved = 0;
+    if (z.climb) {
+      const C = z.climb, L = C.L; let v = C.dir > 0 ? ZCLIMB_UP : ZCLIMB_DOWN;
+      if (z.stunT > 0 || z.trapT > 0) v = 0; else if (z.slowT > 0) v *= z.slowMul;
+      z.y += C.dir * v * dt; z.x = L.x + L.nx * 0.4; z.z = L.z + L.nz * 0.4; z.vy = 0; dx = -L.nx; dz = -L.nz; moved = v * dt * 0.6;
+      if (z.stunT > 0) z.stunT -= dt;
+      if (z.y >= L.H && C.dir > 0) { z.x = L.lx; z.z = L.lz; z.y = L.H; z.climb = null; }
+      else if (z.y <= 0 && C.dir < 0) { z.x = L.bx; z.z = L.bz; z.y = 0; z.climb = null; }
+    } else {
+    step = (!target && !(z.confT > 0)) || z.stunT > 0 || z.trapT > 0 ? 0 : z.speed * (z.slowT > 0 ? z.slowMul : 1) * (z.burnT > 0 && z.burnSlow ? 0.8 : 1) * (z.supT > 0 ? 1 - z.supK : 1) * (z.panicT > 0 ? 1.8 : 1) * (z.rageT > 0 ? 1.5 : 1) * mobMul * dt;
     const kv = Math.hypot(z.kx, z.kz); if (kv > 60) { z.kx *= 60 / kv; z.kz *= 60 / kv; }                 // потолок отталкивания (иначе на ×4 вылетали бы за стены)
     const wx0 = dx * step + z.kx * dt, wz0 = dz * step + z.kz * dt, nsub = Math.max(1, Math.ceil(Math.hypot(wx0, wz0) / 0.3));
     for (let q = 0; q < nsub; q++) moveEntity(z, wx0 / nsub, wz0 / nsub, z.r);
@@ -4400,7 +4461,8 @@ function updateZombies(dt) {
     });
     if (sx || sz) moveEntity(z, clamp(sx, -0.1, 0.1), clamp(sz, -0.1, 0.1), z.r);
     gravity(z, dt, z.r);
-    const moved = Math.hypot(z.x - ox, z.z - oz);
+    moved = Math.hypot(z.x - ox, z.z - oz);
+    }
     if (step > 0 && z.slideT <= 0 && moved < step * 0.4 && dist > 0.8) { z.slideT = 0.7; z.side = Math.random() < 0.5 ? 1 : -1; }
     if (z.flash > 0) z.flash -= dt;
     if (z.atkT > 0) z.atkT -= dt;

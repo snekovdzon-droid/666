@@ -52,7 +52,12 @@ function rollChoices(p) {
   for (const id of ITEM_IDS) if (!p.known[id]) pool.push({ type: 'newitem', id });
   for (const c2 of meleeCardPool(p)) pool.push(c2);                                               // оружие ближнего боя и его улучшения             // новый предмет: открывает тип и даёт 1 заряд
   const out = [];
+  // модули ствола (ЛЦУ, фонарь, удлинённый ствол) выпадают заметно чаще остальных карточек: ~30% на уровень, после пропусков шанс растёт, после двух подряд — наверняка
+  const mods = pool.filter(c => c.type === 'att');
+  if (mods.length && Math.random() < 0.3 + 0.35 * (p.modMiss || 0)) { const c = mods[Math.floor(Math.random() * mods.length)]; out.push(pool.splice(pool.indexOf(c), 1)[0]); p.modMiss = 0; }
+  else if (mods.length) p.modMiss = (p.modMiss || 0) + 1;
   while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }   // модуль не всегда первым
   maybeCurse(p, out);                                                                  // шанс ~8%: проклятие заменяет одну из трёх карточек
   if (!out.length) out.push({ type: 'heal' });
   return out;
@@ -89,7 +94,7 @@ function cardHTML(p, ch, i) {
   if (ch.type === 'melee' || ch.type === 'meleeup') return meleeCardHtml(p, ch, key);
   if (ch.type === 'newitem') return { cls: 'item', html: `<span class="tag">НОВЫЙ ПРЕДМЕТ</span><b>${ITEMS[ch.id].name}</b><span>${ITEMS[ch.id].desc}</span><i>+1 заряд · подсумок ${pouchN(p)}/${pouchCap(p)} · дальше ищи на карте · ${key}</i>` };
   if (ch.type === 'itemlv') { const lv = itemLv(p, ch.id); return { cls: 'item', html: `<span class="tag">ПРЕДМЕТ</span><b>${ITEMS[ch.id].name}</b><span>${itemLvText(ch.id, lv)}</span><i>ур. ${lv} → ${lv + 1} из ${ITEM_MAX_LV} · ${key}</i>` }; }
-  if (ch.type === 'att') return { cls: 'att', html: `<span class="tag">ОБВЕС · ${WEAPONS[p.gun].name}</span><b>${ATTACH[ch.id].name}</b><span>${ATTACH[ch.id].desc}</span><i>ставится сразу · ${key}</i>` };
+  if (ch.type === 'att') return { cls: 'att', html: `<span class="tag">МОДУЛЬ · ${WEAPONS[p.gun].name}</span><b>${ATTACH[ch.id].name}</b><span>${ATTACH[ch.id].desc}</span><i>ставится сразу · ${key}</i>` };
   if (ch.type === 'dev') { const lv = devLv(p, ch.id); return { cls: 'dev', html: `<span class="tag">ДЕВАЙС${lv ? '' : (ch.id === 'dog' || ch.id === 'drone') ? ' · компаньон (только один)' : ' · новый'}</span><b>${DEVICES[ch.id].name}</b><span>${devCardText(ch.id, lv)}</span><i>ур. ${lv + 1} из ${DEV_MAX} · слотов ${devCount(p) + (lv ? 0 : 1)}/${devSlotsOf(p)} · ${key}</i>` }; }
   if (ch.type === 'back') return { cls: 'gen', html: `<span class="tag">НАЗАД</span><b>Пока не выбирать</b><span>Вернуться к обычным карточкам</span><i>${key}</i>` };
   return { cls: 'gen', html: `<span class="tag">ОБЩЕЕ</span><b>Перевязка</b><span>Всё прокачано. Лечит 2 сердца.</span><i>${key}</i>` };
@@ -1019,7 +1024,7 @@ function devCardText(id, lv) { return DEVICES[id].lv[lv]; }   // что даёт
 /* ---------- Обвесы (батч 8): ЛЦУ, подствольный фонарь, удлинённый ствол ---------- */
 const ATTV = new Map();                                   // игрок → { beam, light }
 const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, toneMapped: false, transparent: true, opacity: 0.8 });
-function giveAttach(p, id) { p.att = p.att || {}; p.att[id] = true; toast(p, 'Обвес: ' + ATTACH[id].name, '#ffd76a'); }
+function giveAttach(p, id) { p.att = p.att || {}; p.att[id] = true; toast(p, 'Модуль: ' + ATTACH[id].name, '#ffd76a'); }
 const freeAttach = p => ATT_IDS.filter(id => !(p.att && p.att[id]));
 const inBeam = (p, z) => { const dx = z.x - p.x, dz = z.z - p.z, d = Math.hypot(dx, dz); return d < 8 && d > 0.2 && Math.abs(z.y - p.y) < 1.5 && (dx * Math.sin(p.yaw) + dz * Math.cos(p.yaw)) / d > 0.93; };
 function updateAttach(dt) {

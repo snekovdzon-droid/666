@@ -216,25 +216,54 @@ function navNode(x, z, y) {
 }
 // Поле расстояний от игроков (обход в ширину). На карте 96×96 — ~37 тыс. клеток, поэтому без новых массивов на каждом шаге
 // и не дальше NAV_MAX шагов (40 клеток): дальше зомби идут к игроку напрямую, пока не войдут в поле.
-const NAV_MAX = 160, NAV_D = [1, 0, -1, 0, 0, 1, 0, -1], NAV_D8 = [1, 0, -1, 0, 0, 1, 0, -1, 1, 1, -1, 1, 1, -1, -1, -1];
+const NAV_MAX = 700, NAV_D = [1, 0, -1, 0, 0, 1, 0, -1], NAV_D8 = [1, 0, -1, 0, 0, 1, 0, -1, 1, 1, -1, 1, 1, -1, -1, -1];
+const LAD_COST = 16;                                  // лестница для поля путей «стоит» 16 шагов (8 м): зомби лезут, только если иначе не добраться или заметно дольше
+// ближайшая опора рядом с точкой (лестницы стоят у стены, где сама клетка может не пройти проверку на зазор)
+function navNear(x, z, y) {
+  const ci = Math.floor(x / NC), cj = Math.floor(z / NC); let best = null, bd = 1e9;
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+    const a = ci + di, b = cj + dj; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+    for (const n of navCells[b * NW + a]) { const d = Math.hypot((a + 0.5) * NC - x, (b + 0.5) * NC - z) + Math.abs(n.y - y) * 3; if (d < bd && Math.abs(n.y - y) < 0.8) { bd = d; best = n; } }
+  }
+  return best;
+}
 function navField(srcs) {                // srcs: [{x, y, z}] — все живые игроки (кооп)
   const q = navQ; for (let h = 0; h < q.length; h++) q[h].d = 1e9;   // сбрасываем только то, что прошли в прошлый раз
   q.length = 0;
   for (const o of srcs) { const s = navNode(o.x, o.z, o.y); if (s) { s.n.d = 0; q.push(s.n); } }
-  for (let h = 0; h < q.length; h++) {
-    const n = q[h], nd = n.d + 1; if (nd > NAV_MAX) continue;
-    for (let k = 0; k < 8; k += 2) {
-      const a = n.i + NAV_D[k], b = n.j + NAV_D[k + 1]; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
-      const L = navCells[b * NW + a];
-      for (let t = 0; t < L.length; t++) { const m = L[t]; if (m.d > nd && Math.abs(m.y - n.y) <= STEP + 0.02) { m.d = nd; q.push(m); } }
+  const lads = typeof LADS !== 'undefined' ? LADS : [];
+  for (const L of lads) { L.A = navNear(L.bx, L.bz, 0); L.B = navNear(L.lx, L.lz, L.H); }
+  let h = 0;
+  for (;;) {
+    for (; h < q.length; h++) {
+      const n = q[h], nd = n.d + 1; if (nd > NAV_MAX) continue;
+      for (let k = 0; k < 8; k += 2) {
+        const a = n.i + NAV_D[k], b = n.j + NAV_D[k + 1]; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+        const L = navCells[b * NW + a];
+        for (let t = 0; t < L.length; t++) { const m = L[t]; if (m.d > nd && Math.abs(m.y - n.y) <= STEP + 0.02) { m.d = nd; q.push(m); } }
+      }
     }
+    let any = false;                                  // лестницы: связь низ ↔ верх
+    for (const L of lads) {
+      if (!L.A || !L.B) continue;
+      if (L.A.d + LAD_COST < L.B.d && L.A.d + LAD_COST <= NAV_MAX) { L.B.d = L.A.d + LAD_COST; q.push(L.B); any = true; }
+      if (L.B.d + LAD_COST < L.A.d && L.B.d + LAD_COST <= NAV_MAX) { L.A.d = L.B.d + LAD_COST; q.push(L.A); any = true; }
+    }
+    if (!any) break;
   }
+}
+// есть ли рядом клетка, куда можно ступить (для запрета срезать углы по диагонали)
+function navOpen(a, b, y) {
+  if (a < 0 || b < 0 || a >= NW || b >= NW) return false;
+  for (const m of navCells[b * NW + a]) if (Math.abs(m.y - y) <= STEP + 0.02) return true;
+  return false;
 }
 function navDir(e) {
   const s = navNode(e.x, e.z, e.y); if (!s) return null;
   let best = null, bd = s.n.d;
   for (let k = 0; k < 16; k += 2) {
-    const a = s.i + NAV_D8[k], b = s.j + NAV_D8[k + 1]; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+    const dx = NAV_D8[k], dz = NAV_D8[k + 1], a = s.i + dx, b = s.j + dz; if (a < 0 || b < 0 || a >= NW || b >= NW) continue;
+    if (dx && dz && !(navOpen(s.i + dx, s.j, s.n.y) && navOpen(s.i, s.j + dz, s.n.y))) continue;   // по диагонали — только если оба соседа проходимы
     for (const m of navCells[b * NW + a]) if (Math.abs(m.y - s.n.y) <= STEP + 0.02 && m.d < bd) { bd = m.d; best = [(a + 0.5) * NC, (b + 0.5) * NC]; }
   }
   return best;
