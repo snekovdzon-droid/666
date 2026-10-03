@@ -67,6 +67,7 @@ body:not(.touch) #btns .t{display:none}
 @keyframes mmFlick{0%,100%{opacity:1}90%{opacity:1}91%{opacity:.35}92%{opacity:1}95%{opacity:.6}96%{opacity:1}}
 @keyframes mmIn{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
 #mmBtns button,#mmPanel button{display:block;width:100%;text-align:left;font:inherit;font-size:19px;letter-spacing:.5px;padding:12px 18px;margin:7px 0;border:0;border-left:4px solid #4a4032;background:rgba(20,16,12,.72);color:#d8d0bc;cursor:pointer;transition:transform .15s,border-color .15s,background .15s,color .15s;animation:mmIn .5s both}
+#mmPanel{max-height:calc(100vh - 150px);overflow-y:auto;padding-right:6px}#mmPanel button{font-size:17px;padding:9px 16px;margin:5px 0}#mmPanel::-webkit-scrollbar{width:6px}#mmPanel::-webkit-scrollbar-thumb{background:#4a4032}
 #mmBtns button.sel,#mmBtns button:hover:not(:disabled),#mmPanel button:hover{transform:translateX(10px);border-left-color:#e8a050;background:rgba(62,40,22,.92);color:#fff}
 #mmBtns button:disabled{opacity:.42;cursor:default}#mmBtns small{font-size:11px;color:#e8a050;letter-spacing:1px;text-transform:uppercase;margin-left:6px}
 #mmPanel{display:none;color:#d8d0bc}#mmPanel h3{margin:0 0 10px;font-size:22px;color:#e8a050}#mmPanel p{font-size:13.5px;color:#a89e88;line-height:1.5}
