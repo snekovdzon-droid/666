@@ -57,9 +57,12 @@ function inGroup(fn) {                                    // всё, что ст
 }
 function xBarrelOp(x, z) {
   const { grp, s0 } = inGroup(() => {
-    box(x - 0.3, 0, z - 0.3, x + 0.3, 0.9, z + 0.3, 0xa8342a, { hit: 'metal' });
-    for (const y of [0.28, 0.62]) box(x - 0.33, y, z - 0.33, x + 0.33, y + 0.06, z + 0.33, 0x2a1a14, { solid: false });
-    box(x - 0.34, 0.4, z - 0.14, x + 0.34, 0.54, z + 0.14, 0xe8c030, { solid: false }); box(x - 0.14, 0.4, z - 0.34, x + 0.14, 0.54, z + 0.34, 0xe8c030, { solid: false });   // жёлтая полоса: «взрывоопасно»
+    if (typeof PROP_VOX !== 'undefined') barrelVox(x, z, 'redbarrel');                  // красная бочка из assets/props/redbarrel.vox
+    else {
+      box(x - 0.3, 0, z - 0.3, x + 0.3, 0.9, z + 0.3, 0xa8342a, { hit: 'metal' });
+      for (const y of [0.28, 0.62]) box(x - 0.33, y, z - 0.33, x + 0.33, y + 0.06, z + 0.33, 0x2a1a14, { solid: false });
+      box(x - 0.34, 0.4, z - 0.14, x + 0.34, 0.54, z + 0.14, 0xe8c030, { solid: false }); box(x - 0.14, 0.4, z - 0.34, x + 0.14, 0.54, z + 0.34, 0xe8c030, { solid: false });   // жёлтая полоса: «взрывоопасно»
+    }
   });
   regExpl(s0, { kind: 'barrel', x, z, y: 0.5, max: 22, dmg: 140, R: 2.7, grp });
 }

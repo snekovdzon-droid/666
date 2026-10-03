@@ -10,7 +10,7 @@ window.voxelize = async function (url, N, axis) {
   const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0); const px = cx.getImageData(0, 0, cv.width, cv.height).data;
   const pos = m.geometry.attributes.position, uv = m.geometry.attributes.uv, idx = m.geometry.index ? m.geometry.index.array : null;
   const bb = new THREE.Box3().setFromBufferAttribute(pos), sz = bb.getSize(new THREE.Vector3());
-  const L = axis === 'z' ? sz.z : sz.x, vs = L / N, cells = new Map();
+  const L = axis === 'z' ? sz.z : axis === 'y' ? sz.y : sz.x, vs = L / N, cells = new Map();
   const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), tri = idx ? idx.length / 3 : pos.count / 3;
   for (let t = 0; t < tri; t++) {
     const ia = idx ? idx[t * 3] : t * 3, ib = idx ? idx[t * 3 + 1] : t * 3 + 1, ic = idx ? idx[t * 3 + 2] : t * 3 + 2;

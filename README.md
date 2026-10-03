@@ -36,3 +36,6 @@
 
 ## Машины
 Модель машины — `assets/cars/car.vox` (рисуется в MagicaVoxel; синие тона — краска кузова, перекрашиваются в красный, синий, зелёный или светлый). После правок: `python3 tools/vox2js.py`, затем `python3 tools/build.py`. Автобусы из игры убраны.
+
+## Бочки
+`assets/props/barrel.vox` (обычная) и `redbarrel.vox` (красная взрывная) получены из Meshy `.glb` скриптом `node tools/glb2prop.js <папка с g_barrel.glb, g_redbarrel.glb>`: вокселизация и чистая палитра вместо грязной текстуры; код — `src/04f_barrel_vox.js`.

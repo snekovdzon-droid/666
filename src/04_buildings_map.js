@@ -79,9 +79,12 @@ function car(x, z, alongX, col, wreck, burn) {
   if (burn) addFire(alongX ? x + L - 0.7 : x + Wd / 2, 0.78, alongX ? z + Wd / 2 : z + L - 0.7, 1.4);
 }
 function barrel(x, z, fire) {
-  const c = fire ? 0x7a4630 : 0x48607a;
-  box(x - 0.3, 0, z - 0.3, x + 0.3, 0.9, z + 0.3, c, { hit: 'metal' });
-  box(x - 0.33, 0.28, z - 0.33, x + 0.33, 0.34, z + 0.33, 0x3a2a20, { solid: false }); box(x - 0.33, 0.62, z - 0.33, x + 0.33, 0.68, z + 0.33, 0x3a2a20, { solid: false });
+  if (typeof PROP_VOX !== 'undefined') barrelVox(x, z, 'barrel');                    // бочка из assets/props/barrel.vox
+  else {
+    const c = fire ? 0x7a4630 : 0x48607a;
+    box(x - 0.3, 0, z - 0.3, x + 0.3, 0.9, z + 0.3, c, { hit: 'metal' });
+    box(x - 0.33, 0.28, z - 0.33, x + 0.33, 0.34, z + 0.33, 0x3a2a20, { solid: false }); box(x - 0.33, 0.62, z - 0.33, x + 0.33, 0.68, z + 0.33, 0x3a2a20, { solid: false });
+  }
   if (fire) { addFire(x, 0.92, z, 1); SCORCHES.push([x, z, 1.1]); scorch(x, z, 1.1); }
 }
 // Свет огней — пул из 4 ламп у ближайших к камере огней (раньше у каждого огня своя: на большой карте это десяток лишних источников)
