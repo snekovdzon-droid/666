@@ -134,12 +134,32 @@ const groundCv = document.createElement('canvas'); groundCv.width = groundCv.hei
 const gctx = groundCv.getContext('2d');
 const decalCv = document.createElement('canvas'); decalCv.width = decalCv.height = GW;
 const dctx = decalCv.getContext('2d');
+// Земля: сначала карта зон (какая зона в каждом пикселе), потом цвет. Границы мягких зон (земля, трава, гравий, асфальт, дорога, тёмная плитка)
+// размываются: тип берётся из соседнего пикселя со случайным сдвигом до ~0,5 м, блоками по 3 пикселя — рваный край «из кубиков». Корты и плитка остаются резкими.
+// Поверх шума — пятна побольше (светлее/темнее), пучки травы и камешки.
+const SOFT_T = new Set(['dirt', 'grass', 'gravel', 'asphalt', 'road', 'dark']);
+function hash2(x, y, s = 0) { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function vnoise(x, y, s) {                                          // гладкий шум по решётке
+  const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = hash2(xi, yi, s), b = hash2(xi + 1, yi, s), c = hash2(xi, yi + 1, s), d = hash2(xi + 1, yi + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
 function paintGround(zones) {
-  const img = gctx.createImageData(GW, GW), d = img.data;
-  const zoneAt = (x, z) => { let r = null; for (const Z of zones) if (x >= Z[1] && x < Z[3] && z >= Z[2] && z < Z[4]) r = Z; return r; };     // позже в списке — сверху
-  let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const img = gctx.createImageData(GW, GW), d = img.data, Zi = new Int16Array(GW * GW);
+  for (let k = 0; k < zones.length; k++) {                          // позже в списке — сверху
+    const Z = zones[k], x1 = Math.max(0, Math.round(Z[1] * TPX)), x2 = Math.min(GW, Math.round(Z[3] * TPX)), y1 = Math.max(0, Math.round(Z[2] * TPX)), y2 = Math.min(GW, Math.round(Z[4] * TPX));
+    for (let py = y1; py < y2; py++) Zi.fill(k + 1, py * GW + x1, py * GW + x2);
+  }
+  const typeOf = i => i ? zones[i - 1][0] : 'dirt';
+  let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647, J = 8, CELL = 3;
   for (let py = 0; py < GW; py++) for (let px = 0; px < GW; px++) {
-    const x = px / TPX, z = py / TPX, Z = zoneAt(x, z), t = Z ? Z[0] : 'dirt', n = r();
+    const zi = Zi[py * GW + px], Z = zi ? zones[zi - 1] : null, own = Z ? Z[0] : 'dirt', x = px / TPX, z = py / TPX, n = r();
+    let t = own;
+    if (SOFT_T.has(own)) {                                           // размытая граница: тип из соседнего пикселя
+      const hh = hash2(px / CELL | 0, py / CELL | 0, 3), ox = Math.round(((hh * 256) % 1 - 0.5) * 2 * J), oy = Math.round((hh - 0.5) * 2 * J);
+      const nx = Math.min(GW - 1, Math.max(0, px + ox)), ny = Math.min(GW - 1, Math.max(0, py + oy)), nt = typeOf(Zi[ny * GW + nx]);
+      if (SOFT_T.has(nt)) t = nt;
+    }
     let c;
     if (t === 'dirt') c = n < 0.5 ? [128, 92, 60] : n < 0.85 ? [122, 88, 57] : [136, 99, 65];
     else if (t === 'asphalt' || t === 'road') c = n < 0.6 ? [62, 60, 58] : n < 0.9 ? [56, 54, 52] : [74, 72, 68];
@@ -151,8 +171,20 @@ function paintGround(zones) {
       const bx = Math.min(x - (Z[1] + 0.5), Z[3] - 0.5 - x), bz = Math.min(z - (Z[2] + 0.5), Z[4] - 0.5 - z);
       if (Math.abs(bx) < 0.07 && bz > -0.07 || Math.abs(bz) < 0.07 && bx > -0.07 || Math.abs(x - (Z[1] + Z[3]) / 2) < 0.07 && bz > 0) c = [220, 214, 200];
     } else { c = n < 0.6 ? [170, 162, 146] : [160, 152, 138]; if (px % 32 === 0 || py % 32 === 0) c = [138, 130, 118]; }
-    if (t === 'asphalt' && Z[5] && Z[5].lines && z >= Z[2] + 2 && z < Z[2] + 12 && (Math.abs(x - Math.round(x / 3) * 3) < 0.07 && z % 6 < 4.5)) c = [214, 208, 190];   // разметка парковки
-    if (t === 'road' && Math.abs(x - (Z[1] + Z[3]) / 2) < 0.08 && z % 3 < 1.6) c = [214, 180, 60];
+    if (own === 'asphalt' && Z[5] && Z[5].lines && z >= Z[2] + 2 && z < Z[2] + 12 && (Math.abs(x - Math.round(x / 3) * 3) < 0.07 && z % 6 < 4.5)) c = [214, 208, 190];   // разметка парковки
+    if (own === 'road' && Math.abs(x - (Z[1] + Z[3]) / 2) < 0.08 && z % 3 < 1.6) c = [214, 180, 60];
+    else if (t !== 'court' && !(c[0] > 200)) {                      // пятна: крупные (по ~2 м) и средние (по ~0,5 м) светлее/темнее, мелкие детали по типу
+      const k = 1 + (vnoise(x / 2.2, z / 2.2, 11) - 0.5) * 0.16 + (vnoise(x / 0.5, z / 0.5, 29) - 0.5) * 0.1;
+      let rr = c[0] * k, gg = c[1] * k, bb = c[2] * k;
+      const h2 = hash2(px >> 1, py >> 1, 17);
+      if (t === 'grass' && h2 < 0.07) { rr *= 0.8; gg *= 0.88; bb *= 0.8; }                         // тёмные пучки травы
+      else if (t === 'grass' && h2 > 0.975) { rr *= 1.12; gg *= 1.1; bb *= 0.9; }                   // светлая сухая травинка
+      else if (t === 'dirt' && h2 < 0.04) { rr *= 0.78; gg *= 0.78; bb *= 0.78; }                   // тёмные комки
+      else if (t === 'dirt' && h2 > 0.98) { rr *= 1.2; gg *= 1.18; bb *= 1.15; }                    // камешки
+      else if (t === 'gravel' && h2 > 0.94) { rr *= 1.12; gg *= 1.12; bb *= 1.12; }
+      else if ((t === 'asphalt' || t === 'road') && h2 < 0.015) { rr *= 0.7; gg *= 0.7; bb *= 0.7; } // трещинки
+      c = [Math.min(255, rr), Math.min(255, gg), Math.min(255, bb)];
+    }
     const o = (py * GW + px) * 4; d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = 255;
   }
   gctx.putImageData(img, 0, 0);
