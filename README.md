@@ -37,5 +37,5 @@
 ## Машины
 Модель машины — `assets/cars/car.vox` (рисуется в MagicaVoxel; синие тона — краска кузова, перекрашиваются в красный, синий, зелёный или светлый). После правок: `python3 tools/vox2js.py`, затем `python3 tools/build.py`. Автобусы из игры убраны.
 
-## Бочки и другие модели Meshy
-Бочки (обычная и красная взрывная) — исходные текстурные модели Meshy, сжатые скриптом (упрощение до ~16 тыс. треугольников, текстура 512 px webp, meshopt): `assets/models2.js`, ключи `m_barrel`, `m_redbarrel`.
+## Бочки
+`assets/props/barrel_old.vox` (обычная) и `red_barrel.vox` (красная взрывная) — рисуются в MagicaVoxel (исходно получены из Meshy `.glb` скриптом `tools/glb2vox_faithful.js`). После правок: `python3 tools/vox2props.py`, затем `python3 tools/build.py`. Код — `src/04f_barrel_vox.js`.

@@ -57,7 +57,7 @@ function inGroup(fn) {                                    // всё, что ст
 }
 function xBarrelOp(x, z) {
   const { grp, s0 } = inGroup(() => {
-    if (MODELS.m_redbarrel) modelPut('m_redbarrel', x, z, (x * 7.3 + z * 3.1) % 6.28, 0.9, 0.9, 0.9, { shrink: 0.03, h: 0.9 });      // красная взрывная бочка Meshy (сжатая, с текстурой)
+    if (typeof PROP_VOX !== 'undefined') barrelVox(x, z, 'redbarrel');                  // красная бочка из assets/props/red_barrel.vox
     else {
       box(x - 0.3, 0, z - 0.3, x + 0.3, 0.9, z + 0.3, 0xa8342a, { hit: 'metal' });
       for (const y of [0.28, 0.62]) box(x - 0.33, y, z - 0.33, x + 0.33, y + 0.06, z + 0.33, 0x2a1a14, { solid: false });

@@ -79,7 +79,7 @@ function car(x, z, alongX, col, wreck, burn) {
   if (burn) addFire(alongX ? x + L - 0.7 : x + Wd / 2, 0.78, alongX ? z + Wd / 2 : z + L - 0.7, 1.4);
 }
 function barrel(x, z, fire) {
-  if (MODELS.m_barrel) modelPut('m_barrel', x, z, (x * 7.3 + z * 3.1) % 6.28, 0.9, 0.9, 0.9, { shrink: 0.03, h: 0.9 });          // бочка Meshy (сжатая, с текстурой)
+  if (typeof PROP_VOX !== 'undefined') barrelVox(x, z, 'barrel');                    // бочка из assets/props/barrel_old.vox
   else {
     const c = fire ? 0x7a4630 : 0x48607a;
     box(x - 0.3, 0, z - 0.3, x + 0.3, 0.9, z + 0.3, c, { hit: 'metal' });
