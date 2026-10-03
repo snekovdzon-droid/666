@@ -39,7 +39,7 @@ function mmLeave() { G.nightT = 0; }
 function mmPanel(name) {
   MM.panel = name; const el = $('mmPanel'); $('mmBtns').style.display = name ? 'none' : 'block'; el.style.display = name ? 'block' : 'none';
   if (name === 'settings') {
-    el.innerHTML = `<h3>Настройки</h3><button data-s="quality">Графика: ${QPRE[QID].name}</button><p style="opacity:.7;font-size:12px;margin:2px 0 8px">${QDESC[QID]}</p><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="camlead">Камера к прицелу: ${CAMLEAD_NAME[CAM_LEAD_I]}</button><button data-s="ammohead">Патроны: ${AMMO_HEAD ? 'над героем' : 'в панели сверху'}</button><button data-s="realsnd">Звуки оружия: ${Sound.real ? 'записи' : 'синтез'}</button><button data-s="gibs">Разлёт частей: ${GIBS_ON ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
+    el.innerHTML = `<h3>Настройки</h3><button data-s="quality">Графика: ${QPRE[QID].name}</button><p style="opacity:.7;font-size:12px;margin:2px 0 8px">${QDESC[QID]}</p><button data-s="sound">Звук: ${Sound.on ? 'вкл' : 'выкл'}</button><button data-s="camlead">Камера к прицелу: ${CAMLEAD_NAME[CAM_LEAD_I]}</button><button data-s="ammohead">Патроны: ${AMMO_HEAD ? 'над героем' : 'в панели сверху'}</button><button data-s="realsnd">Звуки оружия: ${Sound.real ? 'записи' : 'синтез'}</button><button data-s="zvol">Голоса зомби: ${ZV.vol > 0 ? Math.round(ZV.vol * 100) + '%' : 'выкл'}</button><button data-s="gibs">Разлёт частей: ${GIBS_ON ? 'вкл' : 'выкл'}</button><button data-s="full">Полный экран</button><button data-s="split">Кооп: ${G.split ? 'раздельный экран' : 'общий экран'}</button><button data-s="hud">Настроить HUD</button><button data-s="reset">Сбросить героев и свои модели</button><button data-s="back">← Назад</button>`;
   } else if (name === 'mapedit') {
     el.innerHTML = mapEditPanelHtml();
   } else if (name === 'exit') {
@@ -53,6 +53,7 @@ function mmSetting(s) {
   else if (s === 'camlead') { CAM_LEAD_I = (CAM_LEAD_I + 1) % 3; lsSet('camLead', CAM_LEAD_I); mmPanel('settings'); }
   else if (s === 'ammohead') { setAmmoHead(!AMMO_HEAD); mmPanel('settings'); }
   else if (s === 'realsnd') { setRealSnd(!Sound.real); mmPanel('settings'); }
+  else if (s === 'zvol') { const o = [1, 0.7, 0.4, 0]; zvSetVol(o[(o.indexOf(ZV.vol) + 1) % o.length]); mmPanel('settings'); }
   else if (s === 'gibs') { GIBS_ON = !GIBS_ON; lsSet('gibs', GIBS_ON); mmPanel('settings'); }
   else if (s === 'quality') { const o = ['high', 'medium', 'low', 'auto']; lsSet('quality', o[(o.indexOf(QID) + 1) % o.length]); location.reload(); }
   else if (s === 'full') goFullscreen();

@@ -81,6 +81,9 @@ const MAP_PRISON = {
     // --- события v0.21: генератор в котельной, вертолётная площадка на крыше администрации, оружейка, взрывные бочки ---
     ['generator', 86.8, 8.0], ['helipad'], ['armory'],
     ['ladder', 45, 32, 0, -1], ['ladder', 57, 36, 1, 0], ['ladder', 33, 8, 0, -1], ['ladder', 23, 14, -1, 0], ['ladder', 63, 8, 0, -1], ['ladder', 73, 14, 1, 0], ['ladder', 69, 47, 1, 0], ['ladder', 13, 34, 0, -1], ['ladder', 21, 49, 1, 0], ['ladder', 6, 77, -1, 0], ['ladder', 16, 84, 0, 1], ['ladder', 86, 78, 1, 0], ['ladder', 80, 74, 0, -1],
+    // --- v0.34: мусорные баки (только на свободном месте) и мешки с мусором ---
+    ...[[72.5, 79, 0], [22.7, 50, 1.571], [42, 42, 0], [55.5, 42, 0], [70.5, 48, 1.571], [26.5, 21.6, 0], [69.5, 21.6, 0], [43.2, 76, 1.571], [35, 85.5, 1.571], [20, 74, 0]].map(p => ['trashbin', ...p]),
+    ...[[73.6, 80.6], [23.3, 51.9], [43.3, 42.7], [56.9, 42.5], [71.1, 50], [28.1, 21.5], [67.9, 21.7], [43.1, 78], [35.3, 87.6], [21.6, 74.6], [8, 80.6], [58.2, 80.6], [84, 72.8], [30.5, 62.2], [64, 62.6], [12, 62.2], [88, 62.2]].map(p => ['trashbag', ...p]),
     ['xbarrel', 82.2, 23], ['xbarrel', 87.3, 23.5], ['xbarrel', 92.5, 21], ['xbarrel', 10, 80], ['xbarrel', 24, 78], ['xbarrel', 22, 73.5], ['xbarrel', 66, 76], ['xbarrel', 72, 88], ['xbarrel', 38, 50], ['xbarrel', 58, 48], ['xbarrel', 14, 56], ['xbarrel', 26, 48], ['xbarrel', 47.5, 27], ['xbarrel', 92, 70], ['xbarrel', 42, 66], ['xbarrel', 36, 62], ['xbarrel', 80, 70], ['xbarrel', 30, 47], ['xbarrel', 64, 40],
   ],
 };
@@ -237,11 +240,13 @@ function gazeboOp(x, z) {                            // беседка во дв
   for (const dx of [-1.6, 1.6]) bench(x + dx, z, 1);
 }
 function hoopOp(x, z) {                              // баскетбольный щит
+  if (useModel('m_hoop')) return hoopModel(x, z);
   const s = x < 84 ? 1 : -1;
   box(x - 0.08, 0, z - 0.08, x + 0.08, 3.1, z + 0.08, 0x5a5e5e); box(x + s * 0.1 - 0.04, 2.6, z - 0.6, x + s * 0.1 + 0.04, 3.4, z + 0.6, 0xe8e4d8, { solid: false });
   box(x + s * 0.1, 2.6, z - 0.2, x + s * 0.5, 2.66, z + 0.2, 0xd8702a, { solid: false });
 }
 function busOp(x, z, alongX, col, wreck) {          // автобус: длинная коробка с окнами
+  if (useModel('m_bus')) return busModel(x, z, alongX, col, wreck);
   const L = 9, Wd = 2.6, H = 2.8, c = wreck ? new THREE.Color(col).multiplyScalar(0.6).getHex() : col;
   const P = (u1, u2, v1, v2, y1, y2, cc, o = {}) => alongX ? box(x + u1, y1, z + v1, x + u2, y2, z + v2, cc, Object.assign({ hit: 'metal' }, o)) : box(x + v1, y1, z + u1, x + v2, y2, z + u2, cc, Object.assign({ hit: 'metal' }, o));
   P(0, L, 0, Wd, 0.35, H, c);
@@ -270,6 +275,7 @@ const MAP_OPS = {
   gate: (x1, z1, x2, z2, axis, open) => addGate(x1, z1, x2, z2, axis, open), search: (x, z, a) => addSearch(x, z, a),
   block: blockOp, shed: shedOp, bridge: fadeWrap(bridgeOp), pens: pensOp, grave: graveOp, tank: fadeWrap(tankOp), gazebo: fadeWrap(gazeboOp), hoop: hoopOp, bus: fadeWrap(busOp), booth: fadeWrap(boothOp), barrier: barrierOp, post: postOp,
   barrel, lamp, car, bench, waterTower: fadeWrap(waterTower), tree: fadeWrap((x, z) => (MODELS.tree ? model('tree', x, z, x * 1.7) : tree(x, z))),
+  trashbin: (x, z, rot) => trashBinOp(x, z, rot), trashbag: (x, z) => trashBagOp(x, z),
   bush: (x, z) => MODELS.bush && model('bush', x, z, x * 2.3, 0.9 + (x % 1) * 0.3), cone: (x, z) => MODELS.cone && model('cone', x, z, x),
 };
 function buildMap() {

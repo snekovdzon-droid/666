@@ -222,7 +222,7 @@ function tick(dt, T) {
   if (G.state === 'play' && G.pickQueue.length) openLevelUp();
   G.hurtFx = Math.max(0, G.hurtFx - dt * 2.5); if (G.lvlFx > 0) G.lvlFx -= dt;
   if (!G.paused) { updateFires(dt, T); updateParts(dt); updateGems(dt, T); }
-  updateSky(dt); updateSearch(T); updateCamera(dt);
+  updateSky(dt); updateSearch(T); updateCamera(dt); if (typeof zvTick === 'function') zvTick(dt);
   flushDecals(dt);
 }
 function render(T) {

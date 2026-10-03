@@ -222,7 +222,7 @@ body.touch .mel{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.31</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.34</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Тюрьма. Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div></div></div>
@@ -246,6 +246,7 @@ body.touch .mel{display:none}
 <script src="vendor/three.min.js"></script>
 <script src="vendor/gltf-meshopt.js"></script>
 <script src="assets/models.js"></script>
+<script src="assets/models2.js"></script>
 <script>if(matchMedia("(pointer:coarse)").matches)document.body.classList.add("touch")</script>
 <script src="src/00_core.js"></script>
 <script src="src/01_data.js"></script>
@@ -281,4 +282,6 @@ body.touch .mel{display:none}
 <script src="src/12d_melee.js"></script>
 <script src="src/12e_runstats.js"></script>
 <script src="src/12f_map_select.js"></script>
+<script src="src/12g_zsnd_assets.js"></script>
+<script src="src/12h_fxsnd_assets.js"></script>
 </body></html>

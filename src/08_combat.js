@@ -265,7 +265,7 @@ function damageZombie(z, dmg, dx, dz, knock, hy, pierce) {
   if (z.hp > 0) return;
   z.dead = true; z.deadT = 0; G.kills++; if (_rs) { _rs.kills++; const _m = Math.floor(G.t / 60); _rs.kpm[_m] = (_rs.kpm[_m] || 0) + 1; } (G.killsBy || (G.killsBy = {}))[z.type] = (G.killsBy[z.type] || 0) + 1;
   if (z.bolts) dropBolts(z);                                                              // болты, застрявшие в зомби, остаются в трупе
-  SFX.death(); dropFromZombie(z);                                                          // редкий малый ящик
+  SFX.death(); zvDeath(z); dropFromZombie(z);                                                          // редкий малый ящик
   const T = ZOMBIES[z.type];
   bloodDecal(z.x + dx * 0.35, z.z + dz * 0.35, 0.3 + Math.random() * 0.1, dx, dz);          // лужа меньше, чем была (правка из плейтеста)
   blood(z.x, z.y + 0.6, z.z, dx, dz, 12);
@@ -291,7 +291,7 @@ function explode(x, y, z, dmg, R, o = {}) { const pv = ATTR; if (o.owner) ATTR =
 function explodeBase(x, y, z, dmg, R, o = {}) {
   explHit(x, z, R);                                                                        // рядом бочки и баки — цепная реакция
   if (GAS.length) igniteGasAt(x, z, R);                                                    // взрыв поджигает бензин
-  boomFx(x, y, z, R, o.gore); SFX.boom(R / 1.5);
+  boomFx(x, y, z, R, o.gore); SFX.boom(R / 1.5, x, z);
   if (o.hurts) for (const p of players) if (p !== o.skip && !p.down && p.inv <= 0 && Math.abs(p.y - y) < 1.5 && Math.hypot(p.x - x, p.z - z) < R && !(o.owner && L(p, 'fireproof'))) hurtPlayer(p);   // костюм спасает и от снаряжения напарника
   GIBF.boom = true;
   forNear(x, z, e => {

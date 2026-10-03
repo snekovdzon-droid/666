@@ -60,7 +60,7 @@ const MOB_AI = {
       return [z.cdx, z.cdz, 10];
     }
     z.chgCd -= dt;
-    if (target && z.stunT <= 0 && z.chgCd <= 0 && dist > 3 && dist < 9 && sameLevel(z, target)) { z.chg = 'wind'; z.chgT = 0.9; SFX.roar(); }
+    if (target && z.stunT <= 0 && z.chgCd <= 0 && dist > 3 && dist < 9 && sameLevel(z, target)) { z.chg = 'wind'; z.chgT = 0.9; SFX.roar(z); }
     return null;
   },
   screamer(z, dt, target, dist, dx, dz) {
@@ -97,7 +97,7 @@ const MOB_AI = {
     }
     z.slamCd -= dt; z.callCd -= dt;
     if (z.callCd <= 0) { callGuards(z, enr); z.callCd = enr ? 14 : 20; }
-    if (target && z.slamCd <= 0 && dist < 4.2 && sameLevel(z, target)) { z.slamWind = 1.0; SFX.roar(); }
+    if (target && z.slamCd <= 0 && dist < 4.2 && sameLevel(z, target)) { z.slamWind = 1.0; SFX.roar(z); }
     return [dx, dz, enr ? 1.35 : 1];
   },
 };
@@ -116,7 +116,7 @@ function smashStructures(z, reach) {
 
 /* ---------- Кричащий: крик ускоряет зомби вокруг и зовёт новых ---------- */
 function doScream(z) {
-  z.scCd = 10; SFX.scream(); shake = Math.max(shake, 0.25);
+  z.scCd = 10; SFX.scream(z); shake = Math.max(shake, 0.25);
   ringFx(z.x, z.y + 0.9, z.z, 1.2, 0xff6a4a, 16); ringFx(z.x, z.y + 0.9, z.z, 2.4, 0xff6a4a, 20);
   forNear(z.x, z.z, o => { if (!o.dead && o !== z) o.rageT = 5; }, 8);
   let alive = 0, sum = 0;
@@ -158,7 +158,7 @@ function doSlam(z, enr) {
 function callGuards(z, enr) {
   let g = 0; for (const o of zombies) if (!o.dead && o.guard) g++;
   const n = Math.min(enr ? 3 : 2, 6 - g); if (n <= 0) return;
-  SFX.scream();
+  SFX.scream(z);
   for (let k = 0; k < n; k++) { const w = spawnZombie('armored', { x: z.x, z: z.z }, undefined, true); if (w) { w.guard = true; w.rageT = 4; } }
 }
 function spawnWarden() {

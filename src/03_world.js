@@ -212,7 +212,8 @@ function loadModels() {
     loader.load(url, g => {
       g.scene.traverse(o => { if (o.isMesh) {                // единый стиль освещения: матовый Lambert с той же текстурой
         const map = o.material.map; if (map) map.encoding = THREE.sRGBEncoding;
-        o.material = new THREE.MeshLambertMaterial({ map }); o.castShadow = o.receiveShadow = true; } });
+        if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();   // колючка пришла без нормалей и материала
+        o.material = new THREE.MeshLambertMaterial(map ? { map } : { color: 0x8a8a84 }); o.castShadow = o.receiveShadow = true; } });
       MODELS[k] = g.scene; res();
     }, undefined, e => { console.warn('модель', k, e); res(); });
   })));
@@ -231,6 +232,95 @@ function model(name, x, z, rot = 0, sc = 1) {
   }
   if (D.leaves) { const r = D.leaves.r * sc; solids.push({ x1: x - r, y1: D.leaves.y1 * sc, z1: z - r, x2: x + r, y2: D.leaves.y2 * sc, z2: z + r, mat: 'wood', leaves: true }); }
   return m;
+}
+/* ---------- v0.34: модели Meshy вместо кодовых объектов — машина, автобус, фонарь, щит, скамейка; мусорные баки и мешки;
+   ящик с лутом; спираль колючки. На тюрьме и своих картах; город не трогаем (MESHY_MAP). Нет модели — старый код. ---------- */
+const MESHY_MAP = MAPID !== 'city';
+const useModel = n => MESHY_MAP && !!MODELS[n];
+// поставить модель центром в cx,cz; sx/sy/sz — масштаб по осям модели; коллизия — габарит (o.solid=false — без неё, o.h — своя высота)
+function modelPut(name, cx, cz, rot, sx, sy = sx, sz = sx, o = {}) {
+  const m = MODELS[name].clone(); m.scale.set(sx, sy, sz); m.rotation.y = rot; m.position.set(cx, o.y || 0, cz);
+  if (o.mat) m.traverse(q => { if (q.isMesh) q.material = o.mat; });
+  (BOX_PARENT || staticGroup).add(m);
+  if (o.solid !== false) {
+    m.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(m), sh = o.shrink || 0;
+    solids.push({ x1: b.min.x + sh, y1: 0, z1: b.min.z + sh, x2: b.max.x - sh, y2: o.h || b.max.y, z2: b.max.z - sh, mat: o.hit || 'metal', group: null });
+  }
+  return m;
+}
+const modelMap = name => { let t = null; MODELS[name].traverse(q => { if (!t && q.isMesh && q.material.map) t = q.material.map; }); return t; };
+// Перекраска синей краски кузова в цвет col: окна, шины, хром и фары другого цвета или темнее — не трогаются
+const RECOLOR = new Map();
+function recolorMat(name, col, wreck) {
+  const key = name + ':' + col + ':' + (wreck ? 1 : 0); if (RECOLOR.has(key)) return RECOLOR.get(key);
+  const src = modelMap(name); if (!src || !src.image) return null;
+  const img = src.image, cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;
+  const cx = cv.getContext('2d'); cx.drawImage(img, 0, 0);
+  const d = cx.getImageData(0, 0, cv.width, cv.height), a = d.data;
+  const isBody = (r, g, b) => { const mx = Math.max(r, g, b), c = mx - Math.min(r, g, b); if (mx < 0.22 || c / mx < 0.22) return -1;
+    let h = mx === r ? ((g - b) / c) % 6 : mx === g ? (b - r) / c + 2 : (r - g) / c + 4; h *= 60; if (h < 0) h += 360; return h >= 190 && h <= 235 ? c / mx : -1; };
+  let sS = 0, sV = 0, n = 0;                                          // средняя насыщенность и яркость краски — от неё меряем новый цвет
+  for (let i = 0; i < a.length; i += 16) { const r = a[i] / 255, g = a[i + 1] / 255, b = a[i + 2] / 255, s = isBody(r, g, b); if (s >= 0) { sS += s; sV += Math.max(r, g, b); n++; } }
+  const refS = n ? sS / n : 0.45, refV = n ? sV / n : 0.55;
+  const C = new THREE.Color(col), hsl = {}; C.getHSL(hsl);
+  const tv = Math.max(C.r, C.g, C.b), ts = tv > 0 ? (tv - Math.min(C.r, C.g, C.b)) / tv : 0, th = hsl.h * 6;
+  const kS = (ts * (wreck ? 0.6 : 1)) / refS, kV = (tv * (wreck ? 0.6 : 1)) / refV, dim = wreck ? 0.78 : 1;
+  for (let i = 0; i < a.length; i += 4) {
+    const r = a[i] / 255, g = a[i + 1] / 255, b = a[i + 2] / 255, s0 = isBody(r, g, b);
+    if (s0 < 0) { if (wreck) { a[i] *= dim; a[i + 1] *= dim; a[i + 2] *= dim; } continue; }
+    const v = Math.min(1, Math.max(r, g, b) * kV), s = Math.min(1, s0 * kS), c = v * s, X = c * (1 - Math.abs(th % 2 - 1)), m = v - c;
+    const [rr, gg, bb] = th < 1 ? [c, X, 0] : th < 2 ? [X, c, 0] : th < 3 ? [0, c, X] : th < 4 ? [0, X, c] : th < 5 ? [X, 0, c] : [c, 0, X];
+    a[i] = (rr + m) * 255; a[i + 1] = (gg + m) * 255; a[i + 2] = (bb + m) * 255;
+  }
+  cx.putImageData(d, 0, 0);
+  const t = new THREE.CanvasTexture(cv); t.flipY = src.flipY; t.encoding = THREE.sRGBEncoding; t.wrapS = src.wrapS; t.wrapT = src.wrapT;
+  const mt = new THREE.MeshLambertMaterial({ map: t }); RECOLOR.set(key, mt); return mt;
+}
+// Машина: как у кодовой — x, z — угол, alongX — длиной вдоль x, перед в +u
+function carModel(x, z, alongX, col, wreck, burn) {
+  const L = 3.2, Wd = 1.5, cx = alongX ? x + L / 2 : x + Wd / 2, cz = alongX ? z + Wd / 2 : z + L / 2;
+  modelPut('m_car', cx, cz, alongX ? Math.PI : Math.PI / 2, 0.85, 0.85, 0.85, { mat: recolorMat('m_car', col, wreck), shrink: 0.05 });
+  if (burn) addFire(alongX ? x + L - 0.7 : x + Wd / 2, 0.85, alongX ? z + Wd / 2 : z + L - 0.7, 1.4);
+}
+// Автобус: место под него то же (9 × 2.6), модель вытянута по длине
+function busModel(x, z, alongX, col, wreck) {
+  const L = 9, Wd = 2.6, cx = alongX ? x + L / 2 : x + Wd / 2, cz = alongX ? z + Wd / 2 : z + L / 2;
+  modelPut('m_bus', cx, cz, alongX ? 0 : -Math.PI / 2, 1.75, 1.55, 1.3, { mat: recolorMat('m_bus', col, wreck), shrink: 0.05 });
+}
+// Фонарь: столб в x,z, плафон смотрит в +x (как у кодового); свет — из плафона
+function lampModel(x, z) {
+  const S = 1.9;
+  modelPut('m_lamp', x + 0.15 * S, z, Math.PI, S, S, S, { solid: false });
+  solids.push({ x1: x - 0.12, y1: 0, z1: z - 0.12, x2: x + 0.12, y2: 3.6, z2: z + 0.12, mat: 'metal', group: null });
+  const lx = x + 0.15 * S + 0.25 * S;
+  const bulb = box(lx - 0.1, 2.46, z - 0.1, lx + 0.1, 2.52, z + 0.1, 0xfff0c0, { solid: false, cast: false, material: new THREE.MeshBasicMaterial({ color: 0x6a6450 }) });
+  lamps.push({ x, z, bulb, lx, ly: 2.45 });
+}
+// Баскетбольный щит: кольцо смотрит к центру площадки (как у кодового)
+function hoopModel(x, z) {
+  const s = x < 84 ? 1 : -1;
+  modelPut('m_hoop', x + 0.3 * s, z, s * Math.PI / 2, 2, 2, 2, { solid: false });
+  solids.push({ x1: x - 0.1, y1: 0, z1: z - 0.1, x2: x + 0.1, y2: 3.4, z2: z + 0.1, mat: 'metal', group: null });
+}
+// Скамейка: длиной вдоль z, сидящий смотрит в +faceX; коллизия низкая, как у кодовой
+function benchModel(x, z, faceX) {
+  const s = faceX || 1;
+  modelPut('m_bench', x, z, s * Math.PI / 2, 0.8, 0.8, 0.8, { h: 0.45, hit: 'wood', shrink: 0.04 });
+}
+// Мусорный бак: ставится, только если место свободно (rot — поворот)
+function trashBinOp(x, z, rot = 0) {
+  if (!useModel('m_bin')) return;
+  const hx = Math.abs(Math.cos(rot)) * 0.62 + Math.abs(Math.sin(rot)) * 0.41, hz = Math.abs(Math.sin(rot)) * 0.62 + Math.abs(Math.cos(rot)) * 0.41;
+  for (const q of solids) if (q.y1 < 1 && q.x1 < x + hx && q.x2 > x - hx && q.z1 < z + hz && q.z2 > z - hz) return;
+  modelPut('m_bin', x, z, rot, 1, 1, 1, { hit: 'metal' });
+}
+// Мешки с мусором: 1–3 штуки кучкой, без коллизии
+function trashBagOp(x, z) {
+  if (!useModel('m_bag')) return;
+  let sd = Math.abs(Math.sin(x * 12.9898 + z * 78.233)) * 43758.5453; const r = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
+  const n = 1 + Math.floor(r() * 3);
+  for (let i = 0; i < n; i++) { const a = r() * TAU, d = i ? 0.3 + r() * 0.15 : 0, s = 0.9 + r() * 0.4;
+    modelPut('m_bag', x + Math.cos(a) * d, z + Math.sin(a) * d, r() * TAU, s, s * (0.8 + r() * 0.3), s, { solid: false }); }
 }
 
 /* ---------- Воксельные модели персонажей: .vox → части тела → склеенные грани + текстура ----------

@@ -349,7 +349,7 @@ function updateThrown(dt) {
         later(0.2 + j * 0.1, () => explode(cx, floorAt(cx, cz, y + 0.5), cz, S.dmg * 0.4 * own.st.dmg, S.R * 0.6, { hurts: true, owner: own }));
       }
     } else if (o.id !== 'molotov') landThrown2(o, x, y, z);
-    else { addPool(own, x, y, z); SFX.glass(); for (let j = 0; j < 8; j++) spawnP({ x, y: y + 0.2, z, vx: rnd(-2, 2), vy: rnd(1, 3), vz: rnd(-2, 2), g: 14, s: 0.05, col: 0x9fd3e0, life: 0.6 }); }
+    else { addPool(own, x, y, z); SFX.molotov(x, z); for (let j = 0; j < 8; j++) spawnP({ x, y: y + 0.2, z, vx: rnd(-2, 2), vy: rnd(1, 3), vz: rnd(-2, 2), g: 14, s: 0.05, col: 0x9fd3e0, life: 0.6 }); }
   }
 }
 /* ---- Лужа молотова: огонь с общим светом (fires в 31_props), жжёт зомби и игроков (кроме «Огнеупорного костюма») ---- */
@@ -435,7 +435,11 @@ function placeWire(p, S) {
   const g = new THREE.Group(), post = tuMat(0x5a4a36), coil = tuMat(0x9a9a92);
   const nP = Math.max(2, Math.round(len / 0.8) + 1);
   for (let k = 0; k < nP; k++) for (const s of [-1, 1]) { const m = new THREE.Mesh(boxGeo, post); m.scale.set(0.06, 0.5, 0.06); m.position.set(s * wid / 2, 0.25, -len / 2 + len * k / (nP - 1)); g.add(m); }
-  for (const s of [-0.28, 0.28]) for (let k = 0; k < Math.round(len / 0.25); k++) {                // кольца спирали
+  if (MODELS.m_wire) for (const s of [-0.28, 0.28]) {                                              // v0.34: спираль из модели, мотки по длине
+    const n = Math.max(1, Math.round(len / 2)), seg = len / n;
+    for (let k = 0; k < n; k++) { const m = MODELS.m_wire.clone(); m.traverse(q => { if (q.isMesh) q.material = coil; }); m.scale.set(seg / 2.1, 0.6, 0.75); m.rotation.y = Math.PI / 2; m.position.set(s * wid, 0, -len / 2 + seg * (k + 0.5)); g.add(m); }
+  }
+  else for (const s of [-0.28, 0.28]) for (let k = 0; k < Math.round(len / 0.25); k++) {                // кольца спирали
     const m = new THREE.Mesh(boxGeo, coil); m.scale.set(0.3, 0.3, 0.03); m.position.set(s * wid, 0.2 + (k % 2) * 0.03, -len / 2 + 0.12 + k * 0.25); m.rotation.z = k * 0.7; g.add(m);
   }
   if (w.trap) { const m = new THREE.Mesh(boxGeo, tuMat(0x4a5a30)); m.scale.set(0.1, 0.12, 0.1); m.position.set(0, 0.06, 0); g.add(m); }
@@ -479,6 +483,10 @@ const CRATES = [], GITEMS = [];
 const crateMat = tuMat(0x8a6236), crateBand = tuMat(0x5a3e22);
 function crateMesh(big) {
   const g = new THREE.Group(), s = big ? 0.55 : 0.38;
+  if (MODELS.m_crate) {                                                     // v0.34: ящик с патронами (Meshy)
+    const m = MODELS.m_crate.clone(), k = big ? 1.25 : 0.9; m.scale.set(k, k * 1.6, k); g.add(m);
+    g.traverse(q => { if (q.isMesh) { q.castShadow = true; q.receiveShadow = true; } }); scene.add(g); return g;
+  }
   const b = new THREE.Mesh(boxGeo, crateMat); b.scale.set(s, s * 0.8, s); b.position.y = s * 0.4; g.add(b);
   for (const k of [-0.3, 0.3]) { const m = new THREE.Mesh(boxGeo, crateBand); m.scale.set(s * 1.02, s * 0.12, s * 1.02); m.position.y = s * 0.4 + k * s * 0.8; g.add(m); }
   g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); scene.add(g); return g;
@@ -646,7 +654,7 @@ function healFx(p) { for (let i = 0; i < 12; i++) spawnP({ x: p.x, y: p.y + 0.5,
 function landThrown2(o, x, y, z) {
   const own = o.owner, S = o.S;
   if (o.id === 'flash') {
-    SFX.boom(); G.flashFx = 1; shake = Math.max(shake, 0.15);
+    SFX.boomSynth(); G.flashFx = 1; shake = Math.max(shake, 0.15);
     for (let i = 0; i < 18; i++) spawnP({ x, y: y + 0.3, z, vx: rnd(-4, 4), vy: rnd(1, 4), vz: rnd(-4, 4), s: 0.08, s1: 0.01, col: 0xffffff, col1: 0xfff0b0, glow: true, life: 0.25 });
     forNear(x, z, zz => { if (!zz.dead && Math.abs(zz.y - y) < 1.5 && Math.hypot(zz.x - x, zz.z - z) < S.R) { zz.stunT = Math.max(zz.stunT || 0, S.stun); zz.flash = 0.1; } }, S.R + 1);
     for (const q of players) if (!q.down && Math.hypot(q.x - x, q.z - z) < S.R && Math.abs(q.y - y) < 1.5) { q.slowT = Math.max(q.slowT || 0, 1.5); toast(q, 'Ослеплён!', '#fff'); }
@@ -683,7 +691,7 @@ function updateClays(dt) {
     let hit = false; forNear(c.x, c.z, z => { if (!hit && !z.dead && Math.abs(z.y - c.y) < 1 && inCone(c, z.x, z.z, c.R * 0.8)) hit = true; }, c.R);
     if (!hit) continue;
     CLAYS.splice(i, 1); scene.remove(c.g);
-    SFX.boom(); shake = Math.max(shake, 0.25); scorch(c.x + Math.sin(c.yaw) * 0.6, c.z + Math.cos(c.yaw) * 0.6, 0.7);
+    SFX.boom(1.2, c.x, c.z); shake = Math.max(shake, 0.25); scorch(c.x + Math.sin(c.yaw) * 0.6, c.z + Math.cos(c.yaw) * 0.6, 0.7);
     for (let k = 0; k < 40; k++) { const a = c.yaw + rnd(-0.85, 0.85), v = rnd(5, 12); spawnP({ x: c.x, y: c.y + 0.2, z: c.z, vx: Math.sin(a) * v, vy: rnd(0, 1.5), vz: Math.cos(a) * v, s: 0.06, s1: 0.01, col: 0xffd080, col1: 0x904020, glow: true, life: 0.25 }); }
     dust(c.x, c.y + 0.2, c.z, 0x7a6a52, 10);
     forNear(c.x, c.z, z => { if (!z.dead && Math.abs(z.y - c.y) < 1.2 && inCone(c, z.x, z.z, c.R)) { const d = Math.hypot(z.x - c.x, z.z - c.z); dzBy(c.owner, z, c.dmg * (1 - d / c.R * 0.5), (z.x - c.x) / d, (z.z - c.z) / d, 6); } }, c.R + 1);
@@ -773,7 +781,7 @@ function pourGas(p, dt) {
 }
 function endCanister(p) { p.fuel = null; p.gasLast = null; if (p.hand === 'canister') p.hand = null; }   // недолитый бензин пропадает
 function igniteGasAt(x, z, R) { let n = 0; for (const g of GAS) if (!g.burn && (g.x - x) ** 2 + (g.z - z) ** 2 < R * R) { lightGas(g); n++; } return n; }
-function lightGas(g) { g.burn = g.dur; g.f = { x: g.x, y: g.y, z: g.z, s: 0.35, R: 0.25, acc: 0, seed: Math.random() * 10 }; fires.push(g.f); g.spread = 0.07; }
+function lightGas(g) { if (SFX.gasFire) SFX.gasFire(g.x, g.z); g.burn = g.dur; g.f = { x: g.x, y: g.y, z: g.z, s: 0.35, R: 0.25, acc: 0, seed: Math.random() * 10 }; fires.push(g.f); g.spread = 0.07; }
 function updateGas(dt) {
   for (let i = GAS.length - 1; i >= 0; i--) {
     const g = GAS[i]; g.t += dt;

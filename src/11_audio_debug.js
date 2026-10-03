@@ -3,9 +3,9 @@
 const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true), real: lsGet('realsnd', true), buf: {} };
 // Настоящие записи оружия (src/02b_sound_assets.js): декодируем один раз при старте звука
 function loadRealSounds() {
-  if (typeof SND_B64 === 'undefined') return;
-  for (const k in SND_B64) {
-    const bin = atob(SND_B64[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  const ALL = Object.assign({}, typeof SND_B64 !== 'undefined' ? SND_B64 : {}, typeof ZSND_B64 !== 'undefined' ? ZSND_B64 : {}, typeof FXSND_B64 !== 'undefined' ? FXSND_B64 : {});   // оружие + голоса зомби
+  for (const k in ALL) {
+    const bin = atob(ALL[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
     try { Sound.ctx.decodeAudioData(u.buffer, b => { Sound.buf[k] = b; }, () => {}); } catch (e) {}
   }
 }

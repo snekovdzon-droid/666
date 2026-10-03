@@ -174,7 +174,7 @@ function updateZombies(dt) {
     for (const p of players) {                                           // укус
       if (p.down || Math.abs(p.y - z.y) > 0.6) continue;
       const cx = p.x - z.x, cz = p.z - z.z, rr = p.r + z.r, d2 = cx * cx + cz * cz;
-      if (d2 < (rr + 0.35) ** 2 && !(z.atkT > 0)) z.atkT = 0.45;
+      if (d2 < (rr + 0.35) ** 2 && !(z.atkT > 0)) { z.atkT = 0.45; zvAttack(z); }
       if (d2 < rr * rr) { const d = Math.sqrt(d2) || 0.001, k = (rr - d) / d; moveEntity(z, -cx * k, -cz * k, z.r); if (p.inv <= 0 && G.state === 'play') hurtPlayer(p, z); }
     }
     if (bt && dist < z.r + 0.45) { bt.hp -= 12 * dt; if (!(z.atkT > 0)) z.atkT = 0.45; }   // грызут турель
@@ -225,7 +225,7 @@ function setLampLights(cx, cz) {
   for (const L of lamps) L.d = Math.hypot(L.x - cx, L.z - cz);
   const ls = lamps.slice().sort((a, b) => a.d - b.d);
   setSearchLights(cx, cz);
-  LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 * lampOn(L) : 0; if (L) { sp.position.set(L.x + 0.6, 3.95, L.z); sp.target.position.set(L.x + 1.2, 0, L.z); sp.target.updateMatrixWorld(); } });
+  LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 * lampOn(L) : 0; if (L) { sp.position.set(L.lx !== undefined ? L.lx : L.x + 0.6, L.ly || 3.95, L.z); sp.target.position.set((L.lx !== undefined ? L.lx : L.x + 0.6) + 0.6, 0, L.z); sp.target.updateMatrixWorld(); } });
 }
 // Здание между камерой и героем — полупрозрачное
 const camDir = new THREE.Vector3();

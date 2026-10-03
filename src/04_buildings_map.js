@@ -65,6 +65,7 @@ function fireEscape(xs, xe, z1, z2, H, grp, y0 = 0) {      // y0 — откуд�
 /* ---------- 5. Машины, бочки, фонари, деревья, стена ---------- */
 const fires = [];                                     // источники огня: { x, y, z, light, s }
 function car(x, z, alongX, col, wreck, burn) {
+  if (useModel('m_car')) return carModel(x, z, alongX, col, wreck, burn);
   const g = new THREE.Group(); staticGroup.add(g);
   const L = 3.2, Wd = 1.5, P = (u1, u2, v1, v2, y1, y2, c, o = {}) => alongX ? box(x + u1, y1, z + v1, x + u2, y2, z + v2, c, Object.assign({ parent: g, hit: 'metal' }, o)) : box(x + v1, y1, z + u1, x + v2, y2, z + u2, c, Object.assign({ parent: g, hit: 'metal' }, o));
   const body = wreck ? new THREE.Color(col).multiplyScalar(0.55).getHex() : col;
@@ -90,6 +91,7 @@ function addFire(x, y, z, s) {
 }
 const lamps = [];
 function lamp(x, z) {
+  if (useModel('m_lamp')) return lampModel(x, z);
   box(x - 0.08, 0, z - 0.08, x + 0.08, 4.2, z + 0.08, 0x5a5c60, { hit: 'metal' });
   box(x - 0.08, 4.1, z - 0.08, x + 0.7, 4.2, z + 0.08, 0x5a5c60, { solid: false });
   const bulb = box(x + 0.45, 3.98, z - 0.1, x + 0.75, 4.1, z + 0.1, 0xfff0c0, { solid: false, cast: false, material: new THREE.MeshBasicMaterial({ color: 0x6a6450 }) });
@@ -121,6 +123,7 @@ function fenceX(x1, x2, z) {                       // сетка-рабица в
   box(x1, 2.2, z - 0.03, x2, 2.26, z + 0.03, 0x5a5e5e, { solid: false });
 }
 function bench(x, z, faceX) {                      // скамейка; faceX — смотрит вдоль ±x (к дороге)
+  if (useModel('m_bench')) return benchModel(x, z, faceX);
   const wood = 0x8a6a44, iron = 0x3a3c3c, s = faceX;
   if (s) { box(x - 0.22, 0.38, z - 0.7, x + 0.22, 0.45, z + 0.7, wood, { solid: false }); box(x - s * 0.24 - 0.04, 0.45, z - 0.7, x - s * 0.24 + 0.04, 0.85, z + 0.7, wood, { solid: false });
     for (const dz of [-0.6, 0.6]) box(x - 0.2, 0, z + dz - 0.04, x + 0.2, 0.38, z + dz + 0.04, iron, { solid: false });
