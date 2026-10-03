@@ -275,6 +275,7 @@ function buildMap() {
   for (const op of MAPDEF.ops) { const f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
   for (const B of buildings) B.finish();
   indexSolids();
+  buildRelief(MAPDEF);                                                              // бордюры, насыпи, клумбы, канавы
 }
 // Точки выхода зомби: проломы, ворота, двери зданий и пустыри по сетке (кроме огороженных участков)
 function mapSpawns() {

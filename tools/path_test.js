@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const p = await b.newPage({ viewport: { width: 600, height: 400 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(i => { window.__mi = i; }, +(process.env.MI || 0)); await p.goto('file://' + path.resolve(process.argv[2])); await p.waitForTimeout(3500);
-  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelectorAll('#mpList .mp')[+(window.__mi||0)].click(); }); await p.waitForTimeout(1500);
+  await p.click('[data-a=single]'); await p.click('#goBtn'); await p.evaluate(() => { const m = document.getElementById('mapPick'); if (m && getComputedStyle(m).display !== 'none') document.querySelectorAll('#mpList .mp')[+(window.__mi||0)].click(); }); await p.waitForTimeout(7000);
   await p.evaluate(() => {
     G.god = true; G.noSpawn = true; zombies.length = 0; G.timeScale = 8; Math.seedrandom;
     let s = 12345; const R = () => (s = (s * 16807) % 2147483647) / 2147483647; let n = 0, tries = 0;
