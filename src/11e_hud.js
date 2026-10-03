@@ -117,6 +117,26 @@ function toView(V, x, y, z, m = 1) {
   return [V.rect.x + (_pv.x + 1) / 2 * V.rect.w, V.rect.y + (1 - _pv.y) / 2 * V.rect.h];
 }
 
+/* --- патроны над героем (второй вариант HUD): магазин, перезарядка; панель сверху в этом режиме без патронов --- */
+let AMMO_HEAD = lsGet('ammoHead', false); const haEls = {};
+function setAmmoHead(on) { AMMO_HEAD = on; lsSet('ammoHead', on); document.body.classList.toggle('ammohead', on); }
+document.body.classList.toggle('ammohead', AMMO_HEAD);
+function headAmmoUpdate() {
+  const box = $('headAmmo'); if (!box) return;
+  const live = AMMO_HEAD && G.state === 'play' && !G.paused, seen = new Set();
+  if (live) for (const V of uiViews()) for (const p of V.ps) {
+    if (p.down) continue;
+    const pos = toView(V, p.x, p.y + 1.95, p.z, 1.1); if (!pos) continue;
+    let e = haEls[p.idx]; if (!e) { e = haEls[p.idx] = document.createElement('div'); e.className = 'ha'; e.innerHTML = '<div class="hn"><span class="am"></span><div class="ammo"></div></div><div class="bar rel"><i></i></div>'; e.style.setProperty('--pc', PLAYER_CSS[p.idx]); box.appendChild(e); }
+    const ws = wStat(p), key = p.ammo + '/' + ws.mag + (p.gun === 'crossbow' ? ':' + p.quiver : '');
+    if (e._k !== key) { e._k = key; const am = e.querySelector('.ammo'); am.classList.toggle('many', ws.mag > 40); e.querySelector('.am').textContent = p.gun === 'crossbow' ? p.ammo + ' · ' + p.quiver : key; am.innerHTML = ws.mag > 40 || p.gun === 'crossbow' ? '' : Array.from({ length: ws.mag }, (_, i) => `<b class="${i < p.ammo ? '' : 'e'}"></b>`).join(''); }
+    const rel = e.querySelector('.rel'); rel.style.display = p.reloadT > 0 ? 'block' : 'none'; if (p.reloadT > 0) rel.firstElementChild.style.width = (p.reloadK * 100).toFixed(0) + '%';
+    e.classList.toggle('low', p.ammo <= Math.max(1, ws.mag * 0.2)); e.style.display = 'flex';
+    e.style.transform = `translate(${pos[0].toFixed(1)}px,${pos[1].toFixed(1)}px) translate(-50%,-100%)`; seen.add(p.idx);
+  }
+  for (const i in haEls) if (!seen.has(+i)) haEls[i].style.display = 'none';
+}
+
 /* --- подсказки над ящиками и предметами рядом с игроком --- */
 const HINT_RANGE = 8, HINT_MAX = 6, hintEls = [];
 function hintsUpdate() {
@@ -184,5 +204,5 @@ function hudExtra(T) {
   const play = G.state === 'play' || G.state === 'levelup';
   const on = play || HUDL.on, rd = $('radarBox'); if (rd) rd.style.display = on ? 'block' : 'none';
   if (on && (RADAR.n++ & 1) === 0) radarDraw(T);
-  hintsUpdate(); bossArrowUpdate(); evHud(T);
+  hintsUpdate(); headAmmoUpdate(); bossArrowUpdate(); evHud(T);
 }

@@ -108,7 +108,8 @@ body:not(.touch) #btns .t{display:none}
 #timer{font-size:17px;font-weight:700;letter-spacing:1.5px;font-variant-numeric:tabular-nums}.tl,.tk{font-size:10px;letter-spacing:1px;color:#a89e88}.tl b,.tk b{font-size:13px;color:#ecd060;margin-left:3px}.tk b{color:#e0603a}
 #xpbar{height:4px;width:100%;background:rgba(0,0,0,.65);border:1px solid #3a3228;overflow:hidden}#xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c87a2a,#ecd060);transition:width .15s}
 #radarBox{position:fixed;right:12px;top:30px;display:none;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}#radar{display:block}
-#hints{position:fixed;inset:0;pointer-events:none;z-index:3}
+#hints,#headAmmo{position:fixed;inset:0;pointer-events:none;z-index:3}
+.ha{position:absolute;left:0;top:0;display:none;flex-direction:column;align-items:center;gap:3px;text-shadow:0 1px 2px #000,0 0 4px #000}.ha .hn{display:flex;align-items:center;gap:6px;background:rgba(14,11,8,.55);padding:2px 7px;border-radius:5px;border-bottom:2px solid var(--pc,#e8a050)}.ha .am{font-size:13px;font-weight:700;color:#ecd060;font-variant-numeric:tabular-nums}.ha .ammo{max-width:110px;justify-content:center}.ha.low .am{color:#ff7a5a}.ha .rel{width:64px;margin:0}body.ammohead .hud .ammoRow,body.ammohead .hud .rel{display:none!important}
 .ghint{position:absolute;left:0;top:0;align-items:center;gap:6px;padding:3px 9px 3px 5px;background:rgba(14,11,8,.88);border:1px solid #6a5a3a;font-size:12px;white-space:nowrap;color:#f2ead6;margin-top:-6px}
 .ghint::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-top-color:#6a5a3a;border-bottom:0}
 .ghint b{font-weight:600;letter-spacing:.3px}.ghint em{display:block;font-style:normal;font-size:11px;color:#ffb080}.ghint.item{border-color:#3a7a8a}.ghint.item::after{border-top-color:#3a7a8a}
@@ -213,7 +214,7 @@ body.touch .mel{display:none}
 <div id="huds"></div>
 <div id="top"><div class="tbox"><span class="tl">УР. <b id="lvl">1</b></span><span id="timer"></span><span class="tk">☠ <b id="kills">0</b></span></div><div id="xpbar"><i></i></div></div>
 <div id="lvlMsg"></div>
-<div id="radarBox"><canvas id="radar"></canvas></div><div id="hints"></div><div id="splitLines"><i></i><i></i></div>
+<div id="radarBox"><canvas id="radar"></canvas></div><div id="hints"></div><div id="headAmmo"></div><div id="splitLines"><i></i><i></i></div>
 <div id="hudPanel"><div class="hp-t">Настройка HUD</div><div class="hp-s" id="hpSel">Выберите элемент и перетащите</div><div class="hp-row"><button id="hpMinus">−</button><b id="hpScale">100%</b><button id="hpPlus">+</button><button id="hpOne">Сбросить элемент</button></div><div class="hp-row"><button id="hpAll">Сбросить всё</button><button id="hpDone">Готово</button></div><div class="hp-h">Тащите элементы мышью или пальцем. Колёсико мыши — размер.</div></div>
 <div id="bossArrow"><i></i><b></b></div>
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>

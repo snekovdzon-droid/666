@@ -303,11 +303,16 @@ function placeCam(cx, cy, cz, sx, sz, aspect, h, shift, yaw = CAM.yaw) {
   cam.left = -h * aspect - shift; cam.right = h * aspect - shift; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
   sun.position.set(cx - 14, 26, cz - 10); sun.target.position.set(cx, 0, cz);
 }
-// Увод камеры вперёд: пока герой стреляет, камера плавно смещается на ~1 м туда, куда смотрит ствол, потом возвращается
+// Камера смещается от героя в сторону прицела (курсор, стик, цель автоприцела): чем дальше цель, тем сильнее, но не больше ~2,6 м
+const CAMLEAD = [0, 0.22, 0.4], CAMLEAD_NAME = ['выкл', 'лёгкое', 'сильное'];
+let CAM_LEAD_I = lsGet('camLead', 1);
 function leadStep(p, dt) {
-  if (p.leadT > 0) p.leadT -= dt;
-  const on = p.leadT > 0 && !p.down, k = on ? 1.0 : 0, f = Math.min(1, dt * (on ? 3 : 2.2));
-  p.lx = (p.lx || 0) + (Math.sin(p.yaw) * k - (p.lx || 0)) * f; p.lz = (p.lz || 0) + (Math.cos(p.yaw) * k - (p.lz || 0)) * f;
+  const f = CAMLEAD[CAM_LEAD_I] || 0; let tx = 0, tz = 0;
+  if (f && !p.down && p.aim && G.state === 'play') {
+    const dx = p.aim.x - p.x, dz = p.aim.z - p.z, d = Math.hypot(dx, dz), c = p.lastC, auto = c && c.auto && !c.manual, m = Math.min(d * f * (auto ? 0.5 : 1), 2.6);
+    if (d > 0.01) { tx = dx / d * m; tz = dz / d * m; }
+  }
+  const k = Math.min(1, dt * 4); p.lx = (p.lx || 0) + (tx - (p.lx || 0)) * k; p.lz = (p.lz || 0) + (tz - (p.lz || 0)) * k;
 }
 function placeViewCam(v) {
   let sx = v.kx + (v.p.lx || 0), sz = v.kz + (v.p.lz || 0); if (shake > 0) { sx += rnd(-1, 1) * shake * 0.6; sz += rnd(-1, 1) * shake * 0.6; }
