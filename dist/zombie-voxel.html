@@ -1392,8 +1392,8 @@ function barrelVox(x, z, id) {
 }
 </script>
 <script>'use strict';
-/* ---------- Рельеф: бордюры по краям дорог, обводка площадок, насыпи, клумбы, канавы ----------
-   Всё низкое (до 0,3 м): герой и зомби заходят как на ступеньку, пули летят поверх, а за насыпью можно присесть.
+/* ---------- Рельеф: серые бордюры по краям дорог и низкая обводка площадок ----------
+   Всё низкое: герой и зомби заходят как на ступеньку, пули летят поверх.
    Вид «из кубиков»: верх — клетки по 0,2 м с разбросом цвета, бока — полосы. Один меш на всю карту. */
 const RELIEF = { B: null, n: 0 };
 const zoneTypeAt = (zones, x, z) => { let t = 'dirt'; for (const Z of zones) if (x >= Z[1] && x < Z[3] && z >= Z[2] && z < Z[4]) t = Z[0]; return t; };
@@ -1438,8 +1438,8 @@ function relFree(def, x1, z1, x2, z2, margin, types) {
   if (typeof GATES !== 'undefined') for (const G of GATES) if ((G.x1 + G.x2) / 2 > x1 - 4 && (G.x1 + G.x2) / 2 < x2 + 4 && (G.z1 + G.z2) / 2 > z1 - 4 && (G.z1 + G.z2) / 2 < z2 + 4) return false;
   return true;
 }
-const CURB_TOP = [172, 166, 154], RIM_TOP = [150, 144, 132], SOIL = [92, 66, 44];
-// бордюры: вдоль краёв дорог и асфальта (снаружи, с мягкой земли) и низкая обводка вокруг площадок
+const CURB_TOP = [158, 158, 160], RIM_TOP = [142, 142, 144];
+// бордюры: вдоль краёв дорог и асфальта (снаружи) и низкая обводка вокруг площадок
 function reliefCurbs(def) {
   const zs = def.zones, road = t => t === 'road' || t === 'asphalt';
   const seg = (x, z, w, d, h, c) => { if (!solidsNear(x + w / 2, z + d / 2, 1).some(s => s.x2 > x - 0.05 && s.x1 < x + w + 0.05 && s.z2 > z - 0.05 && s.z1 < z + d + 0.05 && s.y2 > h)) relBox(x, z, x + w, z + d, 0, h, c, { cell: 0.2, var: 0.07 }); };
@@ -1460,55 +1460,134 @@ function reliefCurbs(def) {
     }
   }
 }
-// насыпь: три ступени 0,1 / 0,2 / 0,3 м; землю берём по цвету зоны
-function reliefMound(def, x, z, w, d) {
-  const t = zoneTypeAt(def.zones, x, z), c = t === 'grass' ? [92, 116, 64] : t === 'gravel' ? [124, 118, 108] : t === 'paving' ? [150, 144, 130] : [132, 96, 62];
-  for (let k = 0; k < 3; k++) { const i = k * 0.5; if (w - 2 * i < 0.5 || d - 2 * i < 0.5) break; relBox(x - w / 2 + i, z - d / 2 + i, x + w / 2 - i, z + d / 2 - i, k ? 0.1 * k : 0, 0.1 * (k + 1), shadeC(c, 1 - 0.05 * k), { var: 0.12, sideK: 0.78, mat: 'dirt' }); }
-}
-// клумба: рамка 0,3 м, внутри земля 0,2 м и цветы из кубиков
-function reliefPlanter(def, x1, z1, x2, z2) {
-  const W = 0.2, wall = [176, 170, 158];
-  relBox(x1, z1, x2, z1 + W, 0, 0.3, wall, { var: 0.06 }); relBox(x1, z2 - W, x2, z2, 0, 0.3, wall, { var: 0.06 });
-  relBox(x1, z1 + W, x1 + W, z2 - W, 0, 0.3, wall, { var: 0.06 }); relBox(x2 - W, z1 + W, x2, z2 - W, 0, 0.3, wall, { var: 0.06 });
-  relBox(x1 + W, z1 + W, x2 - W, z2 - W, 0, 0.2, SOIL, { solid: false, var: 0.14 });
-  const cols = [[70, 120, 50], [84, 138, 56], [210, 70, 60], [230, 200, 70], [200, 120, 190], [110, 90, 40]];
-  for (let x = x1 + W; x < x2 - W - 0.05; x += 0.1) for (let z = z1 + W; z < z2 - W - 0.05; z += 0.1) {
-    const h = hash2(Math.round(x * 20), Math.round(z * 20), 41); if (h > 0.55) continue;
-    const c = cols[Math.floor(hash2(Math.round(x * 10), Math.round(z * 10), 43) * (h < 0.12 ? 6 : 2.99))], top = 0.2 + 0.05 + h * 0.2;
-    relBox(x, z, x + 0.1, z + 0.1, 0.2, top, c, { solid: false, cell: 0.1, var: 0.15, sideK: 0.8 });
-  }
-}
-// канава: два вала по 0,25 м и тёмная вязкая полоса между ними (рисуется на земле)
-function reliefDitch(def, x1, z1, x2, z2) {
-  const alongX = (x2 - x1) > (z2 - z1), bank = 0.55, c = [124, 90, 58];
-  if (alongX) { const m1 = z1 + bank, m2 = z2 - bank; relBox(x1, z1, x2, m1, 0, 0.12, c, { sideK: 0.8 }); relBox(x1, z1 + 0.2, x2, m1 - 0.1, 0.12, 0.25, shadeC(c, 0.92), { sideK: 0.8 }); relBox(x1, m2, x2, z2, 0, 0.12, c, { sideK: 0.8 }); relBox(x1, m2 + 0.1, x2, z2 - 0.2, 0.12, 0.25, shadeC(c, 0.92), { sideK: 0.8 }); reliefMud(x1, m1, x2, m2); }
-  else { const m1 = x1 + bank, m2 = x2 - bank; relBox(x1, z1, m1, z2, 0, 0.12, c, { sideK: 0.8 }); relBox(x1 + 0.2, z1, m1 - 0.1, z2, 0.12, 0.25, shadeC(c, 0.92), { sideK: 0.8 }); relBox(m2, z1, x2, z2, 0, 0.12, c, { sideK: 0.8 }); relBox(m2 + 0.1, z1, x2 - 0.2, z2, 0.12, 0.25, shadeC(c, 0.92), { sideK: 0.8 }); reliefMud(m1, z1, m2, z2); }
-}
-function reliefMud(x1, z1, x2, z2) {
-  for (let py = Math.round(z1 * TPX); py < Math.round(z2 * TPX); py++) for (let px = Math.round(x1 * TPX); px < Math.round(x2 * TPX); px++) {
-    const h = hash2(px, py, 77), wet = hash2(px >> 2, py >> 2, 79) < 0.35;
-    gctx.fillStyle = wet ? (h < 0.5 ? 'rgb(54,52,46)' : 'rgb(64,62,54)') : (h < 0.5 ? 'rgb(76,58,40)' : 'rgb(86,66,46)');
-    gctx.fillRect(px, py, 1, 1);
-  }
-}
 function buildRelief(def) {
   RELIEF.B = newBatch(); RELIEF.n = 0; indexSolids();
   reliefCurbs(def); indexSolids();
-  // россыпь: детерминированно по названию карты
-  let s = 1234 + (def.name || '').length * 977; const R = () => (s = (s * 16807) % 2147483647) / 2147483647;
-  const tries = (n, f) => { for (let i = 0, ok = 0; i < n * 40 && ok < n; i++) if (f()) ok++; };
-  const open = ['dirt', 'gravel', 'paving'], placed = [];
-  const free = (x1, z1, x2, z2, m, ty) => relFree(def, x1, z1, x2, z2, m, ty) && !placed.some(p => p[2] > x1 - 2 && p[0] < x2 + 2 && p[3] > z1 - 2 && p[1] < z2 + 2);
-  if (def.zones.some(Z => Z[0] === 'grass' || Z[0] === 'gravel')) {                                           // не город: пустыри и газоны
-    tries(16, () => { const w = 2.6 + R() * 2.4, d = 1.8 + R() * 1.6, x = 6 + R() * (MAP - 12), z = 6 + R() * (MAP - 12), r = [x - w / 2, z - d / 2, x + w / 2, z + d / 2];
-      if (!free(r[0], r[1], r[2], r[3], 0.9, open)) return false; placed.push([r[0], r[1], r[2], r[3]]); reliefMound(def, x, z, w, d); indexSolids(); return true; });
-    tries(3, () => { const long = 8 + R() * 6, alongX = R() < 0.5, x = 6 + R() * (MAP - 12), z = 6 + R() * (MAP - 12), r = alongX ? [x, z, x + long, z + 2.2] : [x, z, x + 2.2, z + long];
-      if (!free(r[0], r[1], r[2], r[3], 1.0, open)) return false; placed.push(r); reliefDitch(def, r[0], r[1], r[2], r[3]); indexSolids(); return true; });
-    for (const Z of def.zones.filter(q => q[0] === 'grass')) tries(3, () => { const w = 2.4 + R() * 1.2, d = 1.2 + R() * 0.5, x = Z[1] + 1.5 + R() * (Z[3] - Z[1] - 3 - w), z = Z[2] + 1.5 + R() * (Z[4] - Z[2] - 3 - d), r = [x, z, x + w, z + d];
-      if (!free(r[0], r[1], r[2], r[3], 1.2, ['grass'])) return false; placed.push(r); reliefPlanter(def, r[0], r[1], r[2], r[3]); indexSolids(); return true; });
-  }
   if (RELIEF.B.pos.length) { const m = batchMesh(RELIEF.B, true); m.receiveShadow = true; }
   groundTex.needsUpdate = true; RELIEF.B = null;
+}
+</script>
+<script>'use strict';
+/* ---------- За забором: земля, деревья, кусты и камни вокруг карты ----------
+   Доступа туда нет (граница карты не пускает), но с края карты через забор видно не пропасть, а продолжение местности. */
+const OUTSIDE = { g: null, R: 64 };
+function buildOutside(def) {
+  if (OUTSIDE.g) { scene.remove(OUTSIDE.g); OUTSIDE.g = null; }
+  const R = OUTSIDE.R, T = MAP + 2 * R, PPM = 5, W = T * PPM, g = new THREE.Group(); scene.add(g); OUTSIDE.g = g;
+  // земля: земля и трава пятнами, серые россыпи, блоками по 3 пикселя
+  const cv = document.createElement('canvas'); cv.width = cv.height = W; const cx = cv.getContext('2d'), img = cx.createImageData(W, W), d = img.data;
+  for (let py = 0; py < W; py++) for (let px = 0; px < W; px++) {
+    const x = px / PPM - R, z = py / PPM - R, n = hash2(px / 3 | 0, py / 3 | 0, 51), big = vnoise(x / 16, z / 16, 61), mid = vnoise(x / 5, z / 5, 67);
+    let c = big > 0.52 ? (n < 0.5 ? [84, 108, 60] : [78, 100, 56]) : (n < 0.5 ? [124, 90, 58] : [118, 86, 55]);
+    if (mid > 0.7 && big <= 0.52) c = n < 0.5 ? [112, 106, 96] : [104, 98, 88];                             // каменистые проплешины
+    if (hash2(px, py, 71) < 0.03) c = [c[0] * 0.8, c[1] * 0.8, c[2] * 0.8];
+    const k = 1 + (vnoise(x / 3, z / 3, 73) - 0.5) * 0.14, o = (py * W + px) * 4; d[o] = c[0] * k; d[o + 1] = c[1] * k; d[o + 2] = c[2] * k; d[o + 3] = 255;
+  }
+  cx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(cv); tex.magFilter = THREE.NearestFilter; tex.encoding = THREE.sRGBEncoding;
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(T, T).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: tex })); plane.position.set(MAP / 2, -0.012, MAP / 2); plane.receiveShadow = true; g.add(plane);
+  // деревья, кусты и камни — только вне карты, не ближе 2,5 м к забору
+  let s = 8871 + (def.name || '').length * 131; const rnd1 = () => (s = (s * 16807) % 2147483647) / 2147483647, spots = [];
+  const spot = (min, minD, maxD) => {
+    for (let i = 0; i < 60; i++) {
+      const x = -R + rnd1() * T, z = -R + rnd1() * T, dx = Math.max(-x, 0, x - MAP), dz = Math.max(-z, 0, z - MAP), dist = Math.hypot(dx, dz);
+      if (dist < minD || dist > maxD || (dx === 0 && dz === 0)) continue;
+      if (spots.some(p => (p[0] - x) ** 2 + (p[1] - z) ** 2 < min * min)) continue;
+      spots.push([x, z]); return [x, z];
+    }
+    return null;
+  };
+  const clone = (name, x, z, sc) => { const src = MODELS[name], D = MODEL_DEF[name] || { scale: 1, oy: 0 }; if (!src) return; const m = src.clone(), k = D.scale * sc; m.scale.setScalar(k); m.rotation.y = rnd1() * 6.28; m.position.set(x, D.oy * k, z); m.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; }); g.add(m); };
+  const nT = Math.round(T * T / 90), nB = Math.round(T * T / 55);
+  for (let i = 0; i < nT; i++) { const p = spot(4.5, 3, R - 3); if (p) clone('tree', p[0], p[1], 0.9 + rnd1() * 0.7); }
+  for (let i = 0; i < nB; i++) { const p = spot(2.2, 2.5, R - 2); if (p) clone('bush', p[0], p[1], 0.8 + rnd1() * 0.9); }
+  // камни из кубиков: кучки по 3–6 штук
+  const B = newBatch(), RC = [[112, 108, 102], [128, 124, 116], [98, 94, 90]];
+  for (let i = 0; i < Math.round(T * T / 140); i++) {
+    const p = spot(3, 2.5, R - 2); if (!p) continue; const n = 3 + Math.floor(rnd1() * 4);
+    for (let k = 0; k < n; k++) { const sz = 0.3 + rnd1() * 0.7, c = RC[Math.floor(rnd1() * 3)]; pushBox(B, p[0] + (rnd1() - 0.5) * 1.6, sz * 0.4 * (k > 2 ? 1.6 : 1), p[1] + (rnd1() - 0.5) * 1.6, sz, sz * 0.8, sz * (0.7 + rnd1() * 0.5), rnd1() * 3, (c[0] << 16) | (c[1] << 8) | c[2]); }
+  }
+  if (B.pos.length) { const m = batchMesh(B, true); staticGroup.remove(m); g.add(m); }
+}
+</script>
+<script>'use strict';
+/* ---------- Мелочи на земле ----------
+   В текстуру земли: трещины, заплатки на асфальте, лужи, масляные пятна, листья и мусор. Объёмные: пучки травы, камешки, обломки (не мешают ходить).
+   Расстановка детерминирована названием карты; в зданиях и у стен не рисуется. */
+function buildDetails(def) {
+  let seed = 4021 + (def.name || '').length * 313; const R = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const zs = def.zones, tAt = (x, z) => zoneTypeAt(zs, x, z), px = v => Math.round(v * TPX);
+  const inSolid = (x, z, m = 0.2) => solidsNear(x, z, m).some(s => s.y2 > 0.05 && x > s.x1 - m && x < s.x2 + m && z > s.z1 - m && z < s.z2 + m);
+  const dot = (x, z, c, w = 1) => { gctx.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; gctx.fillRect(px(x), px(z), w, w); };
+  const hard = t => t === 'asphalt' || t === 'road' || t === 'dark' || t === 'paving';
+  const dark = (x, z) => { const d = gctx.getImageData(px(x), px(z), 1, 1).data; return d[0] * 0.3 + d[1] * 0.59 + d[2] * 0.11 < 150; };   // не рисуем поверх разметки и светлых линий
+  // трещины: ломаная блуждает по 1 пикселю; иногда ветвится; на плитке и асфальте
+  const crack = (x, z, len, a, depth = 0) => {
+    for (let i = 0; i < len; i++) {
+      a += (R() - 0.5) * 0.9; x += Math.cos(a) / TPX; z += Math.sin(a) / TPX;
+      if (x < 1 || z < 1 || x > MAP - 1 || z > MAP - 1 || !hard(tAt(x, z)) || !dark(x, z)) break;
+      dot(x, z, [34, 32, 30]); if (R() < 0.12) dot(x + 1 / TPX, z, [48, 46, 42]);
+      if (depth < 2 && R() < 0.04) crack(x, z, 6 + R() * 14, a + (R() < 0.5 ? 0.8 : -0.8), depth + 1);
+    }
+  };
+  const area = (Z) => Math.max(0, (Z[3] - Z[1]) * (Z[4] - Z[2]));
+  for (const Z of zs) {
+    const t = Z[0], A = Math.min(area(Z), MAP * MAP * 0.5);
+    if (hard(t)) {
+      for (let i = 0, n = A / 30; i < n; i++) { const x = Z[1] + 1 + R() * (Z[3] - Z[1] - 2), z = Z[2] + 1 + R() * (Z[4] - Z[2] - 2); if (tAt(x, z) === t && !inSolid(x, z, 0.1)) crack(x, z, 10 + R() * 40, R() * 6.28); }
+      if (t === 'asphalt' || t === 'road') {
+        for (let i = 0, n = A / 80; i < n; i++) {                       // заплатки: прямоугольник другого тона с тёмной окантовкой
+          const w = 0.8 + R() * 1.6, d = 0.6 + R() * 1.2, x = Z[1] + 1 + R() * (Z[3] - Z[1] - 2 - w), z = Z[2] + 1 + R() * (Z[4] - Z[2] - 2 - d); if (tAt(x, z) !== t || !dark(x, z)) continue;
+          const k = R() < 0.5 ? 0.8 : 1.18;
+          for (let yy = px(z); yy < px(z + d); yy++) for (let xx = px(x); xx < px(x + w); xx++) { const edge = xx === px(x) || yy === px(z) || xx === px(x + w) - 1 || yy === px(z + d) - 1, v = (edge ? 0.62 : k) * (0.96 + hash2(xx, yy, 5) * 0.08); gctx.fillStyle = `rgb(${60 * v | 0},${58 * v | 0},${56 * v | 0})`; gctx.fillRect(xx, yy, 1, 1); }
+        }
+        for (let i = 0, n = A / 140; i < n; i++) {                      // масляные пятна: тёмные блоки
+          const x = Z[1] + 1 + R() * (Z[3] - Z[1] - 2), z = Z[2] + 1 + R() * (Z[4] - Z[2] - 2); if (tAt(x, z) !== t) continue;
+          for (let k = 0; k < 14; k++) dot(x + (R() - 0.5) * 0.9, z + (R() - 0.5) * 0.9, [30 + R() * 10, 28 + R() * 8, 28], 2);
+        }
+      }
+    }
+    if (t === 'asphalt' || t === 'road' || t === 'paving' || t === 'dirt') for (let i = 0, n = A / 110; i < n; i++) {         // лужи: на твёрдом и грязи; блоки, светлый край и блики
+      const x = Z[1] + 1 + R() * (Z[3] - Z[1] - 2), z = Z[2] + 1 + R() * (Z[4] - Z[2] - 2), r = 0.4 + R() * 0.7; if (tAt(x, z) !== t || inSolid(x, z, 0.5) || !dark(x, z)) continue;
+      for (let yy = -r; yy <= r; yy += 1 / TPX) for (let xx = -r * 1.4; xx <= r * 1.4; xx += 1 / TPX) {
+        const q = (xx / (r * 1.4)) ** 2 + (yy / r) ** 2 + (hash2(Math.round((x + xx) * 8), Math.round((z + yy) * 8), 3) - 0.5) * 0.5;
+        if (q < 0.85) dot(x + xx, z + yy, t === 'dirt' ? (q > 0.62 ? [96, 74, 52] : [78, 66, 52]) : (q > 0.62 ? [74, 82, 90] : [52, 64, 78])); else if (q < 1.0 && hash2(Math.round((x + xx) * 16), Math.round((z + yy) * 16), 4) < 0.5) dot(x + xx, z + yy, t === 'dirt' ? [104, 80, 56] : [88, 90, 92]);
+      }
+      dot(x - r * 0.4, z - r * 0.3, [190, 208, 220]); dot(x - r * 0.4 + 1 / TPX, z - r * 0.3, [150, 172, 190]); dot(x + r * 0.5, z + r * 0.2, [150, 172, 190]);
+    }
+    if (t === 'grass' || t === 'dirt' || t === 'paving' || t === 'gravel') for (let i = 0, n = A / 14; i < n; i++) {   // листья и мусор
+      const x = Z[1] + 0.5 + R() * (Z[3] - Z[1] - 1), z = Z[2] + 0.5 + R() * (Z[4] - Z[2] - 1); if (tAt(x, z) !== t) continue;
+      const k = R(), c = k < 0.4 ? [150, 100, 40] : k < 0.7 ? [170, 140, 50] : k < 0.85 ? [120, 80, 40] : [196, 194, 184];
+      dot(x, z, c); if (R() < 0.5) dot(x + 1 / TPX, z, c); if (R() < 0.3) dot(x, z + 1 / TPX, [c[0] * 0.8, c[1] * 0.8, c[2] * 0.8]);
+    }
+  }
+  groundTex.needsUpdate = true;
+  // ---- объёмные мелочи: один меш, без коллизий и теней ----
+  const B = newBatch(), col = (r, g, b) => (r << 16) | (g << 8) | b;
+  const G = [col(70, 104, 46), col(82, 120, 52), col(60, 92, 42), col(104, 128, 60)], DRY = [col(150, 130, 70), col(130, 110, 60)], ST = [col(120, 116, 108), col(138, 132, 122), col(104, 100, 94)];
+  const tuft = (x, z, big, dry) => {
+    const n = 3 + Math.floor(R() * 3), h0 = big ? 0.14 : 0.08;
+    for (let i = 0; i < n; i++) { const hh = h0 * (0.6 + R() * 0.9); pushBox(B, x + (R() - 0.5) * 0.14, hh / 2, z + (R() - 0.5) * 0.14, 0.035, hh, 0.035, R() * 3, dry ? DRY[i % 2] : G[Math.floor(R() * 4)]); }
+  };
+  const stone = (x, z) => { const n = 1 + Math.floor(R() * 3); for (let i = 0; i < n; i++) { const s = 0.05 + R() * 0.1; pushBox(B, x + (R() - 0.5) * 0.25, s * 0.4, z + (R() - 0.5) * 0.25, s, s * 0.8, s * (0.8 + R() * 0.5), R() * 3, ST[Math.floor(R() * 3)]); } };
+  const debris = (x, z) => {
+    const k = R();
+    if (k < 0.3) pushBox(B, x, 0.04, z, 0.22, 0.08, 0.1, R() * 3, col(138, 74, 54));                                          // кирпич
+    else if (k < 0.55) pushBox(B, x, 0.015, z, 0.6, 0.03, 0.1, R() * 3, col(120, 90, 56));                                    // доска
+    else if (k < 0.7) pushBox(B, x, 0.02, z, 0.3, 0.04, 0.22, R() * 3, col(110, 112, 116));                                   // лист железа
+    else if (k < 0.85) pushBox(B, x, 0.04, z, 0.06, 0.08, 0.06, R() * 3, col(190, 60, 50));                                   // банка
+    else pushBox(B, x, 0.005, z, 0.14, 0.012, 0.18, R() * 3, col(206, 204, 194));                                              // бумага
+  };
+  let nb = 0;
+  for (const Z of zs) {
+    const t = Z[0], A = Math.min(area(Z), MAP * MAP * 0.5);
+    if (t === 'grass') for (let i = 0, n = A * 0.5; i < n; i++) { const x = Z[1] + 0.3 + R() * (Z[3] - Z[1] - 0.6), z = Z[2] + 0.3 + R() * (Z[4] - Z[2] - 0.6); if (tAt(x, z) === 'grass' && !inSolid(x, z, 0.3)) { tuft(x, z, R() < 0.3, R() < 0.12); nb++; } }
+    if (t === 'dirt' || t === 'gravel') for (let i = 0, n = A * 0.08; i < n; i++) { const x = Z[1] + 0.3 + R() * (Z[3] - Z[1] - 0.6), z = Z[2] + 0.3 + R() * (Z[4] - Z[2] - 0.6); if (tAt(x, z) === t && !inSolid(x, z, 0.3)) { R() < 0.5 ? tuft(x, z, false, true) : stone(x, z); nb++; } }
+    if (hard(t) && t !== 'dark') for (let i = 0, n = A * 0.012; i < n; i++) { const x = Z[1] + 0.5 + R() * (Z[3] - Z[1] - 1), z = Z[2] + 0.5 + R() * (Z[4] - Z[2] - 1); if (tAt(x, z) === t && !inSolid(x, z, 0.4)) { debris(x, z); nb++; } }
+  }
+  // «пустая» земля вне зон (по умолчанию грязь): редкие кустики и камни
+  for (let i = 0; i < MAP * MAP * 0.04; i++) { const x = 1 + R() * (MAP - 2), z = 1 + R() * (MAP - 2); if (tAt(x, z) === 'dirt' && !inSolid(x, z, 0.35)) { R() < 0.6 ? tuft(x, z, false, true) : stone(x, z); nb++; } }
+  if (B.pos.length) { const m = batchMesh(B, false); m.castShadow = false; m.receiveShadow = true; }
 }
 </script>
 <script>// Собрано tools/build_parts.py из assets/parts/*.vox — руками не править
@@ -1786,13 +1865,23 @@ const MAP_OPS = {
   trashbin: (x, z, rot) => trashBinOp(x, z, rot), trashbag: (x, z) => trashBagOp(x, z),
   bush: (x, z) => MODELS.bush && model('bush', x, z, x * 2.3, 0.9 + (x % 1) * 0.3), cone: (x, z) => MODELS.cone && model('cone', x, z, x),
 };
+// Стена по границе карты заменяется внутренним забором-рабицей: полупрозрачный, за ним видна земля (см. 04h_outside.js)
+function borderFence(op) {
+  if (op[0] !== 'wall') return op;
+  const [, x1, z1, x2, z2] = op, thin = 0.6, e = 0.05;
+  if (x2 - x1 > z2 - z1 && z2 - z1 <= thin && (z1 <= e || z2 >= MAP - e)) return ['fenceX', x1, x2, z1 <= e ? 0.3 : MAP - 0.3];
+  if (z2 - z1 > x2 - x1 && x2 - x1 <= thin && (x1 <= e || x2 >= MAP - e)) return ['fenceZ', z1, z2, x1 <= e ? 0.3 : MAP - 0.3];
+  return op;
+}
 function buildMap() {
   paintGround(MAPDEF.zones); groundTex.needsUpdate = true;
   window.EDFOOT = [];                                                              // для редактора: из каких коробок состоит каждый объект
-  for (const op of MAPDEF.ops) { const f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
+  for (const op0 of MAPDEF.ops) { const op = borderFence(op0), f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
   for (const B of buildings) B.finish();
   indexSolids();
-  buildRelief(MAPDEF);                                                              // бордюры, насыпи, клумбы, канавы
+  buildRelief(MAPDEF);                                                              // серые бордюры
+  buildOutside(MAPDEF);                                                             // земля и деревья за забором
+  buildDetails(MAPDEF);                                                             // мелочи на земле: трещины, лужи, трава, камни
 }
 // Точки выхода зомби: проломы, ворота, двери зданий и пустыри по сетке (кроме огороженных участков)
 function mapSpawns() {

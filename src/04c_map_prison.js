@@ -269,13 +269,23 @@ const MAP_OPS = {
   trashbin: (x, z, rot) => trashBinOp(x, z, rot), trashbag: (x, z) => trashBagOp(x, z),
   bush: (x, z) => MODELS.bush && model('bush', x, z, x * 2.3, 0.9 + (x % 1) * 0.3), cone: (x, z) => MODELS.cone && model('cone', x, z, x),
 };
+// Стена по границе карты заменяется внутренним забором-рабицей: полупрозрачный, за ним видна земля (см. 04h_outside.js)
+function borderFence(op) {
+  if (op[0] !== 'wall') return op;
+  const [, x1, z1, x2, z2] = op, thin = 0.6, e = 0.05;
+  if (x2 - x1 > z2 - z1 && z2 - z1 <= thin && (z1 <= e || z2 >= MAP - e)) return ['fenceX', x1, x2, z1 <= e ? 0.3 : MAP - 0.3];
+  if (z2 - z1 > x2 - x1 && x2 - x1 <= thin && (x1 <= e || x2 >= MAP - e)) return ['fenceZ', z1, z2, x1 <= e ? 0.3 : MAP - 0.3];
+  return op;
+}
 function buildMap() {
   paintGround(MAPDEF.zones); groundTex.needsUpdate = true;
   window.EDFOOT = [];                                                              // для редактора: из каких коробок состоит каждый объект
-  for (const op of MAPDEF.ops) { const f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
+  for (const op0 of MAPDEF.ops) { const op = borderFence(op0), f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
   for (const B of buildings) B.finish();
   indexSolids();
-  buildRelief(MAPDEF);                                                              // бордюры, насыпи, клумбы, канавы
+  buildRelief(MAPDEF);                                                              // серые бордюры
+  buildOutside(MAPDEF);                                                             // земля и деревья за забором
+  buildDetails(MAPDEF);                                                             // мелочи на земле: трещины, лужи, трава, камни
 }
 // Точки выхода зомби: проломы, ворота, двери зданий и пустыри по сетке (кроме огороженных участков)
 function mapSpawns() {
