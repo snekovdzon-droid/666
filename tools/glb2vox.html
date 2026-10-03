@@ -21,7 +21,7 @@ window.voxelize = async function (url, N, axis) {
       const x = A.x * w + B.x * u + C.x * v, y = A.y * w + B.y * u + C.y * v, z = A.z * w + B.z * u + C.z * v;
       const tu = uv.getX(ia) * w + uv.getX(ib) * u + uv.getX(ic) * v, tv = uv.getY(ia) * w + uv.getY(ib) * u + uv.getY(ic) * v;
       const X = Math.floor((x - bb.min.x) / vs), Y = Math.floor((y - bb.min.y) / vs), Z = Math.floor((z - bb.min.z) / vs), k = X + ',' + Y + ',' + Z;
-      const pi = ((Math.min(cv.height - 1, Math.floor((1 - tv) * cv.height)) % cv.height) * cv.width + (Math.floor(tu * cv.width) % cv.width)) * 4;
+      const pi = ((Math.min(cv.height - 1, Math.floor(tv * cv.height)) % cv.height) * cv.width + (Math.floor(tu * cv.width) % cv.width)) * 4;
       let e = cells.get(k); if (!e) { e = { x: X, y: Y, z: Z, r: 0, g: 0, b: 0, n: 0 }; cells.set(k, e); }
       e.r += px[pi]; e.g += px[pi + 1]; e.b += px[pi + 2]; e.n++;
     }
