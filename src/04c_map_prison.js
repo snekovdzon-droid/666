@@ -70,7 +70,6 @@ const MAP_PRISON = {
     // стоянка: машины и автобусы как укрытия
     ['car', 56, 70, true, 0xc8c4ba], ['car', 62, 70, true, 0x60707e, true, true], ['car', 56, 74.4, true, 0x6e7a50], ['car', 62, 74.4, true, 0x8c3a30, true],
     ['car', 58, 78.5, false, 0xd8b030, true], ['car', 70, 70, false, 0x3e5270], ['car', 28, 88, false, 0x8c3a30, true, true], ['car', 56, 92, true, 0x60707e, true],
-    ['bus', 60, 82.5, true, 0x8a8a3a], ['bus', 60, 87.5, true, 0x5a6a7a, true],
     // --- общее: скамейки, бочки, фонари, зелень ---
     ...[70, 74, 78, 82].flatMap(z => [['bench', 44.6, z, 1], ['bench', 51.4, z, -1]]),
     ['barrel', 26, 40, true], ['barrel', 70, 36, true], ['barrel', 40, 58, true], ['barrel', 64, 58, false], ['barrel', 30, 66, true], ['barrel', 88, 68, false], ['barrel', 4, 40, false],
@@ -245,15 +244,7 @@ function hoopOp(x, z) {                              // баскетбольны
   box(x - 0.08, 0, z - 0.08, x + 0.08, 3.1, z + 0.08, 0x5a5e5e); box(x + s * 0.1 - 0.04, 2.6, z - 0.6, x + s * 0.1 + 0.04, 3.4, z + 0.6, 0xe8e4d8, { solid: false });
   box(x + s * 0.1, 2.6, z - 0.2, x + s * 0.5, 2.66, z + 0.2, 0xd8702a, { solid: false });
 }
-function busOp(x, z, alongX, col, wreck) {          // автобус: длинная коробка с окнами
-  if (useModel('m_bus')) return busModel(x, z, alongX, col, wreck);
-  const L = 9, Wd = 2.6, H = 2.8, c = wreck ? new THREE.Color(col).multiplyScalar(0.6).getHex() : col;
-  const P = (u1, u2, v1, v2, y1, y2, cc, o = {}) => alongX ? box(x + u1, y1, z + v1, x + u2, y2, z + v2, cc, Object.assign({ hit: 'metal' }, o)) : box(x + v1, y1, z + u1, x + v2, y2, z + u2, cc, Object.assign({ hit: 'metal' }, o));
-  P(0, L, 0, Wd, 0.35, H, c);
-  for (let u = 0.8; u < L - 1; u += 1.6) { P(u, u + 1.1, -0.02, 0.04, 1.4, 2.3, 0x2c3a44, { solid: false, cast: false }); P(u, u + 1.1, Wd - 0.04, Wd + 0.02, 1.4, 2.3, 0x2c3a44, { solid: false, cast: false }); }
-  P(L - 0.04, L + 0.02, 0.2, Wd - 0.2, 1.3, 2.4, 0x2c3a44, { solid: false, cast: false });
-  for (const u of [1.3, 1.3 + 0.9, L - 2.4]) { P(u, u + 0.9, -0.05, 0.12, 0, 0.9, 0x1c1c1c, { solid: false }); P(u, u + 0.9, Wd - 0.12, Wd + 0.05, 0, 0.9, 0x1c1c1c, { solid: false }); }
-}
+function busOp() {}                                // автобусы убраны из игры; операция оставлена, чтобы старые сохранённые карты не ломались
 function boothOp(x, z) { box(x, 0, z - 1.2, x + 1.0, 2.6, z + 0.2, 0x8a8a84); }
 function barrierOp(x, z) { box(x, 0.9, z, x + 3.6, 1.0, z + 0.1, 0xc84a2a, { solid: false }); }
 function postOp(x, z) { box(x - 0.15, 0, z - 0.15, x + 0.15, 2.6, z + 0.15, 0x5a5e5e); }

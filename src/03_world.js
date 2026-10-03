@@ -276,17 +276,6 @@ function recolorMat(name, col, wreck) {
   const t = new THREE.CanvasTexture(cv); t.flipY = src.flipY; t.encoding = THREE.sRGBEncoding; t.wrapS = src.wrapS; t.wrapT = src.wrapT;
   const mt = new THREE.MeshLambertMaterial({ map: t }); RECOLOR.set(key, mt); return mt;
 }
-// Машина: как у кодовой — x, z — угол, alongX — длиной вдоль x, перед в +u
-function carModel(x, z, alongX, col, wreck, burn) {
-  const L = 3.2, Wd = 1.5, cx = alongX ? x + L / 2 : x + Wd / 2, cz = alongX ? z + Wd / 2 : z + L / 2;
-  modelPut('m_car', cx, cz, alongX ? Math.PI : Math.PI / 2, 0.85, 0.85, 0.85, { mat: recolorMat('m_car', col, wreck), shrink: 0.05 });
-  if (burn) addFire(alongX ? x + L - 0.7 : x + Wd / 2, 0.85, alongX ? z + Wd / 2 : z + L - 0.7, 1.4);
-}
-// Автобус: место под него то же (9 × 2.6), модель вытянута по длине
-function busModel(x, z, alongX, col, wreck) {
-  const L = 9, Wd = 2.6, cx = alongX ? x + L / 2 : x + Wd / 2, cz = alongX ? z + Wd / 2 : z + L / 2;
-  modelPut('m_bus', cx, cz, alongX ? 0 : -Math.PI / 2, 1.75, 1.55, 1.3, { mat: recolorMat('m_bus', col, wreck), shrink: 0.05 });
-}
 // Фонарь: столб в x,z, плафон смотрит в +x (как у кодового); свет — из плафона
 function lampModel(x, z) {
   const S = 1.9;

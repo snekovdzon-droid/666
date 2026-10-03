@@ -65,7 +65,7 @@ function fireEscape(xs, xe, z1, z2, H, grp, y0 = 0) {      // y0 — откуд�
 /* ---------- 5. Машины, бочки, фонари, деревья, стена ---------- */
 const fires = [];                                     // источники огня: { x, y, z, light, s }
 function car(x, z, alongX, col, wreck, burn) {
-  if (useModel('m_car')) return carModel(x, z, alongX, col, wreck, burn);
+  if (typeof CAR_VOX !== 'undefined') return voxCar(x, z, alongX, col, wreck, burn);          // машина из assets/cars/car.vox
   const g = new THREE.Group(); staticGroup.add(g);
   const L = 3.2, Wd = 1.5, P = (u1, u2, v1, v2, y1, y2, c, o = {}) => alongX ? box(x + u1, y1, z + v1, x + u2, y2, z + v2, c, Object.assign({ parent: g, hit: 'metal' }, o)) : box(x + v1, y1, z + u1, x + v2, y2, z + u2, c, Object.assign({ parent: g, hit: 'metal' }, o));
   const body = wreck ? new THREE.Color(col).multiplyScalar(0.55).getHex() : col;
