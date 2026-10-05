@@ -18,7 +18,17 @@ function gravity(e, dt, r) {
   if (e.y > fl + 1e-3 || e.vy > 0) { e.vy -= 22 * dt; e.y = Math.max(fl, e.y + e.vy * dt); if (e.y <= fl) { if (e.vy < -FALL_V && e.idx !== undefined && !e.down && G.state === 'play') fallHurt(e); e.vy = 0; } } else { e.y = fl; e.vy = 0; }
 }
 let shake = 0;
+function unstickPlayer(p, dt) {                                       // v0.60: застрял в геометрии (упал с крыши у лестницы и т. п.) — выталкиваем
+  if (p.down || p.climb || p.ladder) { p.stuckT = 0; return; }
+  if (!blocked(p.x, p.z, p.y, 0.28)) { p.stuckT = 0; return; }
+  p.stuckT = (p.stuckT || 0) + dt; if (p.stuckT < 0.25) return;
+  for (let r = 0.3; r <= 6; r += 0.3) for (let k = 0; k < 16; k++) {
+    const a = k / 16 * Math.PI * 2, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r; if (x < 0.6 || z < 0.6 || x > MAP - 0.6 || z > MAP - 0.6) continue;
+    const y = floorAt(x, z, p.y + 0.4); if (!blocked(x, z, y, 0.3)) { p.x = x; p.z = z; p.y = y; p.vy = 0; p.stuckT = 0; return; }
+  }
+}
 function updatePlayer(p, dt) {
+  unstickPlayer(p, dt);
   if (p.inv > 0) p.inv -= dt;
   animPlayer(p, dt);                                                     // скорость, ноги, приземление для анимации
   if (p.down) { p.fall = Math.max(-Math.PI / 2, (p.fall || 0) - dt * 6); p.moving = false; gravity(p, dt, p.r); if (players.length > 1 && G.state === 'play') updateDownPistol(p, dt); return; }
@@ -59,7 +69,9 @@ function updatePlayer(p, dt) {
   gravity(p, dt, p.r);
   if (p.moving && (p.stepT = (p.stepT || 0) - dt) <= 0) {             // пыль из-под ног
     p.stepT = p.sprinting ? 0.15 : 0.26;
-    if (p.y < 0.05) spawnP({ x: p.x - wx * 0.15, y: 0.06, z: p.z - wz * 0.15, vx: -wx * 0.3, vy: 0.4, vz: -wz * 0.3, s: 0.08, s1: p.sprinting ? 0.34 : 0.22, col: 0xa08466, col1: 0x8a7a68, life: p.sprinting ? 0.6 : 0.45, drag: 0.9 });
+    { const soft = MAPID === 'cemetery' && p.y < 0.05 && ['grass', 'dirt'].includes(zoneTypeAt(MAPDEF.zones, p.x, p.z));   // v0.61: шаги (на траве и земле — глуше)
+      if (G.t - (p.sndT || -9) >= (p.sprinting ? 0.3 : 0.42)) { p.sndT = G.t; fxPlay('fx_step', p.x, p.z, (soft ? 0.08 : 0.13) * (p.sprinting ? 0.9 : 1), soft ? 0.82 : 1, { near: 5, hear: 14, vary: 0.1 }); } }   // v0.64: свой темп звука шагов — ходьба реже, бег чаще
+    if (p.y < 0.05) spawnP({ x: p.x - wx * 0.15, y: 0.06, z: p.z - wz * 0.15, vx: -wx * 0.3, vy: 0.4, vz: -wz * 0.3, s: 0.08, s1: p.sprinting ? 0.34 : 0.22, col: 0xa08466, col1: 0x8a7a68, life: p.sprinting ? 0.6 : 0.45, drag: 0.9, soft: true });   // пыль из-под ног — тоже полупрозрачная
   }
   updatePlayerWeapon(p, c, dt);
   updateRam(p, dt);
@@ -108,6 +120,12 @@ function updateZombies(dt) {
     let target = nearestAlive(z.x, z.z);
     if (target && SMOKES.length && inSmoke(target) && Math.hypot(target.x - z.x, target.z - z.z) > 1.5) { target = null; z.confT = Math.max(z.confT || 0, 0.3); }   // в дыму игрока не видно издалека
     const bt = TURRETS.length ? baitTurret(z, target) : null; if (bt) target = bt;       // «Приманка»: турель ближе игрока
+    let lure = null;
+    if (SMOKES.length && !(target && Math.hypot(target.x - z.x, target.z - z.z) < 1.8 && Math.abs(target.y - z.y) < 1)) for (const s of SMOKES) {   // v0.52: дым — приманка
+      if (s.t < 0.3 || s.t > s.dur - 0.5) continue; const d = Math.hypot(s.x - z.x, s.z - z.z); if (d > s.lure || Math.abs(s.y - z.y) > 2.5) continue;
+      if (d < s.R * 0.75) { z.confT = Math.max(z.confT || 0, 0.25); target = null; } else { lure = s; target = null; }   // в облаке — топчутся, вокруг — идут к нему
+      break;
+    }
     let dx = 0, dz = 0, dist = 99;
     if (target) {
       let gx = target.x, gz = target.z;
@@ -115,6 +133,12 @@ function updateZombies(dt) {
       if (!(dist < 2.5 && Math.abs(target.y - z.y) < 0.5 && clearLine(z.x, z.z, target.x, target.z, z.y))) { const nd = navDir(z); if (nd) { gx = nd[0]; gz = nd[1]; } }   // перепад высот, далеко или за стеной — по полю пути
       dx = gx - z.x; dz = gz - z.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     }
+    if (z.flank && target && !lure && dist > 6 && Math.abs(target.y - z.y) < 1) {        // обходчик: заходит сбоку или со спины, вблизи — обычная атака
+      const ax = z.x - target.x, az = z.z - target.z, al2 = Math.hypot(ax, az) || 1, c = Math.cos(z.flank), s = Math.sin(z.flank), R2 = Math.min(dist * 0.75, 10);
+      const fx = target.x + (ax * c - az * s) / al2 * R2, fz = target.z + (ax * s + az * c) / al2 * R2;
+      if (fx > 1 && fz > 1 && fx < MAP - 1 && fz < MAP - 1 && clearLine(z.x, z.z, fx, fz, z.y)) { const ex = fx - z.x, ez = fz - z.z, el = Math.hypot(ex, ez) || 1; dx = dx * 0.25 + ex / el * 0.75; dz = dz * 0.25 + ez / el * 0.75; const l2 = Math.hypot(dx, dz) || 1; dx /= l2; dz /= l2; }
+    }
+    if (lure) { dx = lure.x - z.x; dz = lure.z - z.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; dist = 99; target = z; }
     if (z.slideT > 0) {                                                  // уткнулся — обходит боком
       z.slideT -= dt; const sx = -dz * z.side, sz = dx * z.side;
       dx = dx * 0.35 + sx; dz = dz * 0.35 + sz; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
@@ -128,7 +152,7 @@ function updateZombies(dt) {
     if (MOB_AI[z.type]) { const r = MOB_AI[z.type](z, dt, target, dist, dx, dz); if (r) { dx = r[0]; dz = r[1]; mobMul = r[2]; } }   // особые мобы: свои повадки
     if (z.rageT > 0) z.rageT -= dt;                                      // крик: ускорение
     if (z.slowT > 0) z.slowT -= dt; else z.slowMul = 1;
-    if (z.stunT > 0) z.stunT -= dt;
+    if (z.stunT > 0) { z.stunT -= dt; if (Math.random() < dt * 4) spawnP({ x: z.x + rnd(-0.2, 0.2), y: z.y + zHeight(z) + 0.15, z: z.z + rnd(-0.2, 0.2), vy: 0.15, s: 0.06, s1: 0.02, col: 0xfff2a0, glow: true, life: 0.5 }); }   // v0.52: «звёздочки» у оглушённых
     if (z.supT > 0) z.supT -= dt;                                        // «Прижать огнём»
     if (z.markT > 0) { z.markT -= dt; if (Math.random() < dt * 6) spawnP({ x: z.x, y: z.y + zHeight(z) + 0.1, z: z.z, vy: 0.3, s: 0.07, s1: 0.02, col: 0xff3a2a, glow: true, life: 0.3 }); }   // метка трассера
     if (!z.climb && LADS.length) zLadderStart(z);                        // зомби лезут по лестницам, если иначе не добраться (медленно)
@@ -178,7 +202,7 @@ function updateZombies(dt) {
       if (d2 < rr * rr) { const d = Math.sqrt(d2) || 0.001, k = (rr - d) / d; moveEntity(z, -cx * k, -cz * k, z.r); if (p.inv <= 0 && G.state === 'play') hurtPlayer(p, z); }
     }
     if (bt && dist < z.r + 0.45) { bt.hp -= 12 * dt; if (!(z.atkT > 0)) z.atkT = 0.45; }   // грызут турель
-    if (target && !bt && dist > spawnDist + 10) relocate(z);
+    if (target && !bt && dist > spawnDist + 10 + (MAP > 100 ? 16 : 0) && !onScreen(z.x, z.z)) { z.farT = (z.farT || 0) + dt; if (z.farT > 6) { z.farT = 0; relocate(z); } } else z.farT = 0;   // v0.60: переносим только тех, кто долго далеко и не на экране
   }
 }
 const CORPSE_MAX = IS_TOUCH ? 30 : 60;
@@ -187,7 +211,7 @@ function setFireLights(cx, cz, T) {
   const near = CAM.zoom * 2 + 5, lit = fires.filter(f => Math.hypot(f.x - cx, f.z - cz) < near + 6).sort((a, b) => Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz));
   FIRE_LIGHTS.forEach((l, i) => { const f = lit[i]; if (!f) { l.intensity = 0; return; }
     const fl = 0.8 + 0.2 * Math.sin(T * 13 + f.seed) * Math.sin(T * 7.3 + f.seed * 2);
-    l.position.set(f.x, f.y + 0.6, f.z); l.distance = 9 * f.s; l.intensity = (1.4 + G.night * 2.2) * fl * f.s; });
+    l.position.set(f.x, f.y + 0.6, f.z); l.distance = 9 * f.s; l.intensity = (SUNSET ? 0.6 + G.night * 3.0 : 1.4 + G.night * 2.2) * fl * f.s; });   // днём огонь не высвечивает землю вокруг (иначе пропадает тень бочки)
 }
 function updateFires(dt, T) {
   const near = CAM.zoom * 2 + 5, pts = SPLIT.on ? SPLIT.views : [CAM];
@@ -207,25 +231,32 @@ function updateFires(dt, T) {
 }
 // Смена времени: закат → ночь (N — сразу)
 function updateSky(dt) {
-  const k = clamp((G.t - 60) / (RUN_TIME * 0.85 - 60), 0, 1), target = Math.max(G.nightT, k * k * (3 - 2 * k), EV.blackout ? 0.95 : 0);   // первая минута — закат, дальше плавно темнеет, полная ночь к ~17-й минуте
+  const k = clamp((G.t - 60) / (RUN_TIME * 0.85 - 60), 0, 1), target = MAPID === 'cemetery' ? 1 : Math.max(G.nightT, k * k * (3 - 2 * k), EV.blackout ? 0.95 : 0);   // первая минута — закат, дальше плавно темнеет, полная ночь к ~17-й минуте
   G.night += (target - G.night) * Math.min(1, dt * 1.5);
   const n = G.night;
+  if (SUNSET) skySunset(n); else {                                              // город — прежний свет
   sun.intensity = 1.15 * (1 - n) + 0.06 * n;
   sun.color.setRGB(1, 0.8 - n * 0.2, 0.58 + n * 0.3);
   hemi.intensity = 0.5 - n * 0.37; hemi.color.setRGB(1 - n * 0.6, 0.88 - n * 0.5, 0.75 - n * 0.2); hemi.groundColor.setHex(0x3a3028).multiplyScalar(1 - 0.5 * n);   // ночь темнее: почти только лампы, фонари и огонь
   renderer.toneMappingExposure = 1 - 0.08 * n;
   scene.background.setRGB(0.13 - n * 0.115, 0.1 - n * 0.087, 0.09 - n * 0.065); scene.fog.color.copy(scene.background);
+  }
   for (const m of winMats) m.emissiveIntensity = 0.25 + n * 1.1 * evLights();
-  for (const L of lamps) { const nl = n * lampOn(L); L.bulb.material.color.setRGB(0.4 + nl * 0.6, 0.39 + nl * 0.55, 0.3 + nl * 0.45); }
+  for (const L of lamps) { if (L.dead) continue; const nl = n * lampOn(L); L.bulb.material.color.setRGB(0.4 + nl * 0.6, 0.39 + nl * 0.55, 0.3 + nl * 0.45); }
   setLampLights(CAM.x, CAM.z); evSkyFx(n);
 }
 // прожекторы фонарей, ближайших к точке обзора (в раздельном экране — для каждой половины свои)
 function setLampLights(cx, cz) {
   const n = G.night;
   for (const L of lamps) L.d = Math.hypot(L.x - cx, L.z - cz);
-  const ls = lamps.slice().sort((a, b) => a.d - b.d);
+  const ls = lamps.filter(L => !L.dead).sort((a, b) => a.d - b.d);
   setSearchLights(cx, cz);
-  LAMP_LIGHTS.forEach((sp, i) => { const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 * lampOn(L) : 0; if (L) { sp.position.set(L.lx !== undefined ? L.lx : L.x + 0.6, L.ly || 3.95, L.z); sp.target.position.set((L.lx !== undefined ? L.lx : L.x + 0.6) + 0.6, 0, L.z); sp.target.updateMatrixWorld(); } });
+  LAMP_LIGHTS.forEach((sp, i) => {
+    const L = ls[i]; sp.intensity = L && n > 0.01 ? n * 2.4 * (L.pow || 1) * lampOn(L) : 0; if (!L) return;
+    const lx = L.lx !== undefined ? L.lx : L.x + 0.6, lz = L.lz !== undefined ? L.lz : L.z;
+    sp.position.set(lx, L.ly || 3.95, lz); sp.distance = L.dist || 14; sp.angle = L.ang || 0.75;                       // мачта светит дальше и шире
+    sp.target.position.set(L.tx !== undefined ? L.tx : lx + 0.6, 0, L.tz !== undefined ? L.tz : lz); sp.target.updateMatrixWorld();
+  });
 }
 // Здание между камерой и героем — полупрозрачное
 const camDir = new THREE.Vector3();
@@ -301,7 +332,7 @@ function placeCam(cx, cy, cz, sx, sz, aspect, h, shift, yaw = CAM.yaw) {
   cam.position.set(cx + Math.sin(yaw) * cp * D + sx, cy + sp * D, cz + Math.cos(yaw) * cp * D + sz);
   cam.lookAt(cx + sx, cy, cz + sz);
   cam.left = -h * aspect - shift; cam.right = h * aspect - shift; cam.top = h; cam.bottom = -h; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
-  sun.position.set(cx - 14, 26, cz - 10); sun.target.position.set(cx, 0, cz);
+  sun.position.set(cx + SUN_OFF[0], SUN_OFF[1], cz + SUN_OFF[2]); sun.target.position.set(cx, 0, cz);
 }
 // Камера смещается от героя в сторону прицела (курсор, стик, цель автоприцела): чем дальше цель, тем сильнее, но не больше ~2,6 м
 const CAMLEAD = [0, 0.22, 0.4], CAMLEAD_NAME = ['выкл', 'лёгкое', 'сильное'];

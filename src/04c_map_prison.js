@@ -14,7 +14,7 @@ const MAP_PRISON = {
   // типы земли; позже в списке — сверху. [тип, x1, z1, x2, z2, {lines}]
   zones: [
     ['paving', 22, 20, 74, 64], ['paving', 44, 0, 52, 24], ['paving', 3, 30, 24, 62], ['paving', 34, 82, 46, 94],
-    ['grass', 3, 3, 20.5, 30], ['gravel', 76, 3, 95.5, 32], ['dark', 77, 4, 91, 14], ['gravel', 0.5, 54.5, 22, 59.5], ['gravel', 74, 54.5, 95.5, 59.5],
+    ['asphalt', 3, 3, 20.5, 30], ['gravel', 76, 3, 95.5, 32], ['dark', 77, 4, 91, 14], ['gravel', 0.5, 54.5, 22, 59.5], ['gravel', 74, 54.5, 95.5, 59.5],
     ['court', 76, 36, 92, 52], ['road', 46, 64, 50, 96], ['asphalt', 54, 68, 74, 92, { lines: true }], ['dark', 6, 70, 26, 84], ['dark', 74, 74, 86, 83],
   ],
   noSpawn: [[28, 66.5, 40.5, 76.5], [3, 3, 20.5, 30], [76, 3, 95.5, 32], [76, 36, 92, 52], [23, 22, 43, 31], [53, 22, 73, 31], [6, 70, 26, 84], [74, 74, 86, 83]],
@@ -28,17 +28,17 @@ const MAP_PRISON = {
     ...[[1, 30], [95, 30], [1, 80], [95, 80]].map(p => ['tower', ...p]),
     ['search', 1, 30, 0.1], ['search', 95, 30, Math.PI - 0.1], ['search', 1, 80, -0.15], ['search', 95, 80, Math.PI + 0.15],
     // --- север: камерные крылья, проход между ними, мостик над ним ---
-    ['block', 23, 8, 44, 20, 1, { gap: [39.8, 41.4], esc: 35, gapE: [13.2, 15.2], col: 0xc8b8a0 }],
-    ['block', 52, 8, 73, 20, 1, { gap: [60, 61.6], esc: 55, gapW: [13.2, 15.2], col: 0xbcac94 }],
+    ['block', 23, 8, 44, 20, 1, { gap: [39.8, 41.4], esc: 35, gapE: [13.2, 15.2], col: 0xc8b8a0, num: 1 }],
+    ['block', 52, 8, 73, 20, 1, { gap: [60, 61.6], esc: 55, gapW: [13.2, 15.2], col: 0xbcac94, num: 2 }],
     ['bridge', 44, 52, 13.2, 15.2, 2.6, 'x'],
     ['pens', 24, 42, 24, 30, 2, true], ['pens', 54, 72, 24, 30, 2, true],
     // --- кладбище (северо-запад) ---
-    ['fenceZ', 0.5, 30, 20.5], ['fenceX', 6.5, 10, 30], ['gate', 10, 30, 12.4, 30, 'x', false], ['fenceX', 12.4, 20.5, 30],
+    ['ironZ', 0.5, 30, 20.5], ['ironX', 6.5, 10, 30], ['gate', 10, 30, 12.4, 30, 'x', false], ['ironX', 12.4, 20.5, 30],
     ['shed', 12, 17, 19, 24, { h: 2.6, door: { side: 'S', at: [14.6, 16.4] }, col: 0x8e8a80 }],
     ...[[6, 8], [9.5, 8], [13, 8], [16.5, 8], [6, 13], [9.5, 13], [13, 13], [16.5, 13], [5, 27], [8, 27.5], [17, 27]].map(p => ['grave', ...p]),
     // --- северо-восток: котельная и склад топлива за воротами ---
     ['fenceZ', 0.5, 20, 76], ['fenceZ', 28, 32, 76], ['fenceX', 76, 82.5, 32], ['gate', 82.5, 32, 85.5, 32, 'x', false], ['fenceX', 85.5, 95.5, 32],
-    ['shed', 78, 5, 90, 14, { h: 2.6, open: 'S', open2: 'E', col: 0x7a7468 }],
+    ['shed', 78, 5, 90, 14, { h: 2.6, open: 'S', open2: 'E', col: 0x7a7468, blocks: true }],
     ['xtank', 79.5, 19], ['xtank', 84.5, 19], ['xtank', 89.5, 19], ['barrel', 78, 28, true], ['barrel', 92, 27, false], ['barrel', 80.5, 24, false], ['barrel', 91, 15.5, false],
     ['waterTower', 86, 27],
     // --- центр: администрация, двор, прачечная, склад ---
@@ -66,15 +66,16 @@ const MAP_PRISON = {
     ['barrel', 8, 82, false], ['barrel', 8.9, 82.6, true], ['barrel', 20, 71.4, false],
     ['car', 15, 76.5, true, 0x3e5270, true], ['car', 15, 80.2, true, 0x8c3a30, true, true],
     // карцер: одна дверь с запада, лестница на крышу
-    ['shed', 74, 74, 86, 83, { h: 2.6, door: { side: 'W', at: [77, 78.8] }, gap: [80, 81.6], esc: 75, col: 0x7a7468 }],
+    ['shed', 74, 74, 86, 83, { h: 2.6, door: { side: 'W', at: [77, 78.8] }, gap: [80, 81.6], esc: 75, col: 0x7a7468, blocks: true }],
     // стоянка: машины и автобусы как укрытия
     ['car', 56, 70, true, 0xc8c4ba], ['car', 62, 70, true, 0x60707e, true, true], ['car', 56, 74.4, true, 0x6e7a50], ['car', 62, 74.4, true, 0x8c3a30, true],
     ['car', 58, 78.5, false, 0xd8b030, true], ['car', 70, 70, false, 0x3e5270], ['car', 28, 88, false, 0x8c3a30, true, true], ['car', 56, 92, true, 0x60707e, true],
     // --- общее: скамейки, бочки, фонари, зелень ---
     ...[70, 74, 78, 82].flatMap(z => [['bench', 44.6, z, 1], ['bench', 51.4, z, -1]]),
     ['barrel', 26, 40, true], ['barrel', 70, 36, true], ['barrel', 40, 58, true], ['barrel', 64, 58, false], ['barrel', 30, 66, true], ['barrel', 88, 68, false], ['barrel', 4, 40, false],
-    ...[[48, 4], [46.5, 17.6], [48, 24], [30, 22], [66, 22], [36, 36], [60, 36], [30, 46], [69.6, 46], [35.6, 60], [62, 60], [48, 62], [12, 31], [24, 56], [78, 56], [88, 56], [14, 57], [47.2, 68], [50.8, 76], [47.2, 84], [20, 66], [70, 66], [80, 86], [10, 90], [86, 40], [86, 16], [12, 4]].map(p => ['lamp', ...p]),
-    ...[[4, 4], [18, 5], [5, 27], [19.5, 26], [24, 4], [72, 4], [3, 66], [92, 66], [4, 92], [92, 92], [30, 94], [84, 94], [4, 48], [92, 48], [4, 36]].map(p => ['tree', ...p]),
+    ...[[48, 4], [46.5, 17.6], [48, 24], [30, 22], [66, 22], [36, 36], [60, 36], [30, 46], [69.6, 46], [35.6, 60], [62, 60], [12, 31], [24, 56], [78, 56], [88, 56], [14, 57], [47.2, 68], [50.8, 76], [47.2, 84], [86, 40], [86, 16], [12, 4]].map(p => ['lamp', ...p]),
+    ...[[48, 62], [20, 66], [70, 66], [80, 86], [10, 90], [64, 86]].map(p => ['mast', ...p]),                                   // мачты с прожекторами: двор, юг, стоянка
+    ...[[4, 4], [18, 5], [5, 27], [19.5, 26], [24, 4], [72, 4], [3, 66], [92, 66], [4, 92], [92, 92], [30, 94], [84, 94], [4, 48], [92, 48], [4, 36]].map(p => [p[0] === 5 && p[1] === 27 ? 'deadtree' : 'tree', ...p]),
     ...[[6, 10], [86, 36], [6, 88], [90, 88], [86, 62], [30, 90], [80, 90], [92, 50], [20, 12]].map(p => ['bush', ...p]),
     ...[[45.2, 66], [50.8, 66], [46, 90], [50, 90], [47, 82]].map(p => ['cone', ...p]),
     // --- события v0.21: генератор в котельной, вертолётная площадка на крыше администрации, оружейка, взрывные бочки ---
@@ -84,30 +85,51 @@ const MAP_PRISON = {
     ...[[72.5, 79, 0], [22.7, 50, 1.571], [42, 42, 0], [55.5, 42, 0], [70.5, 48, 1.571], [26.5, 21.6, 0], [69.5, 21.6, 0], [43.2, 76, 1.571], [35, 85.5, 1.571], [20, 74, 0]].map(p => ['trashbin', ...p]),
     ...[[73.6, 80.6], [23.3, 51.9], [43.3, 42.7], [56.9, 42.5], [71.1, 50], [28.1, 21.5], [67.9, 21.7], [43.1, 78], [35.3, 87.6], [21.6, 74.6], [8, 80.6], [58.2, 80.6], [84, 72.8], [30.5, 62.2], [64, 62.6], [12, 62.2], [88, 62.2]].map(p => ['trashbag', ...p]),
     ['xbarrel', 82.2, 23], ['xbarrel', 87.3, 23.5], ['xbarrel', 92.5, 21], ['xbarrel', 10, 80], ['xbarrel', 24, 78], ['xbarrel', 22, 73.5], ['xbarrel', 66, 76], ['xbarrel', 72, 88], ['xbarrel', 38, 50], ['xbarrel', 58, 48], ['xbarrel', 14, 56], ['xbarrel', 26, 48], ['xbarrel', 47.5, 27], ['xbarrel', 92, 70], ['xbarrel', 42, 66], ['xbarrel', 36, 62], ['xbarrel', 80, 70], ['xbarrel', 30, 47], ['xbarrel', 64, 40],
+    // --- v0.41–0.42 (в конце списка, чтобы правки карты в редакторе не съехали): кладбище, пропы ---
+    ['freshgrave', 6, 19.5], ['deadtree', 8.5, 22], ['deadtree', 3.5, 16], ['plac', 3, 3, 20.5, 30],
+    ['tires', 7.4, 72.4], ['crates', 7.6, 75.6], ['pallets', 24.2, 82.8, 1], ['tires', 93, 30], ['pallets', 77.6, 30.4, 1], ['crates', 88.6, 6.4],
+    ['cblock', 43.4, 88, 0], ['cblock', 52.6, 86.5, 0], ['tires', 72.6, 90.6], ['cblock', 55.2, 90.8, 1], ['tires', 77.4, 50.6], ['cblock', 87.6, 77, 0],
+    ['crates', 69.6, 52.8], ['pallets', 58.6, 52.6, 1], ['tires', 23.2, 64.8], ['crates', 4.2, 62.4], ['cblock', 33, 66, 1], ['pallets', 37.6, 81.6, 1],
   ],
 };
 
 /* ---------- Ворота: раздвижные, открываются и закрываются игроком, зомби их ломают ---------- */
 const GATES = [];
-function addGate(x1, z1, x2, z2, axis, open) {
-  if (!GATE_START.some(a => a[0] === x1 && a[1] === z1 && a[2] === x2 && a[3] === z2)) GATE_START.push([x1, z1, x2, z2, axis, open]);
+function addGate(x1, z1, x2, z2, axis, open, style) {
+  if (!GATE_START.some(a => a[0] === x1 && a[1] === z1 && a[2] === x2 && a[3] === z2)) GATE_START.push([x1, z1, x2, z2, axis, open, style]);
   const L = axis === 'x' ? x2 - x1 : z2 - z1, t = 0.2, g = new THREE.Group(); staticGroup.add(g);
   const cx = (x1 + x2) / 2, cz = (z1 + z2) / 2, bx = axis === 'x' ? L / 2 : t / 2, bz = axis === 'x' ? t / 2 : L / 2;
   const P = (ax, ay, az, bxx, byy, bzz, col, o = {}) => { const m = new THREE.Mesh(boxGeo, o.material || mat(col)); m.scale.set(bxx - ax, byy - ay, bzz - az); m.position.set((ax + bxx) / 2, (ay + byy) / 2, (az + bzz) / 2); m.castShadow = o.cast !== false; g.add(m); };
+  const iron = style === 'iron' && FACADE_ON;                                          // v0.42: кованые ворота (кладбище)
+  if (iron) {
+    const ic = 0x2a2a2e, tc = 0x3a3a40, along = (a, b, y1, y2, th, col) => axis === 'x' ? P(a, y1, cz - th, b, y2, cz + th, col) : P(cx - th, y1, a, cx + th, y2, b, col);
+    const a0 = axis === 'x' ? cx - bx : cz - bz, a1 = axis === 'x' ? cx + bx : cz + bz;
+    along(a0, a1, 0.12, 0.2, 0.04, ic); along(a0, a1, 0.62, 0.68, 0.035, ic); along(a0, a1, 1.12, 1.2, 0.04, ic);   // поперечины
+    for (let u = a0 + 0.06; u < a1 - 0.03; u += 0.13) { along(u - 0.018, u + 0.018, 0.12, 1.32, 0.018, ic); along(u - 0.035, u + 0.035, 1.32, 1.4, 0.02, tc); }   // прутья с пиками
+    for (const u of [a0 + 0.04, a1 - 0.04]) along(u - 0.05, u + 0.05, 0, 1.45, 0.05, ic);                                   // стойки створки
+    for (const u of [(a0 * 2 + a1) / 3, (a0 + a1 * 2) / 3]) along(u - 0.07, u + 0.07, 0.75, 1.05, 0.03, tc);                 // завитки
+  } else {
   const net = mat(0x8a9090, { transparent: true, opacity: 0.55 });
   P(cx - bx, 0.1, cz - bz, cx + bx, 2.2, cz + bz, 0, { material: net, cast: false });
   for (const [dx, dz] of axis === 'x' ? [[-bx, 0], [bx, 0]] : [[0, -bz], [0, bz]]) P(cx + dx - 0.07, 0, cz + dz - 0.07, cx + dx + 0.07, 2.4, cz + dz + 0.07, 0x7a2e24);
   P(cx - bx, 2.2, cz - bz, cx + bx, 2.3, cz + bz, 0x7a2e24); P(cx - bx, 0.1, cz - bz, cx + bx, 0.18, cz + bz, 0x7a2e24);
+  }
   const G = { x1: axis === 'x' ? x1 : cx - t / 2, z1: axis === 'x' ? cz - t / 2 : z1, x2: axis === 'x' ? x2 : cx + t / 2, z2: axis === 'x' ? cz + t / 2 : z2, axis, L, open, hp: 300, max: 300, g, slide: open ? 1 : 0 };
-  G.s = { x1: G.x1, y1: 0, z1: G.z1, x2: G.x2, y2: 2.3, z2: G.z2, mat: 'metal', group: null, gate: G };
-  if (!open) solids.push(G.s);
+  G.s = { x1: G.x1, y1: 0, z1: G.z1, x2: G.x2, y2: iron ? 1.45 : 2.3, z2: G.z2, mat: 'metal', group: null, gate: G };
+  // v0.61: створка на петлях — поворачивается на 90° внутрь (к центру карты); открытая тоже твёрдая
+  const hx = axis === 'x' ? cx - bx : cx, hz = axis === 'x' ? cz : cz - bz, sg = axis === 'x' ? (MAP / 2 - cz >= 0 ? 1 : -1) : (MAP / 2 - cx >= 0 ? 1 : -1);
+  for (const m of g.children) { m.position.x -= hx; m.position.z -= hz; }
+  g.position.set(hx, 0, hz); G.swing = axis === 'x' ? -sg * Math.PI / 2 : sg * Math.PI / 2;
+  G.so = axis === 'x' ? { x1: hx - 0.1, y1: 0, z1: sg > 0 ? hz : hz - L, x2: hx + 0.1, y2: G.s.y2, z2: sg > 0 ? hz + L : hz, mat: 'metal', group: null, gate: G }
+                      : { x1: sg > 0 ? hx : hx - L, y1: 0, z1: hz - 0.1, x2: sg > 0 ? hx + L : hx, y2: G.s.y2, z2: hz + 0.1, mat: 'metal', group: null, gate: G };
+  solids.push(open ? G.so : G.s);
   GATES.push(G); applyGatePos(G); return G;
 }
-function applyGatePos(G) { const d = G.slide * (G.L + 0.15); G.g.position.set(G.axis === 'x' ? d : 0, 0, G.axis === 'z' ? d : 0); }
+function applyGatePos(G) { const k = G.slide, e = k * k * (3 - 2 * k); G.g.rotation.y = e * (G.swing || 0); }   // v0.61: поворот на петлях
 function gateSetOpen(G, open) {
-  G.open = open; const i = solids.indexOf(G.s);
-  if (open && i >= 0) solids.splice(i, 1); if (!open && i < 0) solids.push(G.s);
-  indexSolids(); navRebuild(G.x1, G.z1, G.x2, G.z2); SFX.crate();
+  G.open = open; for (const s of [G.s, G.so]) { const i = solids.indexOf(s); if (i >= 0) solids.splice(i, 1); }
+  solids.push(open ? G.so : G.s);
+  indexSolids(); navRebuild(Math.min(G.x1, G.so.x1), Math.min(G.z1, G.so.z1), Math.max(G.x2, G.so.x2), Math.max(G.z2, G.so.z2)); SFX.crate();
 }
 // F / Y рядом с воротами
 function gateNear(p, r = 2.4) {
@@ -135,14 +157,14 @@ function updateGates(dt) {
     }, Math.max(3, G.L / 2 + 1));
     if (G.hp <= 0) {
       dust((G.x1 + G.x2) / 2, 1, (G.z1 + G.z2) / 2, 0x8a9090, 14); SFX.crate(); scene.remove(G.g); staticGroup.remove(G.g);
-      const k = solids.indexOf(G.s); if (k >= 0) solids.splice(k, 1); indexSolids(); navRebuild(G.x1, G.z1, G.x2, G.z2); GATES.splice(i, 1);
+      for (const s of [G.s, G.so]) { const k = solids.indexOf(s); if (k >= 0) solids.splice(k, 1); } indexSolids(); navRebuild(G.x1, G.z1, G.x2, G.z2); GATES.splice(i, 1);
     }
   }
 }
 // новый забег: сломанные ворота возвращаются, остальные — в исходное состояние
 const GATE_START = [];
 function resetGates() {
-  for (const G of GATES) { staticGroup.remove(G.g); const k = solids.indexOf(G.s); if (k >= 0) solids.splice(k, 1); }
+  for (const G of GATES) { staticGroup.remove(G.g); for (const s of [G.s, G.so]) { const k = solids.indexOf(s); if (k >= 0) solids.splice(k, 1); } }
   GATES.length = 0;
   for (const a of GATE_START) addGate(...a);
   indexSolids(); navRebuild(0, 0, MAP, MAP);
@@ -178,19 +200,19 @@ function setSearchLights(cx, cz) {
 /* ---------- Постройки карты ---------- */
 function blockOp(x1, z1, x2, z2, floors, o = {}) {              // здание с лестницей на крышу
   const B = building(x1, z1, x2, z2, floors, o);
-  if (o.gap && o.esc !== undefined) { fireEscape(o.esc, o.gap[0], z2, z2 + 1.3, B.H, B.grp); box(o.gap[0], B.H - 0.1, z2, o.gap[1], B.H, z2 + 1.3, RED, { parent: B.grp, hit: 'metal' }); }
-  if (o.cross) { const cx = (x1 + x2) / 2; box(cx - 0.6, 1.6, z2, cx + 0.6, 1.9, z2 + 0.08, 0xc83030, { solid: false }); box(cx - 0.15, 1.15, z2, cx + 0.15, 2.35, z2 + 0.08, 0xc83030, { solid: false }); }
+  if (o.gap && o.esc !== undefined) { fireEscape(o.esc, o.gap[0], z2, z2 + 1.3, B.H, B.grp); box(o.gap[0], B.H - 0.1, z2, o.gap[1], B.H, z2 + 1.3, RED, { parent: B.grp, hit: 'metal' }); if (FACADE_ON) landingRail(o.gap[0], o.gap[1], z2, B.H, B.grp); }
+  if (o.cross) { const cx = (x1 + x2) / 2, y0 = FACADE_ON ? 1.86 : 1.15, s = FACADE_ON ? 0.55 : 1; if (FACADE_ON) { box(cx - 0.36, 1.95, z2, cx + 0.36, 2.21, z2 + 0.08, 0xc83030, { solid: false }); box(cx - 0.12, y0, z2, cx + 0.12, 2.48, z2 + 0.08, 0xc83030, { solid: false }); box(cx - 0.42, y0 - 0.04, z2, cx + 0.42, 2.52, z2 + 0.04, 0xd8d4c8, { solid: false }); } else { box(cx - 0.6, 1.6, z2, cx + 0.6, 1.9, z2 + 0.08, 0xc83030, { solid: false }); box(cx - 0.15, 1.15, z2, cx + 0.15, 2.35, z2 + 0.08, 0xc83030, { solid: false }); } void s; }   // v0.45: крест над фонарём двери, на белой табличке
   return B;
 }
 // Полуоткрытое здание: стены без одной стороны (open), дверной проём (door), плоская крыша — ходовая, если есть лестница
 function shedOp(x1, z1, x2, z2, o = {}) {
   const H = o.h || 3.2, T = 0.5, grp = new THREE.Group(), col = o.col || 0x86806e; staticGroup.add(grp);
-  const B = { x1, z1, x2, z2, H, grp, mats: [] }, wm = mat(col).clone(); B.mats.push(wm);
-  const W = (a1, b1, a2, b2) => box(a1, 0, b1, a2, H, b2, 0, { material: wm, parent: grp });
+  const B = { x1, z1, x2, z2, H, grp, mats: [], blocks: !!o.blocks }, wm = mat(col).clone(); B.mats.push(wm); wm.userData.blocks = !!o.blocks;
+  const W = (a1, b1, a2, b2) => box(a1, 0, b1, a2, H - 0.012, b2, 0, { material: wm, parent: grp });   // v0.41: верх стен чуть ниже крыши — не мерцает
   const door = o.door || null, sides = { N: [x1, z1, x2, z1 + T], S: [x1, z2 - T, x2, z2], W: [x1, z1, x1 + T, z2], E: [x2 - T, z1, x2, z2] };
   for (const k of ['N', 'S', 'W', 'E']) {
     if (o.open === k || o.open2 === k) continue; const [a1, b1, a2, b2] = sides[k];
-    if (door && door.side === k) { const [d1, d2] = door.at; if (k === 'N' || k === 'S') { W(a1, b1, d1, b2); W(d2, b1, a2, b2); box(d1, 2.1, b1, d2, H, b2, 0, { material: wm, parent: grp }); } else { W(a1, b1, a2, d1); W(a1, d2, a2, b2); box(a1, 2.1, d1, a2, H, d2, 0, { material: wm, parent: grp }); } }
+    if (door && door.side === k) { const [d1, d2] = door.at; if (k === 'N' || k === 'S') { W(a1, b1, d1, b2); W(d2, b1, a2, b2); box(d1, 2.1, b1, d2, H - 0.012, b2, 0, { material: wm, parent: grp }); } else { W(a1, b1, a2, d1); W(a1, d2, a2, b2); box(a1, 2.1, d1, a2, H - 0.012, d2, 0, { material: wm, parent: grp }); } }
     else W(a1, b1, a2, b2);
   }
   const rm = mat(ROOF).clone(); B.mats.push(rm);
@@ -199,7 +221,8 @@ function shedOp(x1, z1, x2, z2, o = {}) {
   const gap = o.gap;
   if (gap) { para(x1, H, z2 - 0.16, gap[0], H + PH, z2, 0, { material: pm, parent: grp }); para(gap[1], H, z2 - 0.16, x2, H + PH, z2, 0, { material: pm, parent: grp }); } else para(x1, H, z2 - 0.16, x2, H + PH, z2, 0, { material: pm, parent: grp });
   para(x1, H, z1, x2, H + PH, z1 + 0.16, 0, { material: pm, parent: grp }); para(x1, H, z1, x1 + 0.16, H + PH, z2, 0, { material: pm, parent: grp }); para(x2 - 0.16, H, z1, x2, H + PH, z2, 0, { material: pm, parent: grp });
-  if (gap && o.esc !== undefined) { fireEscape(o.esc, gap[0], z2, z2 + 1.3, H, grp); box(gap[0], H - 0.1, z2, gap[1], H, z2 + 1.3, RED, { parent: grp, hit: 'metal' }); }
+  if (gap && o.esc !== undefined) { fireEscape(o.esc, gap[0], z2, z2 + 1.3, H, grp); box(gap[0], H - 0.1, z2, gap[1], H, z2 + 1.3, RED, { parent: grp, hit: 'metal' }); if (FACADE_ON) landingRail(gap[0], gap[1], z2, H, grp); }
+  if (FACADE_ON) { const FB = newBatch(); facadeShed(FB, x1, z1, x2, z2, H, o); shedPortal(FB, x1, z1, x2, z2, H, o, grp, wm); finishFacade(FB, grp); }
   buildings.push(B);
   B.finish = () => { const cache = new Map(); B.mats = []; grp.traverse(m => { if (!m.isMesh) return; let c = cache.get(m.material); if (!c) { c = m.material.clone(); cache.set(m.material, c); B.mats.push(c); } m.material = c; }); };
   return B;
@@ -212,6 +235,7 @@ function fenceZ(z1, z2, x) {                       // сетка-рабица в
 }
 function bridgeOp(a1, a2, b1, b2, H, axis) {         // мостик между крышами: узкий настил с перилами
   const x1 = axis === 'x' ? a1 : b1, x2 = axis === 'x' ? a2 : b2, z1 = axis === 'x' ? b1 : a1, z2 = axis === 'x' ? b2 : a2;
+  if (FACADE_ON) return bridgeNew(x1, x2, z1, z2, H, axis === 'x');
   box(x1, H - 0.18, z1, x2, H, z2, 0x6e6a60, { hit: 'metal' });
   for (const [ax, az, bx, bz] of axis === 'x' ? [[x1, z1, x2, z1 + 0.08], [x1, z2 - 0.08, x2, z2]] : [[x1, z1, x1 + 0.08, z2], [x2 - 0.08, z1, x2, z2]]) box(ax, H, az, bx, H + 0.9, bz, 0x5a5e5e, { solid: false });
   box(x1, H - 0.9, z1, x2, H - 0.18, z2, 0x4a4844, { solid: false, cast: false });
@@ -223,10 +247,12 @@ function pensOp(x1, x2, z1, z2, n, both) {           // прогулочные �
   for (let i = 0; i < n; i++) { const a = x1 + i * w, m = a + w / 2; fenceX(a, m - gapW / 2, z2); fenceX(m + gapW / 2, a + w, z2); }
 }
 function graveOp(x, z) {
+  if (GY_ON) return graveNew(x, z);
   box(x - 0.35, 0, z - 0.2, x + 0.35, 0.18, z + 0.2, 0x6e6a60, { solid: false });
   box(x - 0.06, 0.18, z - 0.06, x + 0.06, 1.0, z + 0.06, 0x7a7468, { hit: 'concrete' }); box(x - 0.28, 0.66, z - 0.06, x + 0.28, 0.78, z + 0.06, 0x7a7468, { solid: false });
 }
 function tankOp(x, z) {                              // топливный бак: жёлтый цилиндр из коробок с красными полосами
+  if (FACADE_ON) return tankNew(x, z);
   box(x - 1.1, 0, z - 1.1, x + 1.1, 2.6, z + 1.1, 0xb8a040, { hit: 'metal' });
   for (const y of [0.5, 2.0]) box(x - 1.14, y, z - 1.14, x + 1.14, y + 0.14, z + 1.14, 0x8a2e22, { solid: false });
   box(x - 0.4, 2.6, z - 0.4, x + 0.4, 3.0, z + 0.4, 0x5a5448, { solid: false });
@@ -239,14 +265,24 @@ function gazeboOp(x, z) {                            // беседка во дв
   for (const dx of [-1.6, 1.6]) bench(x + dx, z, 1);
 }
 function hoopOp(x, z) {                              // баскетбольный щит
+  if (FACADE_ON) {                                     // v0.53: модель из кубиков — стойка, белый щит с красным квадратом, кольцо, сетка
+    const s = x < 84 ? 1 : -1, B = newBatch(), P = (px, y, pz, sx, sy, sz, c) => pushBox(B, x + px * s, y, z + pz, sx, sy, sz, 0, c);
+    P(0, 0.1, 0, 0.5, 0.2, 0.5, 0x4a4844); P(0, 1.6, 0, 0.14, 3.0, 0.14, 0x3e4a5a); P(0.2, 3.05, 0, 0.42, 0.1, 0.1, 0x3e4a5a); P(0.2, 2.75, 0, 0.08, 0.5, 0.08, 0x3e4a5a);
+    P(0.42, 3.1, 0, 0.06, 0.9, 1.4, 0xd8d4c8); P(0.455, 3.1, 0, 0.02, 0.9, 1.4, 0x9a968c);
+    for (const [py, pz, sy, sz] of [[2.9, 0, 0.04, 0.5], [3.24, 0, 0.04, 0.5], [3.07, -0.23, 0.38, 0.04], [3.07, 0.23, 0.38, 0.04]]) P(0.39, py, pz, 0.01, sy, sz, 0xb83020);   // красный квадрат
+    P(0.39, 3.1, -0.68, 0.02, 0.86, 0.04, 0x8a8478); P(0.39, 3.1, 0.68, 0.02, 0.86, 0.04, 0x8a8478);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; P(0.62 + Math.cos(a) * 0.2, 2.82, Math.sin(a) * 0.2, 0.06, 0.03, 0.06, 0xd8602a); }   // кольцо
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; for (let k = 0; k < 4; k++) { const r = 0.19 - k * 0.025; P(0.62 + Math.cos(a) * r, 2.76 - k * 0.09, Math.sin(a) * r, 0.015, 0.09, 0.015, 0xe8e4dc); } }   // сетка
+    batchMesh(B, true); solids.push({ x1: x - 0.1, y1: 0, z1: z - 0.1, x2: x + 0.1, y2: 3.4, z2: z + 0.1, mat: 'metal', group: null }); return;
+  }
   if (useModel('m_hoop')) return hoopModel(x, z);
   const s = x < 84 ? 1 : -1;
   box(x - 0.08, 0, z - 0.08, x + 0.08, 3.1, z + 0.08, 0x5a5e5e); box(x + s * 0.1 - 0.04, 2.6, z - 0.6, x + s * 0.1 + 0.04, 3.4, z + 0.6, 0xe8e4d8, { solid: false });
   box(x + s * 0.1, 2.6, z - 0.2, x + s * 0.5, 2.66, z + 0.2, 0xd8702a, { solid: false });
 }
 function busOp() {}                                // автобусы убраны из игры; операция оставлена, чтобы старые сохранённые карты не ломались
-function boothOp(x, z) { box(x, 0, z - 1.2, x + 1.0, 2.6, z + 0.2, 0x8a8a84); }
-function barrierOp(x, z) { box(x, 0.9, z, x + 3.6, 1.0, z + 0.1, 0xc84a2a, { solid: false }); }
+function boothOp(x, z) { if (FACADE_ON) return boothNew(x, z); box(x, 0, z - 1.2, x + 1.0, 2.6, z + 0.2, 0x8a8a84); }
+function barrierOp(x, z) { if (FACADE_ON) return barrierNew(x, z); box(x, 0.9, z, x + 3.6, 1.0, z + 0.1, 0xc84a2a, { solid: false }); }
 function postOp(x, z) { box(x - 0.15, 0, z - 0.15, x + 0.15, 2.6, z + 0.15, 0x5a5e5e); }
 
 // Беседка, вышки, баки, автобусы, деревья, мостики: тоже прозрачнеют, когда закрывают героя (как дома)
@@ -263,13 +299,31 @@ function fadeWrap(fn) {
 }
 const MAP_OPS = {
   wall: (...a) => wallSeg(...a), tower: fadeWrap((x, z) => tower(x, z)), fenceX: (...a) => fenceX(...a), fenceZ: (...a) => fenceZ(...a),
-  gate: (x1, z1, x2, z2, axis, open) => addGate(x1, z1, x2, z2, axis, open), search: (x, z, a) => addSearch(x, z, a),
+  gate: (x1, z1, x2, z2, axis, open, style) => addGate(x1, z1, x2, z2, axis, open, style), search: (x, z, a) => addSearch(x, z, a),
   block: blockOp, shed: shedOp, bridge: fadeWrap(bridgeOp), pens: pensOp, grave: graveOp, tank: fadeWrap(tankOp), gazebo: fadeWrap(gazeboOp), hoop: hoopOp, bus: fadeWrap(busOp), booth: fadeWrap(boothOp), barrier: barrierOp, post: postOp,
-  barrel, lamp, car, bench, waterTower: fadeWrap(waterTower), tree: fadeWrap((x, z) => (MODELS.tree ? model('tree', x, z, x * 1.7) : tree(x, z))),
+  plac: (x1, z1, x2, z2) => placOp(x1, z1, x2, z2), tires: (x, z) => GY_ON && tiresOp(x, z), crates: (x, z) => GY_ON && crateStack(x, z), pallets: (x, z, a) => GY_ON && palletStack(x, z, a !== 0), cblock: (x, z, a) => GY_ON && concreteBlock(x, z, a !== 0),
+  ironX: (x1, x2, z) => GY_ON ? ironRun(x1, x2, z, true) : fenceX(x1, x2, z), ironZ: (z1, z2, x) => GY_ON ? ironRun(z1, z2, x, false) : fenceZ(z1, z2, x),
+  deadtree: fadeWrap((x, z) => GY_ON ? deadTree(x, z) : tree(x, z)), freshgrave: (x, z) => GY_ON && freshGrave(x, z),
+  barrel, lamp, mast: (x, z) => lamp(x, z, 'mast'), car, bench, waterTower: fadeWrap(waterTower), tree: fadeWrap((x, z) => (MODELS.tree ? model('tree', x, z, x * 1.7) : tree(x, z))),
   trashbin: (x, z, rot) => trashBinOp(x, z, rot), trashbag: (x, z) => trashBagOp(x, z),
   bush: (x, z) => MODELS.bush && model('bush', x, z, x * 2.3, 0.9 + (x % 1) * 0.3), cone: (x, z) => MODELS.cone && model('cone', x, z, x),
 };
 // Стена по границе карты заменяется внутренним забором-рабицей: полупрозрачный, за ним видна земля (см. 04h_outside.js)
+// v0.42: всё ограждение на кладбище тюрьмы — кованое (и то, что добавлено в редакторе)
+function cemeteryOp(op) {
+  if (MAPID !== 'prison' || !FACADE_ON) return op;
+  const inC = (x, z) => x <= 21 && z <= 30.6 && x >= 0.4 && z >= 0;
+  // v0.44: кладбища в тюрьме больше нет — на его месте плац (кладбище будет отдельной картой)
+  if (['grave', 'freshgrave', 'deadtree', 'ironX', 'ironZ'].includes(op[0])) return null;
+  if ((op[0] === 'tree' || op[0] === 'bush' || op[0] === 'ladder') && inC(op[1], op[2]) && op[1] > 2.5 && op[2] > 2.5) return null;
+  if (op[0] === 'shed' && op[1] === 12 && op[2] === 17) return null;
+  if (op[0] === 'gate' && inC(op[1], op[2]) && inC(op[3], op[4])) return null;
+  if ((op[0] === 'fenceX' && inC(op[1], op[3]) && inC(op[2], op[3]) && op[3] > 1) || (op[0] === 'fenceZ' && inC(op[3], op[1]) && inC(op[3], op[2]) && op[3] > 1)) return null;
+  if (op[0] === 'fenceX' && inC(op[1], op[3]) && inC(op[2], op[3])) return ['ironX', op[1], op[2], op[3]];
+  if (op[0] === 'fenceZ' && inC(op[3], op[1]) && inC(op[3], op[2])) return ['ironZ', op[1], op[2], op[3]];
+  if (op[0] === 'gate' && inC(op[1], op[2]) && inC(op[3], op[4])) return ['gate', op[1], op[2], op[3], op[4], op[5], op[6], 'iron'];
+  return op;
+}
 function borderFence(op) {
   if (op[0] !== 'wall') return op;
   const [, x1, z1, x2, z2] = op, thin = 0.6, e = 0.05;
@@ -280,12 +334,20 @@ function borderFence(op) {
 function buildMap() {
   paintGround(MAPDEF.zones); groundTex.needsUpdate = true;
   window.EDFOOT = [];                                                              // для редактора: из каких коробок состоит каждый объект
-  for (const op0 of MAPDEF.ops) { const op = borderFence(op0), f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
+  for (const op0 of MAPDEF.ops) { const op = ladderClash(op0) ? null : cemeteryOp(borderFence(op0)); if (!op) { EDFOOT.push([]); continue; } const f = MAP_OPS[op[0]], s0 = solids.length; if (f) f(...op.slice(1)); else console.warn('Неизвестная операция карты', op[0]); EDFOOT.push(solids.slice(s0).map(q => [q.x1, q.z1, q.x2, q.z2, q.y2])); }
+  finishLamps();                                                                   // фонари — одной пачкой
+  if (CEM) { finishCem(); finishPumpkins(); }
+  if (GY_ON) { finishGraveyard(); finishProps(); buildRavens(); }                    // кладбище — инстансами, пропы — пачкой, вороны
   for (const B of buildings) B.finish();
   indexSolids();
   buildRelief(MAPDEF);                                                              // серые бордюры
   buildOutside(MAPDEF);                                                             // земля и деревья за забором
   buildDetails(MAPDEF);                                                             // мелочи на земле: трещины, лужи, трава, камни
+  buildEdgeChunks();                                                                // крошка бетона у краёв плитки
+  paintGroundAO();                                                                  // тёмный ореол у основания объектов
+  applyObjectAO([staticGroup, OUTSIDE.g]);                                          // низ стен и предметов темнее к земле
+  applyBuildingPixels(); for (const m of BLOCK_MESHES) { m.material.onBeforeCompile = AOPXB_COMPILE; m.material.needsUpdate = true; }   // v0.44: пиксели и кладка на зданиях
+  if (FACADE_ON) mergeStaticBoxes();                                                // v0.50: склейка коробок — меньше отрисовок
 }
 // Точки выхода зомби: проломы, ворота, двери зданий и пустыри по сетке (кроме огороженных участков)
 function mapSpawns() {

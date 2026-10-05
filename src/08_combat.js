@@ -12,7 +12,8 @@ function updatePlayerWeapon(p, c, dt) {
   p.lastC = c;
   const A = aimPoint(p, c);
   p.aim = A.pt;
-  if (A.pt) { p.yaw = Math.atan2(A.pt.x - p.x, A.pt.z - p.z); const hy = p.y + HAND_Y, d = Math.hypot(A.pt.x - p.x, A.pt.z - p.z); p.pitch = clamp(Math.atan2(A.pt.y - hy, Math.max(0.3, d)), -1.2, 0.6); }
+  if (A.pt) { p.yaw = Math.atan2(A.pt.x - p.x, A.pt.z - p.z); const hy = p.y + HAND_Y, d = Math.hypot(A.pt.x - p.x, A.pt.z - p.z), ty = !A.target && A.pt.y < p.y - 0.5 ? hy : A.pt.y;   // v0.53: с крыши без цели под курсором — ствол ровно, не в землю под ногами
+    p.pitch = clamp(Math.atan2(ty - hy, Math.max(0.3, d)), -1.2, 0.6); }
   else if (!p.still) { p.yaw = Math.atan2(p.mvx, p.mvz); p.pitch = 0; }
   let fire = c.fire;
   if (fire === null || (c.auto && !c.manual)) fire = !!A.target;          // телефон и ПК без мыши — сами по цели
@@ -196,7 +197,7 @@ function updateBullets(dt) {
       b.x += b.vx * dt / steps; b.y += b.vy * dt / steps; b.z += b.vz * dt / steps;
       if (b.x < 0 || b.z < 0 || b.x > MAP || b.z > MAP) { dead = true; b.lost = true; break; }
       if (b.y <= 0.02) { dust(b.x, 0.03, b.z, 0x8a6a44, 3); SFX.impact('dirt'); dead = true; b.y = 0.05; break; }
-      let so = pointSolid(b.x, b.y, b.z);
+      let so = pointSolid(b.x, b.y, b.z); if (so && so.rail) so = null;   // v0.60: сквозь перила пули пролетают
       if (so && b.thin && (so.y2 - so.y1 < 1.4 || Math.min(so.x2 - so.x1, so.z2 - so.z1) < 0.3)) so = null;   // «Слонобой» проходит тонкие преграды
       if (so) { const bx = b.x - b.vx / sp * 0.06, bz = b.z - b.vz / sp * 0.06;
         if (so.mat === 'metal') sparks(bx, b.y, bz); else dust(bx, b.y, bz, so.mat === 'wood' ? 0x7a5a36 : 0xb0a690, so.leaves ? 2 : 5);
@@ -287,7 +288,8 @@ function updateSwells(dt) {
   }
 }
 // Взрыв: ранит зомби рядом (и игроков, если hurts), на той же высоте ±1.5
-function explode(x, y, z, dmg, R, o = {}) { const pv = ATTR; if (o.owner) ATTR = o.owner; try { explodeBase(x, y, z, dmg, R, o); } finally { ATTR = pv; } }
+function explode(x, y, z, dmg, R, o = {}) {
+  if (typeof ravenScare === 'function') ravenScare(x, z, 22); const pv = ATTR; if (o.owner) ATTR = o.owner; try { explodeBase(x, y, z, dmg, R, o); } finally { ATTR = pv; } }
 function explodeBase(x, y, z, dmg, R, o = {}) {
   explHit(x, z, R);                                                                        // рядом бочки и баки — цепная реакция
   if (GAS.length) igniteGasAt(x, z, R);                                                    // взрыв поджигает бензин

@@ -125,7 +125,7 @@ const MAX_P = 2400;
 const pLit = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial(), MAX_P);
 const pGlow = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), MAX_P);
 for (const m of [pLit, pGlow]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_P * 3), 3); m.frustumCulled = false; scene.add(m); }
-const pSoft = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.3, depthWrite: false }), MAX_P);   // полупрозрачный дым выстрелов
+const pSoft = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.2, depthWrite: false }), MAX_P);   // полупрозрачный дым и пыль (v0.38: 30% → 20%)
 pSoft.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pSoft.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_P * 3), 3); pSoft.frustumCulled = false; pSoft.castShadow = false; pSoft.renderOrder = 2; scene.add(pSoft);
 pLit.castShadow = false;                              // тени от дыма и крошек дорогие, почти не видны
 const parts = [], _c2 = new THREE.Color();

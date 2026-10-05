@@ -5,7 +5,7 @@ const SLOT_KEY = ['', '', '', ''];
 function heroApplySlot(i) {
   const h = heroById(HEROES.sel[i]), key = h ? JSON.stringify(h) : '';
   if (SLOT_KEY[i] === key) return; SLOT_KEY[i] = key;
-  setHeroModel(i, h ? buildVoxModel(genHeroVox(h)) : buildDefaultHero(i));
+  setHeroModel(i, buildVoxModel(genHeroVox(h || Object.assign({}, HERO_PRESETS[0], { top: '#' + PLAYER_COL[i].map(v => v.toString(16).padStart(2, '0')).join('') }))));   // v0.51: герой по умолчанию — тоже из слоёв
 }
 const heroApplyAll = () => { for (let i = 0; i < 4; i++) heroApplySlot(i); };
 
@@ -27,7 +27,8 @@ const ED_UI = [
   ['col', 'skin', 'Кожа', 'skin'],
   ['cat', 'hairStyle'], ['col', 'hair', 'Цвет волос', 'hair'],
   ['cat', 'beard'], ['col', 'beardCol', 'Цвет бороды', 'hair', 'как у волос'],
-  ['cat', 'topStyle'], ['col', 'top', 'Цвет верха', 'cloth'], ['col', 'trim', 'Отделка верха', 'cloth'],
+  ['cat', 'topStyle'], ['col', 'top2', 'Цвет нижнего верха', 'cloth'],
+  ['cat', 'outer'], ['col', 'top', 'Цвет верхней одежды', 'cloth'], ['col', 'trim', 'Отделка', 'cloth'],
   ['cat', 'legs'], ['col', 'pants', 'Цвет низа', 'pants'],
   ['cat', 'shoesStyle'], ['col', 'shoes', 'Цвет обуви', 'shoes'],
   ['cat', 'hat'], ['col', 'hatCol', 'Цвет головного убора', 'cloth'],

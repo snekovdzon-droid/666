@@ -8,7 +8,7 @@ function buildDetails(def) {
   const inSolid = (x, z, m = 0.2) => solidsNear(x, z, m).some(s => s.y2 > 0.05 && x > s.x1 - m && x < s.x2 + m && z > s.z1 - m && z < s.z2 + m);
   const dot = (x, z, c, w = 1) => { gctx.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; gctx.fillRect(px(x), px(z), w, w); };
   const hard = t => t === 'asphalt' || t === 'road' || t === 'dark' || t === 'paving';
-  const dark = (x, z) => { const d = gctx.getImageData(px(x), px(z), 1, 1).data; return d[0] * 0.3 + d[1] * 0.59 + d[2] * 0.11 < 150; };   // не рисуем поверх разметки и светлых линий
+  const dark = (x, z) => { const d = gctx.getImageData(px(x), px(z), 1, 1).data; return d[0] * 0.3 + d[1] * 0.59 + d[2] * 0.11 < (GRADE_ON ? 140 : 150); };   // не рисуем поверх разметки и светлых линий
   // трещины: ломаная блуждает по 1 пикселю; иногда ветвится; на плитке и асфальте
   const crack = (x, z, len, a, depth = 0) => {
     for (let i = 0; i < len; i++) {

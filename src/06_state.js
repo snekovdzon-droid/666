@@ -109,7 +109,7 @@ const quiverMax = p => WEAPONS[p.gun].quiver + 6 * L(p, 'cb_quiver');   // ар�
 // двойное оружие: «Два кольта» и «Второй узи» — по стволу в каждой руке
 const twinGuns = p => !p.hand && ((p.gun === 'revolver' && !!p.evo.rv_twin) || (p.gun === 'smg' && L(p, 'smg_uzi') > 0));
 const oneHand = p => !!p.hand || p.gun === 'revolver' || (p.gun === 'smg' && L(p, 'smg_uzi') > 0);   // предмет в руке — одной рукой
-const xpNeed = lvl => 5 + (lvl - 1) * 4;
+const xpNeed = lvl => Math.round(5 * Math.pow(1.13, lvl - 1) + (lvl - 1) * 3);   // v0.60: каждый уровень заметно дороже предыдущего
 const alivePlayers = () => players.filter(p => !p.down);
 function nearestAlive(x, z) { let best = null, bd = Infinity; for (const p of players) { if (p.down) continue; const d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < bd) { bd = d; best = p; } } return best; }
 
@@ -140,11 +140,16 @@ function onScreen(x, z, y = 0) {
 function spawnPoint(allowVisible) {
   const al = alivePlayers(); if (!al.length) return null;
   const cand = [];
+  // v0.60: со всех сторон — вокруг игроков 8 секторов; чем больше зомби уже в секторе, тем реже там появляются новые
+  const cx = al.reduce((a, p) => a + p.x, 0) / al.length, cz = al.reduce((a, p) => a + p.z, 0) / al.length, SEC = new Array(8).fill(0);
+  const secOf = (x, z) => ((Math.floor((Math.atan2(z - cz, x - cx) + Math.PI) / (Math.PI / 4)) % 8) + 8) % 8;
+  for (const z of zombies) if (!z.dead) SEC[secOf(z.x, z.z)]++;
+  const avg = SEC.reduce((a, b) => a + b, 0) / 8 + 1;
   for (const sp of SPAWNS) {
     const d = Math.min(...al.map(p => Math.hypot(p.x - sp.x, p.z - sp.z)));
     if (allowVisible ? d < 8 : d < spawnDist * 0.85 || onScreen(sp.x, sp.z)) continue;
-    const w = d < spawnDist + 12 ? 1 : 0.02;
-    cand.push([sp, w * (sp.kind === 'bld' ? 0.8 : sp.kind === 'field' ? 0.7 : 1.2)]);
+    const w = d < spawnDist + 12 ? 1 : 0.02, crowd = (SEC[secOf(sp.x, sp.z)] + 1) / avg;
+    cand.push([sp, w * (sp.kind === 'bld' ? 0.8 : sp.kind === 'field' ? 0.7 : 1.2) / (crowd * crowd)]);
   }
   if (!cand.length) return allowVisible ? null : spawnPoint(true);   // маленькая карта: выходят из дверей и пролома на виду
   let r = Math.random() * cand.reduce((a, c) => a + c[1], 0);
@@ -184,7 +189,7 @@ function spawnZombie(forceType, at, crawl, ignoreCap) {
     phase: Math.random() * 6, moving: true, flash: 0, kx: 0, kz: 0, dead: false, deadT: 0, fall: 0, atkT: 0, hurtT: 0, nod: 0,
     slideT: 0, side: 1, slowT: 0, slowMul: 1, stunT: 0, burnT: 0, bleedT: 0, dotT: 0 };
   if (MOB_INIT[type]) MOB_INIT[type](z);                                  // особые мобы: свои поля (щит, масть, запасы)
-  z.mhp = z.hp; z.born = G.t; z.gait = Math.floor(Math.random() * 4);                                                           // начальное здоровье — для расчёта «перебора» урона (разлёт частей)
+  z.mhp = z.hp; z.born = G.t; z.gait = Math.floor(Math.random() * 4); z.flank = Math.random() < 0.33 ? (Math.random() < 0.5 ? 1 : -1) * (0.9 + Math.random() * 0.5) : 0;   // v0.60: обходчики                                                           // начальное здоровье — для расчёта «перебора» урона (разлёт частей)
   zombies.push(z);
   return z;
 }
