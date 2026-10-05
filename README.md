@@ -1,6 +1,6 @@
 # MANY DEAD (voxel)
 
-Версия: v0.76. Браузерный выживач на three.js.
+Версия: v0.77. Браузерный выживач на three.js.
 
 - `index.html` — разметка и стили, запуск: открыть файл в браузере
 - Редактор персонажа: `src/04b_hero_gen.js` (сборка героя из частей), `src/11b_hero_editor.js` (окно редактора). Кнопка — в меню выбора класса. Герои хранятся в браузере.
@@ -20,8 +20,8 @@
 ## Тюремные зомби (v0.75)
 `assets/zombies/prison_1..4.vox` (рисуются в MagicaVoxel, геометрия как у Zed_1–4, другие цвета). После правок: `python3 tools/vox2zombies.py`, затем `python3 tools/build.py`. На карте «Тюрьма» 70% ходоков и бегунов — тюремные (`pickVm` в `src/05_characters_fx.js`), на других картах их нет.
 
-## Главное меню (v0.76)
-Сцена «кладбище и рука из земли» — `src/12i_menu_graveyard.js` (рука разрезана на ладонь и 5 пальцев по вокселям, пальцы вздрагивают, «Одиночная игра»/«Кооп» сжимают кулак перед выбором класса, пиксельный логотип рисуется кодом). Рука: `assets/menu/hand.vox` ← Meshy `.glb` через `node tools/glb2vox_faithful.js hand.glb assets/menu/hand.vox 60 24`, затем `python3 tools/vox2menu.py` и `python3 tools/build.py`. Скриншоты: `node tools/menu_shot.js dist/zombie-voxel.html 1280 720 /tmp/menu`.
+## Главное меню (v0.77)
+Сцена «кладбище и рука из земли», рисуется в маленький буфер (≈270 строк) и растягивается без сглаживания — пиксель-арт, с шейдером цвета и виньеткой — `src/12i_menu_graveyard.js` (рука разрезана на ладонь и 5 пальцев по вокселям, пальцы вздрагивают, «Одиночная игра»/«Кооп» сжимают кулак перед выбором класса, пиксельный логотип рисуется кодом). Рука: `assets/menu/hand.vox` ← Meshy `.glb` через `node tools/glb2vox_faithful.js hand.glb assets/menu/hand.vox 60 24`, затем `python3 tools/vox2menu.py` и `python3 tools/build.py`. Скриншоты: `node tools/menu_shot.js dist/zombie-voxel.html 1280 720 /tmp/menu`.
 
 ## Особые мобы
 Данные (здоровье, скорость, время появления) — `ZOMBIES` в `src/01_data.js`; поведение, вид и звуки — `src/11d_mobs.js`.
