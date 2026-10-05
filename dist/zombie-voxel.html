@@ -15,6 +15,8 @@ body.touch #help{display:none}
 #btns{position:fixed;right:10px;bottom:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:60vw}
 #btns button{font-size:15px;padding:10px 12px;border-radius:8px;border:1px solid #6a6252;background:rgba(30,26,22,.8);color:#f2ead6}
 body:not(.touch) #btns .t{display:none}
+#fireBtn{display:none;position:fixed;right:22px;bottom:96px;width:104px;height:104px;border-radius:50%;border:3px solid #e8a050;background:rgba(150,40,24,.55);color:#fff0d0;font-size:15px;font-weight:700;letter-spacing:1px;z-index:3;touch-action:none}
+#fireBtn.on{background:rgba(230,80,40,.8);transform:scale(.94)}
 #dbg{position:fixed;right:10px;top:28px;display:none;background:rgba(10,8,6,.86);color:#e8e0cc;font-size:12.5px;padding:8px 10px;border-radius:8px;max-width:440px;line-height:1.7;z-index:5}
 #dbg label{margin-right:10px}#dbg button{font-size:12px;padding:3px 8px;margin:2px;border-radius:5px;border:1px solid #6a6252;background:#2a241e;color:#f2ead6}
 #dbgStats{color:#ffd76a}
@@ -221,8 +223,8 @@ body.touch .mel{display:none}
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, LB/RB камера</div>
-<div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.69</div>
+<div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><button id="fireBtn">ОГОНЬ</button><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
+<div id="loading">Загрузка…</div><div id="ver">v0.70</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
@@ -327,8 +329,8 @@ const WEAPONS = {
   revolver: { name:'Револьвер', desc:'Тяжёлая пуля, 6 патронов. Без пробития — пробивать учат пути.',
               dmg:40, rate:1.6, mag:6,   reload:2.2, pellets:1, spread:0,    speed:30, life:0.6,  pierce:0,  knock:0.3,  fan:true, heavy:true, bloom:0.03, bloomMax:0.1 },
   // арбалет (переделка v0.68): болт 55, пробивает до 2 зомби, взвод 0,7 с после выстрела, болты бесконечные
-  crossbow: { name:'Арбалет',   desc:'Тихий болт 55, пробивает до двух зомби. Взвод 0,7 с после каждого выстрела, болты бесконечные.',
-              dmg:55, rate:10,  mag:1,   reload:0.7, pellets:1, spread:0.01, speed:22, life:0.55, pierce:1,  knock:0.25, fan:true, bolt:true },
+  crossbow: { name:'Арбалет',   desc:'Тихий болт 55, пробивает до двух зомби. Взвод 3 с после каждого выстрела, болты бесконечные.',
+              dmg:55, rate:10,  mag:1,   reload:3, pellets:1, spread:0.01, speed:22, life:0.55, pierce:1,  knock:0.25, fan:true, bolt:true },
   // ПП (батч 3): 4 урона, 12 выстр./с, магазин 32, перезарядка 1,4 с, ходишь на 10% быстрее
   smg:      { name:'ПП',        desc:'Лёгкий и скорострельный. Слабая пуля, зато бегаешь на 10% быстрее.',
               dmg:4,  rate:12,  mag:32,  reload:1.4, pellets:1, spread:0.1,  speed:15, life:0.45, pierce:0,  knock:0.05, fan:true, bloom:0.012, bloomMax:0.18, walk:1.1 },
@@ -549,7 +551,7 @@ const PERKS = [
   { id:'cb_multi',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Двойной болт',      desc:'Выстрел выпускает 2 болта веером ~8° (2-й ур. — «Тройной болт»: 3 болта, боковые бьют на 60%)', max:2 },
   { id:'cb_heavy',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Тяжёлый наконечник', desc:'Болт пробивает до трёх зомби вместо двух', max:1 },
   { id:'cb_taut',   br:'wpn', gun:'crossbow', branch:'neutral', name:'Тугая тетива',      desc:'Урон +20% за уровень', max:2 },
-  { id:'cb_quick',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Быстрая рука',      desc:'Взвод быстрее на 15% за уровень (0,7 → около 0,5 с)', max:2 },
+  { id:'cb_quick',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Быстрая рука',      desc:'Взвод быстрее на 15% за уровень (3 → около 2,2 с)', max:2 },
   { id:'cb_silver', br:'wpn', gun:'crossbow', branch:'neutral', name:'Серебряный наконечник', desc:'Двойной урон по толстякам и бронированным', max:1 },
   { id:'cb_fletch', br:'wpn', gun:'crossbow', branch:'neutral', name:'Оперение',          desc:'Болт летит быстрее и дальше, реже промахивается по бегунам', max:1 },
   { id:'cb_crit',   br:'wpn', gun:'crossbow', branch:'neutral', name:'Меткий выстрел',    desc:'15% шанс критического попадания: двойной урон и хруст', max:1 },
@@ -3871,7 +3873,7 @@ function nearestZombie(x, z, range, except) {
 <script>'use strict';
 /* ---------- 10. Управление: клавиатура, мышь, палец, несколько геймпадов → «пульт» каждого игрока ---------- */
 const keys = new Set(); const mouse = { x: 0, y: 0, down: false, has: false };
-const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
+const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false, fireT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
 addEventListener('keydown', e => {
   if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
@@ -3901,9 +3903,10 @@ addEventListener('blur', () => { keys.clear(); mouse.down = false; });
 addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.has = true; });
 addEventListener('mousedown', e => { if (e.button === 0 && !e.target.closest('button,#menu,#dbg')) mouse.down = true; if (e.button === 2 && !e.target.closest('button,#menu,#dbg')) act.alt = true; });
 addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
-addEventListener('wheel', e => { CAM.zoomT = clamp(CAM.zoomT * (e.deltaY > 0 ? 1.12 : 0.89), 6, 20); }, { passive: true });
+addEventListener('wheel', e => { CAM.zoomT = clamp(CAM.zoomT * (e.deltaY > 0 ? 1.12 : 0.89), ZMIN, 20); }, { passive: true });
 addEventListener('contextmenu', e => e.preventDefault());
 // Телефон: левая часть экрана — стик (двойной тап и держать — бег), стрельба сама по ближайшему
+const ZMIN = IS_TOUCH ? 3.2 : 6;                  // ближе всего камера: на телефоне можно приблизить сильнее
 const touch = { id: null, ox: 0, oy: 0, dx: 0, dy: 0, run: false, upT: -9 };
 if (IS_TOUCH) {
   addEventListener('touchstart', e => { for (const t of e.changedTouches) if (touch.id === null && t.clientX < innerWidth * 0.6 && !t.target.closest('button,#menu,#dbg')) {
@@ -3916,10 +3919,15 @@ if (IS_TOUCH) {
   const pd = () => { const a = [...pinch.values()]; return a.length >= 2 ? Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) : 0; };
   addEventListener('touchstart', e => { for (const t of e.changedTouches) if (t.identifier !== touch.id && !t.target.closest('button,#menu,#dbg,#lvlUp')) pinch.set(t.identifier, { x: t.clientX, y: t.clientY }); pinchD = pd(); }, { passive: true });
   addEventListener('touchmove', e => { let ch = false; for (const t of e.changedTouches) if (pinch.has(t.identifier)) { pinch.set(t.identifier, { x: t.clientX, y: t.clientY }); ch = true; }
-    if (ch && pinch.size >= 2) { const d = pd(); if (pinchD > 0 && d > 0) CAM.zoomT = clamp(CAM.zoomT * pinchD / d, 6, 20); pinchD = d; } }, { passive: true });
+    if (ch && pinch.size >= 2) { const d = pd(); if (pinchD > 0 && d > 0) CAM.zoomT = clamp(CAM.zoomT * pinchD / d, ZMIN, 20); pinchD = d; } }, { passive: true });
   const pend = e => { for (const t of e.changedTouches) pinch.delete(t.identifier); pinchD = pd(); };
   addEventListener('touchend', pend); addEventListener('touchcancel', pend);
 }
+// Кнопка огня на телефоне: стреляет только пока кнопка зажата (авто-прицел остаётся, авто-огня нет)
+if (IS_TOUCH) { const fb = document.getElementById('fireBtn'), fids = new Set(), upd = () => { act.fireT = fids.size > 0; fb.classList.toggle('on', act.fireT); };
+  fb.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); for (const t of e.changedTouches) fids.add(t.identifier); upd(); }, { passive: false });
+  const fe = e => { e.stopPropagation(); for (const t of e.changedTouches) fids.delete(t.identifier); upd(); };
+  fb.addEventListener('touchend', fe); fb.addEventListener('touchcancel', fe); }
 // Полный экран (телефон: убрать адресную строку). iPhone в Safari не умеет — подсказка «На экран Домой»
 function goFullscreen(force) {
   const d = document.documentElement, on = document.fullscreenElement || document.webkitFullscreenElement;
@@ -3931,7 +3939,7 @@ function goFullscreen(force) {
 }
 document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); const k = b.dataset.k;
   if (k === 'ql') CAM.yawT += Math.PI / 2; if (k === 'qr') CAM.yawT -= Math.PI / 2; if (k === 'n') G.nightT = G.nightT > 0.5 ? 0 : 1;
-  if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, 6, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, 6, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
+  if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, ZMIN, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, ZMIN, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
 
 // Геймпады: у каждого своё состояние. Кнопки: RT огонь, R3 ближний бой, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
 // Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
@@ -4022,7 +4030,7 @@ function readControl(p) {
   }
   const l = Math.hypot(ix, iz); if (l > 1) { ix /= l; iz /= l; }
   const [wx, wz] = screenToWorld(ix, iz, yawOf(p));
-  return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? null : fire, reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
+  return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? act.fireT : fire, touchBtn: IS_TOUCH && t === 'all', reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
 }
 
 /* ---------- 11. Прицел: луч из-под курсора в мир / автоприцел ---------- */
@@ -4089,7 +4097,7 @@ function updatePlayerWeapon(p, c, dt) {
     p.pitch = clamp(Math.atan2(ty - hy, Math.max(0.3, d)), -1.2, 0.6); }
   else if (!p.still) { p.yaw = Math.atan2(p.mvx, p.mvz); p.pitch = 0; }
   let fire = c.fire;
-  if (fire === null || (c.auto && !c.manual)) fire = !!A.target;          // телефон и ПК без мыши — сами по цели
+  if (!c.touchBtn && (fire === null || (c.auto && !c.manual))) fire = !!A.target;          // телефон и ПК без мыши — сами по цели
   const B = WEAPONS[p.gun], id = p.gun;
   if (G.t - p.lastShot > 1.2) p.pump = 0;
   p.fanOn = !!fire; if (!fire) p.fanN = 0;                             // «Веер» (револьвер): пока спуск зажат
@@ -7593,6 +7601,7 @@ function menuKey(code) {
 }
 function showScreen(id) { document.body.classList.toggle('mainScr', id === 'main'); for (const s of ['main', 'menu', 'over', 'pause']) $(s).style.display = s === id ? 'flex' : 'none';
   const play = id === null || id === 'pause'; $('huds').style.display = $('top').style.display = play ? 'block' : 'none';
+  $('fireBtn').style.display = play && IS_TOUCH ? 'block' : 'none';
   $('help').style.display = play && !IS_TOUCH && players.length < 2 ? 'block' : 'none'; }
 // HUD: у каждого игрока свой блок в своём углу (И1 слева сверху, И2 справа сверху, И3/И4 снизу)
 // Телефон: кнопки предметов (тап — в руку, стрельба сама бросит по цели) и «обменять»

@@ -15,6 +15,8 @@ body.touch #help{display:none}
 #btns{position:fixed;right:10px;bottom:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:60vw}
 #btns button{font-size:15px;padding:10px 12px;border-radius:8px;border:1px solid #6a6252;background:rgba(30,26,22,.8);color:#f2ead6}
 body:not(.touch) #btns .t{display:none}
+#fireBtn{display:none;position:fixed;right:22px;bottom:96px;width:104px;height:104px;border-radius:50%;border:3px solid #e8a050;background:rgba(150,40,24,.55);color:#fff0d0;font-size:15px;font-weight:700;letter-spacing:1px;z-index:3;touch-action:none}
+#fireBtn.on{background:rgba(230,80,40,.8);transform:scale(.94)}
 #dbg{position:fixed;right:10px;top:28px;display:none;background:rgba(10,8,6,.86);color:#e8e0cc;font-size:12.5px;padding:8px 10px;border-radius:8px;max-width:440px;line-height:1.7;z-index:5}
 #dbg label{margin-right:10px}#dbg button{font-size:12px;padding:3px 8px;margin:2px;border-radius:5px;border:1px solid #6a6252;background:#2a241e;color:#f2ead6}
 #dbgStats{color:#ffd76a}
@@ -221,8 +223,8 @@ body.touch .mel{display:none}
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, LB/RB камера</div>
-<div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.69</div>
+<div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><button id="fireBtn">ОГОНЬ</button><div id="btns"><button class="t" data-k="r">⟳ патроны</button><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button data-k="n">☾</button><button data-k="fs">⛶</button><button id="dbgBtn">dbg</button></div>
+<div id="loading">Загрузка…</div><div id="ver">v0.70</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>

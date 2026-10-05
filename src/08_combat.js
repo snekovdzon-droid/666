@@ -16,7 +16,7 @@ function updatePlayerWeapon(p, c, dt) {
     p.pitch = clamp(Math.atan2(ty - hy, Math.max(0.3, d)), -1.2, 0.6); }
   else if (!p.still) { p.yaw = Math.atan2(p.mvx, p.mvz); p.pitch = 0; }
   let fire = c.fire;
-  if (fire === null || (c.auto && !c.manual)) fire = !!A.target;          // телефон и ПК без мыши — сами по цели
+  if (!c.touchBtn && (fire === null || (c.auto && !c.manual))) fire = !!A.target;          // телефон и ПК без мыши — сами по цели
   const B = WEAPONS[p.gun], id = p.gun;
   if (G.t - p.lastShot > 1.2) p.pump = 0;
   p.fanOn = !!fire; if (!fire) p.fanN = 0;                             // «Веер» (револьвер): пока спуск зажат
