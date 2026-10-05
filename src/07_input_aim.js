@@ -71,7 +71,7 @@ document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', e
   if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, ZMIN, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, ZMIN, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
 
 // Геймпады: у каждого своё состояние. Кнопки: RT огонь, R3 ближний бой, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
-// Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
+// Back крюк-кошка, Start пауза (ночь — только клавиша N). В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
 const PADS = new Map();                                // индекс геймпада → { lx, ly, rx, ry, pr[], just[], gp }
 const PAD = { active: false, navT: 0 };                // active — последний ввод был с геймпада (для одиночной игры)
 function pollPad(dt) {
@@ -105,7 +105,6 @@ function pollPad(dt) {
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
     for (const [gi, s] of PADS) { const own = players.find(q => (q.ctrl === 'pad' && q.pad === gi) || q.ctrl === 'all'); if (s.just[4]) rotCam(own, 1); if (s.just[5]) rotCam(own, -1); }   // у каждого геймпада — свой экран
-    if (any(8)) G.nightT = G.nightT > 0.5 ? 0 : 1;
     if (any(9)) G.paused = !G.paused;
   }
 }
@@ -151,9 +150,9 @@ function readControl(p) {
     ix += s.lx; iz += s.ly;                                              // крестовина больше не двигает героя — на ней предметы
     const dp = [12, 15, 13, 14].findIndex(b => s.just[b]); if (dp >= 0) slot = dp;   // ↑ → ↓ ← — слоты 1–4
     if (s.just[3]) { swap = true; back = true; }                           // Y — обменять / обратно к стволу / листать слоты
-    if (s.just[0]) hook = true;
+    if (s.just[8]) hook = true;                                            // Back/Select — крюк-кошка (не A: на A берут карточки уровня)
     if (s.just[11]) melee = true;                                          // R3 — ближний бой
-    if (s.just[6]) alt = true;                                           // LT — подствольник                                          // A — крюк-кошка
+    if (s.just[6]) alt = true;                                           // LT — подствольник
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;
     manual = true; auto = true; fire = fire || s.fire;
     if (Math.hypot(s.rx, s.ry) > 0.35) { const [wx, wz] = screenToWorld(s.rx, s.ry, yawOf(p)), l = Math.hypot(wx, wz); aim = [wx / l, wz / l]; }
