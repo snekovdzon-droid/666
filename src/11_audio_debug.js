@@ -83,7 +83,7 @@ const SFX = {
   dry() { if (!soundOn()) return; if (playReal('dry', 0.7)) return; click(2400, 0.22, 0, 7, 0.02); click(1500, 0.12, 0.03, 6, 0.02); },
   breath() { if (!soundOn()) return; noiseHit({ dur: 0.32, type: 'bandpass', freq: 1100, q: 0.8, vol: 0.07, attack: 0.09, sweep: 700 });
     setTimeout(() => { if (soundOn()) noiseHit({ dur: 0.28, type: 'bandpass', freq: 1600, q: 1, vol: 0.045, attack: 0.12, sweep: 1900 }); }, 380); },
-  shot(id) {
+  shot(id, path) {
     if (!soundOn()) return;
     const RS = { rifle: [30, 0.8, 1], mg: [25, 0.75, 1], smg: [30, 0.7, 1], pistol: [0, 0.7, 1.1, 'smg'], revolver: [0, 1, 1], shotgun: [0, 1, 1], sawnoff: [0, 1, 0.82, 'shotgun'] }[id];
     if (RS && Sound.real && (RS[3] || id) && (Sound.buf[(RS[3] || id) + '_1'])) { if (RS[0] && !canPlay(id, RS[0])) return; playReal(RS[3] || id, RS[1], RS[2], 0.07); if (id === 'sawnoff') setTimeout(() => playReal('shotgun', 0.85, 0.7, 0.07), 14); return; }   // обрез: два ствола почти одновременно
@@ -94,7 +94,11 @@ const SFX = {
       case 'mg': if (!canPlay('mg', 25)) return; noiseHit({ dur: 0.08, type: 'bandpass', freq: 1600, q: 0.7, vol: 0.45 }); tone({ f0: 140, f1: 60, dur: 0.06, vol: 0.35 }); break;
       case 'pistol': noiseHit({ dur: 0.14, type: 'bandpass', freq: 2600, q: 0.8, vol: 0.4 }); tone({ f0: 160, f1: 60, dur: 0.08, vol: 0.3 }); break;
       case 'revolver': noiseHit({ dur: 0.35, type: 'bandpass', freq: 3000, q: 0.6, sweep: 600, vol: 0.75 }); tone({ f0: 80, f1: 30, dur: 0.3, vol: 0.7 }); break;
-      case 'crossbow': if (!canPlay('crossbow', 60)) return; tone({ f0: 320, f1: 140, dur: 0.12, vol: 0.28 }); noiseHit({ dur: 0.06, type: 'bandpass', freq: 1200, q: 2, vol: 0.12 }); break;   // тихий щелчок тетивы
+      case 'crossbow': if (!canPlay('crossbow', 60)) return; tone({ f0: 320, f1: 140, dur: 0.12, vol: 0.28 }); noiseHit({ dur: 0.06, type: 'bandpass', freq: 1200, q: 2, vol: 0.12 });
+        if (path === 'fire') { noiseHit({ dur: 0.32, type: 'highpass', freq: 2500, sweep: 900, vol: 0.14 }); for (let i = 0; i < 4; i++) click(2400 + Math.random() * 2000, 0.07, 0.04 + i * 0.05 + Math.random() * 0.03, 4, 0.01); }   // шипение смолы и потрескивание
+        else if (path === 'boom') { tone({ f0: 1900, f1: 1500, dur: 0.05, vol: 0.07 }); tone({ f0: 1900, f1: 1500, dur: 0.05, vol: 0.07, delay: 0.09 }); thud(120, 0.1, 0.01, 0.05); }   // писк капсюля и глухой удар
+        else if (path === 'drum') { click(3200, 0.2, 0.05, 6, 0.02); click(2600, 0.14, 0.09, 6, 0.02); }                       // щелчок поворота барабана
+        break;   // тихий щелчок тетивы
       case 'smg': if (!canPlay('smg', 30)) return; noiseHit({ dur: 0.06, type: 'bandpass', freq: 3200, q: 0.9, vol: 0.32 }); tone({ f0: 220, f1: 90, dur: 0.04, vol: 0.2 }); break;
     }
   },
@@ -107,13 +111,14 @@ const SFX = {
     else if (mat === 'wood') thud(220, 0.1, 0, 0.05);
     else noiseHit({ dur: 0.06, freq: 1800, sweep: 600, vol: 0.08 });
   },
-  reload(start, id) {
+  reload(start, id, path) {
     if (!soundOn()) return;
     if (Sound.buf[id + (start ? '_start' : '_end')] && playReal(id + (start ? '_start' : '_end'), 0.8, 1, 0.02)) return;
     if (start) {
       if (id === 'sawnoff') { click(2200, 0.25, 0, 6, 0.04); thud(180, 0.12, 0.02, 0.06); }
       else if (id === 'revolver') { click(3000, 0.18, 0); noiseHit({ dur: 0.18, type: 'bandpass', freq: 2500, q: 3, vol: 0.05 }); }
       else if (id === 'shotgun') click(2600, 0.14, 0);
+      else if (id === 'crossbow' && path === 'drum') { for (let i = 0; i < 6; i++) click(2200 + i * 160, 0.16, i * 0.17, 6, 0.02); thud(150, 0.12, 0.05, 0.05); }   // барабан меняют: трещотка
       else if (id === 'crossbow') { click(1400, 0.16, 0, 6, 0.03); click(1200, 0.16, 0.25, 6, 0.03); }   // взвод рычагом
       else { click(2800, 0.2, 0); thud(160, 0.12, 0.03, 0.05); }
     } else {

@@ -144,7 +144,7 @@ function updateFireStrips(dt) {
 // Всё, что делает выстрел ощутимым: звук, отдача, толчок камеры, вибрация, вспышка, дым, гильза
 function shotFeel(p, ang, use) {
   const F = FEEL[p.gun], mz = muzzleOf(p), dx = Math.sin(ang), dz = Math.cos(ang);
-  SFX.shot(p.gun);
+  SFX.shot(p.gun, p.gun === 'crossbow' ? p.branch : undefined);
   p.kick = Math.min(3, p.kick * 0.6 + F.kick * 0.55);                 // откат ствола в руках; в очереди копится
   p.kx -= dx * F.push; p.kz -= dz * F.push;                            // героя слегка сдвигает назад
   p.leadT = 0.45;                                                     // камера уходит вперёд, куда смотрит ствол, пока идёт стрельба
@@ -161,6 +161,11 @@ function shotFeel(p, ang, use) {
       spawnP({ x: mz.x + dx * 0.15, y: mz.y, z: mz.z + dz * 0.15, vx: Math.sin(a) * v, vy: rnd(0.2, 0.8), vz: Math.cos(a) * v, s: s0, s1: s1 * rnd(0.7, 1.1), col: c0, col1: c1, life: life * rnd(0.8, 1.15), drag: 0.9, soft: true }); }
     if (W === 'shotgun' || W === 'sawnoff') for (let i = 0; i < 4; i++) spawnP({ x: mz.x, y: mz.y, z: mz.z, vx: rnd(-0.2, 0.2), vy: rnd(0.4, 0.9), vz: rnd(-0.2, 0.2), s: 0.1, s1: 0.5, col: 0xb8b4ac, col1: 0x7a7670, life: 1.6, drag: 0.96, soft: true });   // стелется у ствола
   }
+  if (W === 'crossbow') {                                                                              // вспышка у тетивы по пути
+    const col = p.branch === 'fire' ? [0xffc050, 0xd02808] : p.branch === 'boom' ? [0xff4a3a, 0x8a1810] : null;
+    if (col) for (let i = 0; i < 4; i++) spawnP({ x: mz.x + dx * 0.1, y: mz.y, z: mz.z + dz * 0.1, vx: dx * rnd(0.5, 2) + rnd(-0.6, 0.6), vy: rnd(0.2, 1.2), vz: dz * rnd(0.5, 2) + rnd(-0.6, 0.6), s: 0.12, s1: 0.02, col: col[0], col1: col[1], glow: true, life: rnd(0.15, 0.3) });
+    if (p.branch === 'drum') { const ej = gunPoint(p, 'eject'); spawnP({ x: ej ? ej.x : mz.x, y: ej ? ej.y : mz.y, z: ej ? ej.z : mz.z, vx: Math.sin(p.yaw - 1.4) * 1.2, vy: 1.8, vz: Math.cos(p.yaw - 1.4) * 1.2, g: 14, s: 0.04, col: 0xd8b050, life: 0.5, bounce: 1 }); }   // вылетает капсюль барабана
+  }
   if (F.shell) for (let i = 0; i < use; i++) spawnCasing(p, F.shell, 1);
 }
 function spawnCasing(p, type, side) {
@@ -175,7 +180,7 @@ function loadMag(p, ws) {
   SFX.reload(false, p.gun);
 }
 function startReload(p, ws) {
-  SFX.reload(true, p.gun);
+  SFX.reload(true, p.gun, p.branch);
   if (p.gun === 'sawnoff') for (let i = 0; i < 2; i++) spawnCasing(p, 'shell', -1);                          // переломил — гильзы выпали
   if (p.gun === 'revolver') for (let i = 0; i < ws.mag - p.ammo; i++) spawnCasing(p, 'brass', Math.random() < 0.5 ? 1 : -1);   // высыпал барабан
   let t = ws.reload;
@@ -208,8 +213,22 @@ function updateBullets(dt) {
       });
     }
     if (dead) { if (b.bolt) boltEnd(b); bullets.splice(i, 1); }
+    else if (b.bolt && bulletTrailFx(b, dt)) { /* хвост арбалетного болта нарисован */ }
     else if (Math.random() < 0.7) spawnP({ x: b.x, y: b.y, z: b.z, s: b.heavy ? 0.08 : 0.05, sz: b.heavy ? 5 : 3, ry: Math.atan2(b.vx, b.vz), col: b.ignite ? 0xff8030 : b.tracer ? 0xff3a2a : b.heavy ? 0xfff0c0 : 0xffe2a0, glow: true, life: b.ignite || b.tracer ? 0.07 : 0.03 });
   }
+}
+// Вид болта по пути: огненный хвост с искрами, красная мигалка на наконечнике разрывного, барабанный — латунный отблеск
+function bulletTrailFx(b, dt) {
+  const ry = Math.atan2(b.vx, b.vz);
+  spawnP({ x: b.x, y: b.y, z: b.z, s: 0.08, sz: 5, ry, col: 0xfff0c0, glow: true, life: 0.04 });          // сам болт
+  if (b.burn) {                                                                                           // зажигательный: языки пламени и угольки позади
+    spawnP({ x: b.x - b.vx * 0.012, y: b.y, z: b.z - b.vz * 0.012, vy: rnd(0.3, 0.9), s: 0.17, s1: 0.03, col: 0xffc050, col1: 0xd02808, glow: true, life: rnd(0.18, 0.3) });
+    if (Math.random() < 0.6) spawnP({ x: b.x, y: b.y, z: b.z, vx: rnd(-0.6, 0.6), vy: rnd(0.4, 1.4), vz: rnd(-0.6, 0.6), g: 3, s: 0.05, s1: 0.01, col: 0xff8a2a, glow: true, life: rnd(0.3, 0.55) });
+  } else if (b.boom) {                                                                                    // разрывной: красная мигалка
+    if (Math.floor(G.t * 16) % 2 === 0) spawnP({ x: b.x, y: b.y + 0.02, z: b.z, s: 0.2, s1: 0.12, col: 0xff2a1a, glow: true, life: 0.07 });
+    spawnP({ x: b.x, y: b.y, z: b.z, s: 0.05, col: 0xc84a3a, life: 0.06 });
+  } else return false;
+  return true;
 }
 function hitByBullet(z, b) {
   b.hits.push(z.id);
