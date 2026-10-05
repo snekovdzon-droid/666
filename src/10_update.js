@@ -259,18 +259,18 @@ function setLampLights(cx, cz) {
   });
 }
 // Здание между камерой и героем — полупрозрачное
-const camDir = new THREE.Vector3();
+const camDir = new THREE.Vector3(), _fFrom = new THREE.Vector3(), _fRay = new THREE.Ray(), _fMM = [{ x: 0, y: 0, z: 0 }];   // переиспользуемые объекты: раньше на каждый кадр и каждое здание создавались новые
 function updateFade() {
-  const toShared = cam.position;
+  const toShared = cam.position, list = MAPID === 'city' && G.state === 'main' ? (_fMM[0].x = MM.cam.x, _fMM[0].z = MM.cam.z, _fMM) : players;
   for (const B of buildings) {
-    const bb = new THREE.Box3(new THREE.Vector3(B.x1, 0, B.z1), new THREE.Vector3(B.x2, B.H + 0.5, B.z2));
+    const bb = B.fadeBox || (B.fadeBox = new THREE.Box3(new THREE.Vector3(B.x1, 0, B.z1), new THREE.Vector3(B.x2, B.H + 0.5, B.z2)));
     let hit = false;
-    for (const p of (MAPID === 'city' && G.state === 'main' ? [{ x: MM.cam.x, y: 0, z: MM.cam.z }] : players)) {                           // здание закрывает хоть одного игрока — полупрозрачное
-      const to = SPLIT.on && viewFor(p) ? viewFor(p).cp : toShared, from = new THREE.Vector3(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(from).normalize();
-      if (new THREE.Ray(from, camDir).intersectsBox(bb) && !(p.y >= B.H - 0.1 && p.x > B.x1 && p.x < B.x2 && p.z > B.z1 && p.z < B.z2)) { hit = true; break; }
+    for (const p of list) {                                                                                                 // здание закрывает хоть одного игрока — полупрозрачное
+      const to = SPLIT.on && viewFor(p) ? viewFor(p).cp : toShared; _fFrom.set(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(_fFrom).normalize();
+      if (_fRay.set(_fFrom, camDir).intersectsBox(bb) && !(p.y >= B.H - 0.1 && p.x > B.x1 && p.x < B.x2 && p.z > B.z1 && p.z < B.z2)) { hit = true; break; }
     }
     const target = hit ? 0.28 : 1;
-    for (const m of B.mats) { m.transparent = true; m.opacity += (target - m.opacity) * 0.2; m.depthWrite = m.opacity > 0.95; }
+    for (const m of B.mats) { if (m.opacity === target && m.transparent) continue; m.transparent = true; m.opacity += (target - m.opacity) * 0.2; if (Math.abs(target - m.opacity) < 0.003) m.opacity = target; m.depthWrite = m.opacity > 0.95; }   // дошло до цели — больше не трогаем
   }
 }
 /* ---- Кооп: общая камера отдаляется, «поводок» не даёт разойтись за край экрана, упавшего поднимают ---- */

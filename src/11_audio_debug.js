@@ -1,13 +1,20 @@
 'use strict';
 /* ---------- 15. Звук: синтез, перенесён из 2D v33 (свои звуки у каждого ствола) ---------- */
-const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true), real: lsGet('realsnd', true), buf: {} };
+const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true), real: lsGet('realsnd', true), buf: {}, pend: {} };
 // Настоящие записи оружия (src/02b_sound_assets.js): декодируем один раз при старте звука
+const SOUND_LAZY = new Set(['mus_cem']);                  // тяжёлая музыка кладбища (~1 МБ mp3, десятки МБ после распаковки) — только когда нужна
+let SOUND_SRC = null;
+function soundSrc() { return SOUND_SRC || (SOUND_SRC = Object.assign({}, typeof SND_B64 !== 'undefined' ? SND_B64 : {}, typeof ZSND_B64 !== 'undefined' ? ZSND_B64 : {}, typeof FXSND_B64 !== 'undefined' ? FXSND_B64 : {})); }   // оружие + голоса зомби + эффекты
+function decodeSound(k) {
+  const src = soundSrc(); if (!src[k] || Sound.buf[k] || Sound.pend[k] || !Sound.ctx) return; Sound.pend[k] = 1;
+  const bin = atob(src[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  try { Sound.ctx.decodeAudioData(u.buffer, b => { Sound.buf[k] = b; delete Sound.pend[k]; }, () => { delete Sound.pend[k]; }); } catch (e) { delete Sound.pend[k]; }
+}
+// Распаковка по одной записи с паузами, чтобы телефон не замирал при первом касании; сначала стволы, потом фон, голоса зомби в конце
 function loadRealSounds() {
-  const ALL = Object.assign({}, typeof SND_B64 !== 'undefined' ? SND_B64 : {}, typeof ZSND_B64 !== 'undefined' ? ZSND_B64 : {}, typeof FXSND_B64 !== 'undefined' ? FXSND_B64 : {});   // оружие + голоса зомби
-  for (const k in ALL) {
-    const bin = atob(ALL[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-    try { Sound.ctx.decodeAudioData(u.buffer, b => { Sound.buf[k] = b; }, () => {}); } catch (e) {}
-  }
+  const keys = Object.keys(soundSrc()).filter(k => !SOUND_LAZY.has(k)), rank = k => /^(z_)/.test(k) ? 2 : /^(amb_|fx_)/.test(k) ? 1 : 0;
+  keys.sort((a, b) => rank(a) - rank(b));
+  keys.forEach((k, i) => setTimeout(() => decodeSound(k), i < 10 ? 0 : i * 12));
 }
 // Играет запись: vol — громкость, rate — высота тона (1 = как есть), у вариантов name_1..name_n берётся случайный
 function playReal(name, vol = 1, rate = 1, vary = 0.05) {

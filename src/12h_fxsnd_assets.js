@@ -26,6 +26,7 @@ function ambTick() {
   }
   if (want && !AMB.on) {
     const w = Sound.buf.amb_wind, n = Sound.buf.amb_night; if (!w || !n) return;
+    if (want === 'cemetery' && !Sound.buf.mus_cem) { decodeSound('mus_cem'); return; }   // музыку распаковываем только на кладбище; фон стартует, когда она готова
     AMB.g = c.createGain(); AMB.g.gain.value = 0; AMB.g.connect(Sound.master);
     AMB.nightG = c.createGain(); AMB.nightG.gain.value = want === 'cemetery' ? 1 : 0; AMB.nightG.connect(AMB.g);
     for (const [b, v, night] of [[w, 0.37, false], [n, 0.5, true]])   /* v0.66: на треть тише */ { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; s.loop = true; s.loopStart = 0.05; s.loopEnd = b.duration - 0.05; g.gain.value = v; s.connect(g); g.connect(night ? AMB.nightG : AMB.g); s.start(now, Math.random() * b.duration * 0.8); AMB.srcs.push(s); }

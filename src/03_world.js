@@ -6,15 +6,15 @@ const QPRE = {
   medium: { name: 'Средняя', pr: 1.25, scale: 0.85, shadow: 1024, soft: false, aa: true,  lamps: 2, search: 1, fire: 3, fx: 0.7, cap: 0.66 },
   low:    { name: 'Низкая',  pr: 1,    scale: 0.6,  shadow: 0,    soft: false, aa: false, lamps: 1, search: 1, fire: 2, fx: 0.4, cap: 0.4 },
 };
-QPRE.auto = Object.assign({}, QPRE.high, { name: 'Авто', lamps: 3 });
+QPRE.auto = Object.assign({}, IS_TOUCH ? QPRE.medium : QPRE.high, { name: 'Авто', lamps: 3 });   // на телефоне старт со «Средней»
 const QDESC = {
   high: 'Полное разрешение, мягкие тени, сглаживание, до 900 зомби. Для мощных компьютеров.',
   medium: 'Около 85% разрешения, тени попроще, меньше света и частиц, до 600 зомби.',
   low: '60% разрешения, без теней и сглаживания, минимум света и частиц, до 360 зомби. Для слабых ноутбуков.',
-  auto: 'Старт как «Высокая»; если FPS падает ниже 40 — игра сама снижает разрешение до 50%, затем отключает тени.',
+  auto: 'Старт как «Высокая» (на телефоне — как «Средняя»); если FPS падает ниже 40 — игра сама снижает разрешение до 50%, затем отключает тени.',
 };
 document.body.classList.toggle('touch', IS_TOUCH);
-const QID = (() => { const v = lsGet('quality', 'high'); return QPRE[v] ? v : 'high'; })();
+const QID = (() => { const v = lsGet('quality', IS_TOUCH ? 'auto' : 'high'); return QPRE[v] ? v : (IS_TOUCH ? 'auto' : 'high'); })();   // телефон по умолчанию — «Авто»
 const QS = Object.assign({}, QPRE[QID], { auto: QID === 'auto' });      // живые значения: у «Авто» разрешение подстраивается на ходу
 const qPixelRatio = () => Math.min(devicePixelRatio, IS_TOUCH ? Math.min(1.5, QS.pr) : QS.pr) * QS.scale;
 const renderer = new THREE.WebGLRenderer({ antialias: !IS_TOUCH && QS.aa, powerPreference: 'high-performance' });

@@ -231,7 +231,7 @@ body.touch .mel{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, A — крюк, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><button id="fireBtn" class="tctl" aria-label="Огонь"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="2.5" fill="currentColor"/><path d="M24 4v10M24 34v10M4 24h10M34 24h10"/></svg></button><button id="sprintBtn" class="tctl" aria-label="Бег"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2.5h7.5v8.2l5 2.2c1.3.6 1.9 1.6 1.9 3V19a1 1 0 0 1-1 1H5V4.5a2 2 0 0 1 1-2z"/><path d="M3.5 21.5h17" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button><button id="rldBtn" class="tctl" data-k="r" aria-label="Перезарядка"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 3.5v4.6h-4.6"/></svg></button><div id="btns"><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button class="dsk" data-k="n">☾</button><button class="dsk" data-k="fs">⛶</button><button class="dsk" id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.73</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.74</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
@@ -745,15 +745,15 @@ const QPRE = {
   medium: { name: 'Средняя', pr: 1.25, scale: 0.85, shadow: 1024, soft: false, aa: true,  lamps: 2, search: 1, fire: 3, fx: 0.7, cap: 0.66 },
   low:    { name: 'Низкая',  pr: 1,    scale: 0.6,  shadow: 0,    soft: false, aa: false, lamps: 1, search: 1, fire: 2, fx: 0.4, cap: 0.4 },
 };
-QPRE.auto = Object.assign({}, QPRE.high, { name: 'Авто', lamps: 3 });
+QPRE.auto = Object.assign({}, IS_TOUCH ? QPRE.medium : QPRE.high, { name: 'Авто', lamps: 3 });   // на телефоне старт со «Средней»
 const QDESC = {
   high: 'Полное разрешение, мягкие тени, сглаживание, до 900 зомби. Для мощных компьютеров.',
   medium: 'Около 85% разрешения, тени попроще, меньше света и частиц, до 600 зомби.',
   low: '60% разрешения, без теней и сглаживания, минимум света и частиц, до 360 зомби. Для слабых ноутбуков.',
-  auto: 'Старт как «Высокая»; если FPS падает ниже 40 — игра сама снижает разрешение до 50%, затем отключает тени.',
+  auto: 'Старт как «Высокая» (на телефоне — как «Средняя»); если FPS падает ниже 40 — игра сама снижает разрешение до 50%, затем отключает тени.',
 };
 document.body.classList.toggle('touch', IS_TOUCH);
-const QID = (() => { const v = lsGet('quality', 'high'); return QPRE[v] ? v : 'high'; })();
+const QID = (() => { const v = lsGet('quality', IS_TOUCH ? 'auto' : 'high'); return QPRE[v] ? v : (IS_TOUCH ? 'auto' : 'high'); })();   // телефон по умолчанию — «Авто»
 const QS = Object.assign({}, QPRE[QID], { auto: QID === 'auto' });      // живые значения: у «Авто» разрешение подстраивается на ходу
 const qPixelRatio = () => Math.min(devicePixelRatio, IS_TOUCH ? Math.min(1.5, QS.pr) : QS.pr) * QS.scale;
 const renderer = new THREE.WebGLRenderer({ antialias: !IS_TOUCH && QS.aa, powerPreference: 'high-performance' });
@@ -3777,6 +3777,7 @@ function wStat(p) {
 const twinGuns = p => !p.hand && ((p.gun === 'revolver' && !!p.evo.rv_twin) || (p.gun === 'smg' && L(p, 'smg_uzi') > 0));
 const oneHand = p => !!p.hand || p.gun === 'revolver' || (p.gun === 'smg' && L(p, 'smg_uzi') > 0);   // предмет в руке — одной рукой
 const xpNeed = lvl => Math.round(5 * Math.pow(1.13, lvl - 1) + (lvl - 1) * 3);   // v0.60: каждый уровень заметно дороже предыдущего
+function aliveZombies() { let n = 0; for (const z of zombies) if (!z.dead) n++; return n; }   // без временных массивов
 const alivePlayers = () => players.filter(p => !p.down);
 function nearestAlive(x, z) { let best = null, bd = Infinity; for (const p of players) { if (p.down) continue; const d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < bd) { bd = d; best = p; } } return best; }
 
@@ -3845,7 +3846,7 @@ function pickZombieType(t) {
 }
 const FORM = { walker: 'walk', runner: 'run', armored: 'armored', fat: 'fat', hound: 'hound', screamer: 'screamer', spitter: 'spitter', brute: 'brute', riot: 'riot', warden: 'warden' };
 function spawnZombie(forceType, at, crawl, ignoreCap) {
-  if (!ignoreCap && zombies.filter(z => !z.dead).length >= MAX_ENEMIES) return null;
+  if (!ignoreCap && aliveZombies() >= MAX_ENEMIES) return null;
   const t = G.t, type = forceType || pickZombieType(t);
   const pos = findSpawnPos(at); if (!pos) return null;
   const T = ZOMBIES[type];
@@ -5960,18 +5961,18 @@ function setLampLights(cx, cz) {
   });
 }
 // Здание между камерой и героем — полупрозрачное
-const camDir = new THREE.Vector3();
+const camDir = new THREE.Vector3(), _fFrom = new THREE.Vector3(), _fRay = new THREE.Ray(), _fMM = [{ x: 0, y: 0, z: 0 }];   // переиспользуемые объекты: раньше на каждый кадр и каждое здание создавались новые
 function updateFade() {
-  const toShared = cam.position;
+  const toShared = cam.position, list = MAPID === 'city' && G.state === 'main' ? (_fMM[0].x = MM.cam.x, _fMM[0].z = MM.cam.z, _fMM) : players;
   for (const B of buildings) {
-    const bb = new THREE.Box3(new THREE.Vector3(B.x1, 0, B.z1), new THREE.Vector3(B.x2, B.H + 0.5, B.z2));
+    const bb = B.fadeBox || (B.fadeBox = new THREE.Box3(new THREE.Vector3(B.x1, 0, B.z1), new THREE.Vector3(B.x2, B.H + 0.5, B.z2)));
     let hit = false;
-    for (const p of (MAPID === 'city' && G.state === 'main' ? [{ x: MM.cam.x, y: 0, z: MM.cam.z }] : players)) {                           // здание закрывает хоть одного игрока — полупрозрачное
-      const to = SPLIT.on && viewFor(p) ? viewFor(p).cp : toShared, from = new THREE.Vector3(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(from).normalize();
-      if (new THREE.Ray(from, camDir).intersectsBox(bb) && !(p.y >= B.H - 0.1 && p.x > B.x1 && p.x < B.x2 && p.z > B.z1 && p.z < B.z2)) { hit = true; break; }
+    for (const p of list) {                                                                                                 // здание закрывает хоть одного игрока — полупрозрачное
+      const to = SPLIT.on && viewFor(p) ? viewFor(p).cp : toShared; _fFrom.set(p.x, p.y + 0.6, p.z); camDir.copy(to).sub(_fFrom).normalize();
+      if (_fRay.set(_fFrom, camDir).intersectsBox(bb) && !(p.y >= B.H - 0.1 && p.x > B.x1 && p.x < B.x2 && p.z > B.z1 && p.z < B.z2)) { hit = true; break; }
     }
     const target = hit ? 0.28 : 1;
-    for (const m of B.mats) { m.transparent = true; m.opacity += (target - m.opacity) * 0.2; m.depthWrite = m.opacity > 0.95; }
+    for (const m of B.mats) { if (m.opacity === target && m.transparent) continue; m.transparent = true; m.opacity += (target - m.opacity) * 0.2; if (Math.abs(target - m.opacity) < 0.003) m.opacity = target; m.depthWrite = m.opacity > 0.95; }   // дошло до цели — больше не трогаем
   }
 }
 /* ---- Кооп: общая камера отдаляется, «поводок» не даёт разойтись за край экрана, упавшего поднимают ---- */
@@ -6099,14 +6100,21 @@ function updateShield(p, dt) {
 </script>
 <script>'use strict';
 /* ---------- 15. Звук: синтез, перенесён из 2D v33 (свои звуки у каждого ствола) ---------- */
-const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true), real: lsGet('realsnd', true), buf: {} };
+const Sound = { ctx: null, master: null, noise: null, last: {}, on: lsGet('sound', true), real: lsGet('realsnd', true), buf: {}, pend: {} };
 // Настоящие записи оружия (src/02b_sound_assets.js): декодируем один раз при старте звука
+const SOUND_LAZY = new Set(['mus_cem']);                  // тяжёлая музыка кладбища (~1 МБ mp3, десятки МБ после распаковки) — только когда нужна
+let SOUND_SRC = null;
+function soundSrc() { return SOUND_SRC || (SOUND_SRC = Object.assign({}, typeof SND_B64 !== 'undefined' ? SND_B64 : {}, typeof ZSND_B64 !== 'undefined' ? ZSND_B64 : {}, typeof FXSND_B64 !== 'undefined' ? FXSND_B64 : {})); }   // оружие + голоса зомби + эффекты
+function decodeSound(k) {
+  const src = soundSrc(); if (!src[k] || Sound.buf[k] || Sound.pend[k] || !Sound.ctx) return; Sound.pend[k] = 1;
+  const bin = atob(src[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  try { Sound.ctx.decodeAudioData(u.buffer, b => { Sound.buf[k] = b; delete Sound.pend[k]; }, () => { delete Sound.pend[k]; }); } catch (e) { delete Sound.pend[k]; }
+}
+// Распаковка по одной записи с паузами, чтобы телефон не замирал при первом касании; сначала стволы, потом фон, голоса зомби в конце
 function loadRealSounds() {
-  const ALL = Object.assign({}, typeof SND_B64 !== 'undefined' ? SND_B64 : {}, typeof ZSND_B64 !== 'undefined' ? ZSND_B64 : {}, typeof FXSND_B64 !== 'undefined' ? FXSND_B64 : {});   // оружие + голоса зомби
-  for (const k in ALL) {
-    const bin = atob(ALL[k]), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
-    try { Sound.ctx.decodeAudioData(u.buffer, b => { Sound.buf[k] = b; }, () => {}); } catch (e) {}
-  }
+  const keys = Object.keys(soundSrc()).filter(k => !SOUND_LAZY.has(k)), rank = k => /^(z_)/.test(k) ? 2 : /^(amb_|fx_)/.test(k) ? 1 : 0;
+  keys.sort((a, b) => rank(a) - rank(b));
+  keys.forEach((k, i) => setTimeout(() => decodeSound(k), i < 10 ? 0 : i * 12));
 }
 // Играет запись: vol — громкость, rate — высота тона (1 = как есть), у вариантов name_1..name_n берётся случайный
 function playReal(name, vol = 1, rate = 1, vary = 0.05) {
@@ -9993,6 +10001,7 @@ function ambTick() {
   }
   if (want && !AMB.on) {
     const w = Sound.buf.amb_wind, n = Sound.buf.amb_night; if (!w || !n) return;
+    if (want === 'cemetery' && !Sound.buf.mus_cem) { decodeSound('mus_cem'); return; }   // музыку распаковываем только на кладбище; фон стартует, когда она готова
     AMB.g = c.createGain(); AMB.g.gain.value = 0; AMB.g.connect(Sound.master);
     AMB.nightG = c.createGain(); AMB.nightG.gain.value = want === 'cemetery' ? 1 : 0; AMB.nightG.connect(AMB.g);
     for (const [b, v, night] of [[w, 0.37, false], [n, 0.5, true]])   /* v0.66: на треть тише */ { const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; s.loop = true; s.loopStart = 0.05; s.loopEnd = b.duration - 0.05; g.gain.value = v; s.connect(g); g.connect(night ? AMB.nightG : AMB.g); s.start(now, Math.random() * b.duration * 0.8); AMB.srcs.push(s); }

@@ -115,6 +115,7 @@ function wStat(p) {
 const twinGuns = p => !p.hand && ((p.gun === 'revolver' && !!p.evo.rv_twin) || (p.gun === 'smg' && L(p, 'smg_uzi') > 0));
 const oneHand = p => !!p.hand || p.gun === 'revolver' || (p.gun === 'smg' && L(p, 'smg_uzi') > 0);   // предмет в руке — одной рукой
 const xpNeed = lvl => Math.round(5 * Math.pow(1.13, lvl - 1) + (lvl - 1) * 3);   // v0.60: каждый уровень заметно дороже предыдущего
+function aliveZombies() { let n = 0; for (const z of zombies) if (!z.dead) n++; return n; }   // без временных массивов
 const alivePlayers = () => players.filter(p => !p.down);
 function nearestAlive(x, z) { let best = null, bd = Infinity; for (const p of players) { if (p.down) continue; const d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d < bd) { bd = d; best = p; } } return best; }
 
@@ -183,7 +184,7 @@ function pickZombieType(t) {
 }
 const FORM = { walker: 'walk', runner: 'run', armored: 'armored', fat: 'fat', hound: 'hound', screamer: 'screamer', spitter: 'spitter', brute: 'brute', riot: 'riot', warden: 'warden' };
 function spawnZombie(forceType, at, crawl, ignoreCap) {
-  if (!ignoreCap && zombies.filter(z => !z.dead).length >= MAX_ENEMIES) return null;
+  if (!ignoreCap && aliveZombies() >= MAX_ENEMIES) return null;
   const t = G.t, type = forceType || pickZombieType(t);
   const pos = findSpawnPos(at); if (!pos) return null;
   const T = ZOMBIES[type];

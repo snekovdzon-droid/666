@@ -5,7 +5,7 @@ const { chromium } = require('playwright'); const path = require('path');
   const c = await b.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve(process.argv[2] || 'index.html')); await p.waitForTimeout(3500);
-  console.log('touch:', await p.evaluate(() => IS_TOUCH));
+  console.log('touch:', await p.evaluate(() => IS_TOUCH), await p.evaluate(() => QS.name));
   await p.evaluate(() => { G.nPlayers = 1; G.gun = 'rifle'; G.guns = ['rifle']; startRun(); }); await p.waitForTimeout(2000);
   const r = await p.evaluate(async () => {
     G.god = true; G.noSpawn = true; G.timeScale = 3; zombies.length = 0; const o = {};
