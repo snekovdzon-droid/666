@@ -229,9 +229,9 @@ body.touch .mel{display:none}
 <div id="bossArrow"><i></i><b></b></div>
 <div id="bossBar"><b>Начальник тюрьмы</b><div><i></i></div></div>
 <div id="fps"></div>
-<div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, Back — крюк, LB/RB камера</div>
+<div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, A — крюк, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><button id="fireBtn" class="tctl" aria-label="Огонь"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="2.5" fill="currentColor"/><path d="M24 4v10M24 34v10M4 24h10M34 24h10"/></svg></button><button id="sprintBtn" class="tctl" aria-label="Бег"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2.5h7.5v8.2l5 2.2c1.3.6 1.9 1.6 1.9 3V19a1 1 0 0 1-1 1H5V4.5a2 2 0 0 1 1-2z"/><path d="M3.5 21.5h17" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button><button id="rldBtn" class="tctl" data-k="r" aria-label="Перезарядка"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 3.5v4.6h-4.6"/></svg></button><div id="btns"><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button class="dsk" data-k="n">☾</button><button class="dsk" data-k="fs">⛶</button><button class="dsk" id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.72</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.73</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
@@ -3950,7 +3950,7 @@ document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', e
   if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, ZMIN, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, ZMIN, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
 
 // Геймпады: у каждого своё состояние. Кнопки: RT огонь, R3 ближний бой, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
-// Back крюк-кошка, Start пауза (ночь — только клавиша N). В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
+// A крюк-кошка (не срабатывает от нажатия, выбравшего карточку), Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
 const PADS = new Map();                                // индекс геймпада → { lx, ly, rx, ry, pr[], just[], gp }
 const PAD = { active: false, navT: 0 };                // active — последний ввод был с геймпада (для одиночной игры)
 function pollPad(dt) {
@@ -3977,6 +3977,7 @@ function pollPad(dt) {
       if (s.just[13] || (s.ly > 0.5 && PAD.navT <= 0)) v = 1; if (s.just[12] || (s.ly < -0.5 && PAD.navT <= 0)) v = -1;
     }
     if (h || v) PAD.navT = 0.25;
+    if (any(0)) PAD.menuA = performance.now();                                   // A ушла на меню/карточку уровня — крюк на этот кадр и чуть дольше не срабатывает
     if (G.state === 'levelup') { if (h || v) lvKey((h || v) > 0 ? 'ArrowRight' : 'ArrowLeft'); if (any(0)) lvKey('Enter'); }
     else if (G.state === 'main') { if (v) mainKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mainKey('Enter'); if (any(1)) mainKey('Escape'); }
     else if (G.state === 'menu') { if (h) menuKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) menuKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) menuKey('Enter'); if (any(3)) menuKey('Tab'); if (any(1)) menuKey('Backspace'); }
@@ -3984,6 +3985,7 @@ function pollPad(dt) {
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
     for (const [gi, s] of PADS) { const own = players.find(q => (q.ctrl === 'pad' && q.pad === gi) || q.ctrl === 'all'); if (s.just[4]) rotCam(own, 1); if (s.just[5]) rotCam(own, -1); }   // у каждого геймпада — свой экран
+    if (any(8)) G.nightT = G.nightT > 0.5 ? 0 : 1;
     if (any(9)) G.paused = !G.paused;
   }
 }
@@ -4029,7 +4031,7 @@ function readControl(p) {
     ix += s.lx; iz += s.ly;                                              // крестовина больше не двигает героя — на ней предметы
     const dp = [12, 15, 13, 14].findIndex(b => s.just[b]); if (dp >= 0) slot = dp;   // ↑ → ↓ ← — слоты 1–4
     if (s.just[3]) { swap = true; back = true; }                           // Y — обменять / обратно к стволу / листать слоты
-    if (s.just[8]) hook = true;                                            // Back/Select — крюк-кошка (не A: на A берут карточки уровня)
+    if (s.just[0] && performance.now() - (PAD.menuA || 0) > 500) hook = true;   // A — крюк-кошка; нажатие, которым выбрали карточку/пункт меню, крюк не запускает
     if (s.just[11]) melee = true;                                          // R3 — ближний бой
     if (s.just[6]) alt = true;                                           // LT — подствольник
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;
@@ -6892,7 +6894,7 @@ const pips = (n, max) => `<span class="pips">${'<i class="on"></i>'.repeat(Math.
 function abilKeys(p) {
   if (IS_TOUCH) return { ubgl: '', hook: '' };
   const pad = p.ctrl === 'pad' || (p.ctrl === 'all' && PAD.active), k2 = p.ctrl === 'keys2';
-  return { ubgl: pad ? 'LT' : k2 ? "'" : 'ПКМ', hook: pad ? 'Back' : k2 ? '/' : 'G' };
+  return { ubgl: pad ? 'LT' : k2 ? "'" : 'ПКМ', hook: pad ? 'A' : k2 ? '/' : 'G' };
 }
 function abilHtml(p) {
   const K = abilKeys(p), out = [];

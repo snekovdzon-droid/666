@@ -71,7 +71,7 @@ document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', e
   if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, ZMIN, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, ZMIN, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
 
 // Геймпады: у каждого своё состояние. Кнопки: RT огонь, R3 ближний бой, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
-// Back крюк-кошка, Start пауза (ночь — только клавиша N). В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
+// A крюк-кошка (не срабатывает от нажатия, выбравшего карточку), Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
 const PADS = new Map();                                // индекс геймпада → { lx, ly, rx, ry, pr[], just[], gp }
 const PAD = { active: false, navT: 0 };                // active — последний ввод был с геймпада (для одиночной игры)
 function pollPad(dt) {
@@ -98,6 +98,7 @@ function pollPad(dt) {
       if (s.just[13] || (s.ly > 0.5 && PAD.navT <= 0)) v = 1; if (s.just[12] || (s.ly < -0.5 && PAD.navT <= 0)) v = -1;
     }
     if (h || v) PAD.navT = 0.25;
+    if (any(0)) PAD.menuA = performance.now();                                   // A ушла на меню/карточку уровня — крюк на этот кадр и чуть дольше не срабатывает
     if (G.state === 'levelup') { if (h || v) lvKey((h || v) > 0 ? 'ArrowRight' : 'ArrowLeft'); if (any(0)) lvKey('Enter'); }
     else if (G.state === 'main') { if (v) mainKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mainKey('Enter'); if (any(1)) mainKey('Escape'); }
     else if (G.state === 'menu') { if (h) menuKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) menuKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) menuKey('Enter'); if (any(3)) menuKey('Tab'); if (any(1)) menuKey('Backspace'); }
@@ -105,6 +106,7 @@ function pollPad(dt) {
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
     for (const [gi, s] of PADS) { const own = players.find(q => (q.ctrl === 'pad' && q.pad === gi) || q.ctrl === 'all'); if (s.just[4]) rotCam(own, 1); if (s.just[5]) rotCam(own, -1); }   // у каждого геймпада — свой экран
+    if (any(8)) G.nightT = G.nightT > 0.5 ? 0 : 1;
     if (any(9)) G.paused = !G.paused;
   }
 }
@@ -150,7 +152,7 @@ function readControl(p) {
     ix += s.lx; iz += s.ly;                                              // крестовина больше не двигает героя — на ней предметы
     const dp = [12, 15, 13, 14].findIndex(b => s.just[b]); if (dp >= 0) slot = dp;   // ↑ → ↓ ← — слоты 1–4
     if (s.just[3]) { swap = true; back = true; }                           // Y — обменять / обратно к стволу / листать слоты
-    if (s.just[8]) hook = true;                                            // Back/Select — крюк-кошка (не A: на A берут карточки уровня)
+    if (s.just[0] && performance.now() - (PAD.menuA || 0) > 500) hook = true;   // A — крюк-кошка; нажатие, которым выбрали карточку/пункт меню, крюк не запускает
     if (s.just[11]) melee = true;                                          // R3 — ближний бой
     if (s.just[6]) alt = true;                                           // LT — подствольник
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;

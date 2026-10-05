@@ -53,7 +53,7 @@ const pips = (n, max) => `<span class="pips">${'<i class="on"></i>'.repeat(Math.
 function abilKeys(p) {
   if (IS_TOUCH) return { ubgl: '', hook: '' };
   const pad = p.ctrl === 'pad' || (p.ctrl === 'all' && PAD.active), k2 = p.ctrl === 'keys2';
-  return { ubgl: pad ? 'LT' : k2 ? "'" : 'ПКМ', hook: pad ? 'Back' : k2 ? '/' : 'G' };
+  return { ubgl: pad ? 'LT' : k2 ? "'" : 'ПКМ', hook: pad ? 'A' : k2 ? '/' : 'G' };
 }
 function abilHtml(p) {
   const K = abilKeys(p), out = [];
