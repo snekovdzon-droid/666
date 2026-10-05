@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- 10. Управление: клавиатура, мышь, палец, несколько геймпадов → «пульт» каждого игрока ---------- */
 const keys = new Set(); const mouse = { x: 0, y: 0, down: false, has: false };
-const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false, fireT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
+const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false, fireT: false, sprintT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
 addEventListener('keydown', e => {
   if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
@@ -51,11 +51,12 @@ if (IS_TOUCH) {
   const pend = e => { for (const t of e.changedTouches) pinch.delete(t.identifier); pinchD = pd(); };
   addEventListener('touchend', pend); addEventListener('touchcancel', pend);
 }
-// Кнопка огня на телефоне: стреляет только пока кнопка зажата (авто-прицел остаётся, авто-огня нет)
-if (IS_TOUCH) { const fb = document.getElementById('fireBtn'), fids = new Set(), upd = () => { act.fireT = fids.size > 0; fb.classList.toggle('on', act.fireT); };
-  fb.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); for (const t of e.changedTouches) fids.add(t.identifier); upd(); }, { passive: false });
-  const fe = e => { e.stopPropagation(); for (const t of e.changedTouches) fids.delete(t.identifier); upd(); };
-  fb.addEventListener('touchend', fe); fb.addEventListener('touchcancel', fe); }
+// Кнопки на телефоне, пока зажаты: огонь (авто-огня нет, авто-прицел остаётся) и бег
+function holdBtn(id, key) { const el = document.getElementById(id), ids = new Set(), upd = () => { act[key] = ids.size > 0; el.classList.toggle('on', act[key]); };
+  el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); for (const t of e.changedTouches) ids.add(t.identifier); upd(); }, { passive: false });
+  const fe = e => { e.stopPropagation(); for (const t of e.changedTouches) ids.delete(t.identifier); upd(); };
+  el.addEventListener('touchend', fe); el.addEventListener('touchcancel', fe); }
+if (IS_TOUCH) { holdBtn('fireBtn', 'fireT'); holdBtn('sprintBtn', 'sprintT'); }
 // Полный экран (телефон: убрать адресную строку). iPhone в Safari не умеет — подсказка «На экран Домой»
 function goFullscreen(force) {
   const d = document.documentElement, on = document.fullscreenElement || document.webkitFullscreenElement;
@@ -143,6 +144,7 @@ function readControl(p) {
   if (t === 'all' && act.altT) alt = true;
   if (t === 'all' && (act.slotT >= 0 || act.swapT)) { if (act.slotT >= 0) slot = act.slotT; if (act.swapT) swap = true; }   // кнопки на экране
   if (t === 'all' && touch.id !== null) { ix = touch.dx; iz = touch.dy; sprint = touch.run; }
+  if (t === 'all' && act.sprintT) sprint = true;                      // кнопка бега на телефоне
   const pads = t === 'pad' ? [PADS.get(p.pad)] : t === 'all' && PAD.active ? [...PADS.values()] : [];
   for (const s of pads) {
     if (!s) continue;

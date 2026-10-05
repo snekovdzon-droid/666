@@ -66,7 +66,7 @@ function menuKey(code) {
 }
 function showScreen(id) { document.body.classList.toggle('mainScr', id === 'main'); for (const s of ['main', 'menu', 'over', 'pause']) $(s).style.display = s === id ? 'flex' : 'none';
   const play = id === null || id === 'pause'; $('huds').style.display = $('top').style.display = play ? 'block' : 'none';
-  $('fireBtn').style.display = play && IS_TOUCH ? 'block' : 'none';
+  document.querySelectorAll('.tctl').forEach(b => b.style.display = play && IS_TOUCH ? 'block' : 'none');
   $('help').style.display = play && !IS_TOUCH && players.length < 2 ? 'block' : 'none'; }
 // HUD: у каждого игрока свой блок в своём углу (И1 слева сверху, И2 справа сверху, И3/И4 снизу)
 // Телефон: кнопки предметов (тап — в руку, стрельба сама бросит по цели) и «обменять»

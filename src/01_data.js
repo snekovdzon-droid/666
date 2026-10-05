@@ -30,8 +30,8 @@ const WEAPONS = {
   revolver: { name:'Револьвер', desc:'Тяжёлая пуля, 6 патронов. Без пробития — пробивать учат пути.',
               dmg:40, rate:1.6, mag:6,   reload:2.2, pellets:1, spread:0,    speed:30, life:0.6,  pierce:0,  knock:0.3,  fan:true, heavy:true, bloom:0.03, bloomMax:0.1 },
   // арбалет (переделка v0.68): болт 55, пробивает до 2 зомби, взвод 0,7 с после выстрела, болты бесконечные
-  crossbow: { name:'Арбалет',   desc:'Тихий болт 55, пробивает до двух зомби. Взвод 3 с после каждого выстрела, болты бесконечные.',
-              dmg:55, rate:10,  mag:1,   reload:3, pellets:1, spread:0.01, speed:22, life:0.55, pierce:1,  knock:0.25, fan:true, bolt:true },
+  crossbow: { name:'Арбалет',   desc:'Тихий болт 55, пробивает до двух зомби. Взвод 2 с после каждого выстрела, болты бесконечные.',
+              dmg:55, rate:10,  mag:1,   reload:2, pellets:1, spread:0.01, speed:22, life:0.55, pierce:1,  knock:0.25, fan:true, bolt:true },
   // ПП (батч 3): 4 урона, 12 выстр./с, магазин 32, перезарядка 1,4 с, ходишь на 10% быстрее
   smg:      { name:'ПП',        desc:'Лёгкий и скорострельный. Слабая пуля, зато бегаешь на 10% быстрее.',
               dmg:4,  rate:12,  mag:32,  reload:1.4, pellets:1, spread:0.1,  speed:15, life:0.45, pierce:0,  knock:0.05, fan:true, bloom:0.012, bloomMax:0.18, walk:1.1 },
@@ -252,7 +252,7 @@ const PERKS = [
   { id:'cb_multi',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Двойной болт',      desc:'Выстрел выпускает 2 болта веером ~8° (2-й ур. — «Тройной болт»: 3 болта, боковые бьют на 60%)', max:2 },
   { id:'cb_heavy',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Тяжёлый наконечник', desc:'Болт пробивает до трёх зомби вместо двух', max:1 },
   { id:'cb_taut',   br:'wpn', gun:'crossbow', branch:'neutral', name:'Тугая тетива',      desc:'Урон +20% за уровень', max:2 },
-  { id:'cb_quick',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Быстрая рука',      desc:'Взвод быстрее на 15% за уровень (3 → около 2,2 с)', max:2 },
+  { id:'cb_quick',  br:'wpn', gun:'crossbow', branch:'neutral', name:'Быстрая рука',      desc:'Взвод быстрее на 15% за уровень (2 → около 1,45 с)', max:2 },
   { id:'cb_silver', br:'wpn', gun:'crossbow', branch:'neutral', name:'Серебряный наконечник', desc:'Двойной урон по толстякам и бронированным', max:1 },
   { id:'cb_fletch', br:'wpn', gun:'crossbow', branch:'neutral', name:'Оперение',          desc:'Болт летит быстрее и дальше, реже промахивается по бегунам', max:1 },
   { id:'cb_crit',   br:'wpn', gun:'crossbow', branch:'neutral', name:'Меткий выстрел',    desc:'15% шанс критического попадания: двойной урон и хруст', max:1 },
@@ -264,7 +264,7 @@ const PERKS = [
   { id:'cb_charge', br:'wpn', gun:'crossbow', branch:'boom', name:'Кассета',           desc:'После взрыва разлетаются 4 осколка, каждый тоже рвётся', max:1 },
   { id:'cb_sticky', br:'wpn', gun:'crossbow', branch:'boom', name:'Липкий болт',       desc:'Болт втыкается в зомби и взрывается через секунду, но сильнее', max:1 },
   // ---- арбалет: путь «Барабанный магазин» ----
-  { id:'cb_mag',    br:'wpn', gun:'crossbow', branch:'drum', name:'Барабанный магазин', desc:'Магазин на 5 болтов, перезарядка магазина 1,2 с, урон болта −25%', max:1 },
+  { id:'cb_mag',    br:'wpn', gun:'crossbow', branch:'drum', name:'Барабанный магазин', desc:'Магазин на 5 болтов, перезарядка магазина 3 с, урон болта −25%', max:1 },
   { id:'cb_vol',    br:'wpn', gun:'crossbow', branch:'drum', name:'Объём барабана',    desc:'Магазин 5 → 7 → 9 → 12 болтов', max:3 },
   { id:'cb_swap',   br:'wpn', gun:'crossbow', branch:'drum', name:'Быстрая смена барабана', desc:'Перезарядка магазина −25%', max:1 },
   { id:'cb_spin',   br:'wpn', gun:'crossbow', branch:'drum', name:'Раскрутка',         desc:'Пока держишь спуск, темп растёт до +50% (не пулемёт); отпустил — сброс', max:1 },

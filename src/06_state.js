@@ -92,7 +92,7 @@ function wStat(p) {
     if (L(p, 'cb_mag')) {                                                // «Барабанный магазин»: 5 → 7 → 9 → 12
       mag = [5, 7, 9, 12][Math.min(3, L(p, 'cb_vol'))]; dmg *= 0.75;
       rate = 2.5 / qk * (1 + 0.5 * p.spin * L(p, 'cb_spin'));            // «Раскрутка»: до +50%
-      reload = 1.2 * s.reload * (L(p, 'cb_swap') ? 0.75 : 1);
+      reload = 3 * s.reload * (L(p, 'cb_swap') ? 0.75 : 1);
     }
   }
   if (id === 'smg') {
