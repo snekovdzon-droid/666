@@ -1,6 +1,6 @@
 # MANY DEAD (voxel)
 
-Версия: v0.67. Браузерный выживач на three.js.
+Версия: v0.68. Браузерный выживач на three.js.
 
 - `index.html` — разметка и стили, запуск: открыть файл в браузере
 - Редактор персонажа: `src/04b_hero_gen.js` (сборка героя из частей), `src/11b_hero_editor.js` (окно редактора). Кнопка — в меню выбора класса. Герои хранятся в браузере.
@@ -10,6 +10,9 @@
 - `vendor/` — three.js, GLTFLoader, meshopt-декодер (не править)
 - `tools/build.py` — собирает один файл `dist/zombie-voxel.html`
 - `tools/smoke.js` — проверка в Chromium: `node tools/smoke.js index.html` (меню) и `node tools/play.js index.html` (запуск боя)
+
+## Арбалет (v0.68)
+Спека — `CROSSBOW_REDESIGN.md`. Карточки в `src/01_data.js` (`cb_*`, пути fire / boom / drum), статы — `wStat` в `src/06_state.js`, выстрел и наконечники — `src/08_combat.js`. Проверки: `node tools/crossbow_test.js`, `node tools/crossbow_hits.js`.
 
 ## Особые мобы
 Данные (здоровье, скорость, время появления) — `ZOMBIES` в `src/01_data.js`; поведение, вид и звуки — `src/11d_mobs.js`.

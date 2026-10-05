@@ -146,7 +146,7 @@ function setSound(on) { Sound.on = on; lsSet('sound', on); if (Sound.master) Sou
 
 /* ---------- Отладочная панель: F3 или ` (на телефоне — кнопка «dbg») ---------- */
 const DBG = { on: false, el: null };
-function debugGun(id) { if (!player || !WEAPONS[id]) return; Object.assign(player, { gun: id, cls: CLS({ gun: id }), spin: 0, bloom: 0, reloadT: 0, branch: null, sub: null }); player.ammo = wStat(player).mag; player.quiver = WEAPONS[id].bolt ? quiverMax(player) - player.ammo : 0; }
+function debugGun(id) { if (!player || !WEAPONS[id]) return; Object.assign(player, { gun: id, cls: CLS({ gun: id }), spin: 0, bloom: 0, reloadT: 0, branch: null, sub: null }); player.ammo = wStat(player).mag; }
 function spawnNear(type, crawl) { const p = player, a = Math.random() * TAU; return spawnZombie(type, { x: clamp(p.x + Math.cos(a) * 7, 2, MAP - 2), z: clamp(p.z + Math.sin(a) * 7, 2, MAP - 2) }, crawl); }
 function debugInit() {
   const el = document.createElement('div'); el.id = 'dbg'; DBG.el = el;

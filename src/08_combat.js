@@ -25,11 +25,11 @@ function updatePlayerWeapon(p, c, dt) {
   const ws = wStat(p);
   p.firing = fire && p.ammo > 0 && p.reloadT <= 0;
   if (fire && !p.firing && (c.manual || !c.auto) && SFX.ok('dry', 300)) SFX.dry();
-  if (B.rateMax) p.spin = p.firing ? Math.min(1, p.spin + dt / (B.spinUp * (L(p, 'mg_grease') ? 0.5 : 1))) : Math.max(0, p.spin - dt);
+  if (id === 'crossbow') p.spin = L(p, 'cb_spin') && p.firing ? Math.min(1, p.spin + dt / 2.5) : Math.max(0, p.spin - dt * 1.5);   // «Раскрутка» барабана
+  else if (B.rateMax) p.spin = p.firing ? Math.min(1, p.spin + dt / (B.spinUp * (L(p, 'mg_grease') ? 0.5 : 1))) : Math.max(0, p.spin - dt);
   if (B.bloom && !p.firing) p.bloom = Math.max(0, p.bloom - dt * 0.6);
   p.cool = Math.max(0, p.cool - dt);
-  if (p.ammo > ws.mag) { if (B.bolt) p.quiver += p.ammo - ws.mag; p.ammo = ws.mag; }
-  if (B.bolt && p.quiver <= 0 && p.ammo <= 0 && (p.boltT += dt) >= 3) { p.boltT = 0; p.quiver = 1; }   // пустой колчан: болт за 3 с
+  if (p.ammo > ws.mag) p.ammo = ws.mag;
   if (p.reloadT > 0) {
     if (p.shellMode) {                                 // «Поштучная зарядка»: по патрону, стрелять можно в любой момент
       p.reloadT -= dt;
@@ -41,8 +41,8 @@ function updatePlayerWeapon(p, c, dt) {
       return;
     }
   }
-  if (c.reload && p.ammo < ws.mag && !(B.bolt && p.quiver <= 0)) { startReload(p, ws); return; }
-  if (B.bolt && p.ammo <= 0 && p.quiver > 0) { startReload(p, ws); return; }          // арбалет: болт появился в колчане — взводим сам
+  if (c.reload && p.ammo < ws.mag) { startReload(p, ws); return; }
+  if (B.bolt && p.ammo <= 0) { startReload(p, ws); return; }                          // арбалет: взвод
   if (!(fire && p.cool <= 0 && p.ammo > 0)) return;
   let use = 1, pelletMul = 1, mul = 1, ap = A.pt;
   if (id === 'sawnoff' && L(p, 'so_double') && p.ammo >= 2) { use = 2; pelletMul = 2; }
@@ -93,15 +93,18 @@ function shoot(p, ws, ap, mul, pelletMul) {
   if (id === 'mg' && p.evo.mg_mower && p.shotN % 4 === 0) xp = 1;                 // «Косилка»: каждая 4-я пробивает одного
   if (id === 'smg' && p.evo.smg_spec && p.shotN % 5 === 0) xp = 1;                // «Спецназ»: каждая 5-я пробивает одного
   const bolt = !!WEAPONS[id].bolt, tip = bolt ? boltTip(p) : null;
-  const volley = bolt && L(p, 'cb_volley') > 0 && ++p.volleyN % 5 === 0;           // «Залп»: каждый 5-й — 3 болта веером
+  const last = bolt && L(p, 'cb_mag') > 0 && L(p, 'cb_last') > 0 && p.ammo === 1;   // «Последний болт»: веер из 5
   const rv = id === 'revolver', rico = rv ? L(p, 'rv_rico') : 0;
-  const nn = n + (volley ? 2 : 0);
+  const nn = last ? 5 : n;
   for (let i = 0; i < nn; i++) {
     let a = ang, sp = ws.speed;
-    if (i >= n) a += (i === n ? -0.16 : 0.16) + (Math.random() - 0.5) * ws.spread;          // болты залпа
-    else if (ws.fan) a += (i - (n - 1) / 2) * (bolt ? 0.06 : 0.12) + (Math.random() - 0.5) * ws.spread;
+    if (ws.fan) a += (i - (nn - 1) / 2) * (bolt ? (last ? 0.12 : 0.14) : 0.12) + (Math.random() - 0.5) * ws.spread;   // болты веером: ~8° между соседними
     else { a += (Math.random() - 0.5) * ws.spread * (pelletMul > 1 ? 1.3 : 1); sp *= 0.85 + Math.random() * 0.3; }
-    let d = ws.dmg * mul * smul, crit = smul > 1;
+    let d = ws.dmg * mul * smul, crit = smul > 1, bcrit = false;
+    if (bolt) {
+      if (nn === 3 && i !== 1) d *= 0.6;                                                    // «Тройной болт»: боковые — 60%
+      if (L(p, 'cb_crit') > 0 && Math.random() < 0.15) { d *= 2; crit = bcrit = true; }     // «Меткий выстрел»
+    }
     const e = elev + (ws.fan ? 0 : rnd(-0.03, 0.03)), ch = Math.cos(e);
     bullets.push({ owner: p, x0: p.x, z0: p.z, x: mz.x, y: mz.y, z: mz.z, vx: Math.sin(a) * ch * sp, vy: Math.sin(e) * sp, vz: Math.cos(a) * ch * sp,
       slug: id === 'shotgun' && L(p, 'sg_slug') > 0, life: ws.life, dmg: d, pierce: Math.min(99, ws.pierce + xp), knock: ws.knock, hits: [], big: mul > 1 || crit, heavy: ws.heavy || (id === 'shotgun' && L(p, 'sg_slug') > 0),
@@ -109,7 +112,7 @@ function shoot(p, ws, ap, mul, pelletMul) {
       mark, tracer: mark, supp: id === 'rifle' ? L(p, 'ri_supp') : 0, under: id === 'rifle' && L(p, 'ri_under') > 0, far: id === 'rifle' && L(p, 'ri_scope') > 0,
       helm: id === 'mg' && L(p, 'mg_core') > 0, stag: id === 'mg' && L(p, 'mg_stag') > 0, pop: id === 'mg' && !!p.evo.mg_127,
       rico, trick: rv && !!p.evo.rv_trick, cock: rv && !!p.cocked, knee: rv && L(p, 'rv_knee') > 0, bounceN: 0 });
-    if (bolt) Object.assign(bullets[bullets.length - 1], { bolt: true, heavy: true, nopick: i > 0, ignite: !!tip.burn, burn: tip.burn, boom: tip.boom, burnBolt: tip.burnBolt, noFF: true });
+    if (bolt) Object.assign(bullets[bullets.length - 1], { bolt: true, heavy: true, ignite: !!tip.burn, burn: tip.burn, boom: tip.boom, pool: tip.pool, trail: tip.trail, silver: L(p, 'cb_silver') > 0, fletch: L(p, 'cb_fletch') > 0, bcrit, noFF: true });
   }
   if (id === 'shotgun' && p.evo.sg_dragon) addFireStrip(p, mz, ang, Math.min(5, ws.speed * ws.life), burn);
   return ang;
@@ -132,9 +135,9 @@ function updateFireStrips(dt) {
   for (let i = fireStrips.length - 1; i >= 0; i--) {
     const f = fireStrips[i]; f.t -= dt;
     if (f.t <= 0) { fireStrips.splice(i, 1); continue; }
-    f.acc += dt * 30;
-    while (f.acc > 1) { f.acc--; const k = Math.random(); spawnP({ x: f.x0 + (f.x1 - f.x0) * k + rnd(-0.12, 0.12), y: f.y + 0.05, z: f.z0 + (f.z1 - f.z0) * k + rnd(-0.12, 0.12), vx: rnd(-0.2, 0.2), vy: rnd(0.8, 1.6), vz: rnd(-0.2, 0.2), s: rnd(0.1, 0.18), s1: 0.02, col: 0xffd060, col1: 0xd02808, glow: true, life: rnd(0.3, 0.55), drag: 0.97 }); }
-    forNear((f.x0 + f.x1) / 2, (f.z0 + f.z1) / 2, z => { if (!z.dead && Math.abs(z.y - f.y) < 0.6 && segDist(z.x, z.z, f) < 0.35 + z.r * 0.5) setBurn(z, f.burn.t, f.burn.dps, false, 1, f.burn.slow); }, 3.5);
+    f.acc += dt * 30 * (f.rad ? f.rad * f.rad * 2 : 1);
+    while (f.acc > 1) { f.acc--; const k = Math.random(), jr = f.rad || 0.12; spawnP({ x: f.x0 + (f.x1 - f.x0) * k + rnd(-jr, jr), y: f.y + 0.05, z: f.z0 + (f.z1 - f.z0) * k + rnd(-jr, jr), vx: rnd(-0.2, 0.2), vy: rnd(0.8, 1.6), vz: rnd(-0.2, 0.2), s: rnd(0.1, 0.18), s1: 0.02, col: 0xffd060, col1: 0xd02808, glow: true, life: rnd(0.3, 0.55), drag: 0.97 }); }
+    forNear((f.x0 + f.x1) / 2, (f.z0 + f.z1) / 2, z => { if (!z.dead && Math.abs(z.y - f.y) < 0.6 && segDist(z.x, z.z, f) < (f.rad || 0.35) + z.r * 0.5) setBurn(z, f.burn.t, f.burn.dps, false, 1, f.burn.slow); }, 3.5);
     if (!f.noFF) for (const q of players) if (q !== f.owner && !q.down && q.inv <= 0 && Math.abs(q.y - f.y) < 0.6 && segDist(q.x, q.z, f) < 0.3 && !L(q, 'fireproof') && G.state === 'play') hurtPlayer(q);   // огонь по своим включён
   }
 }
@@ -166,13 +169,9 @@ function spawnCasing(p, type, side) {
   spawnP({ x: ej ? ej.x : p.x + Math.sin(a) * 0.2, y: ej ? ej.y : hy, z: ej ? ej.z : p.z + Math.cos(a) * 0.2, vx: Math.sin(a) * rnd(1.8, 3.2), vy: rnd(2.5, 4.2), vz: Math.cos(a) * rnd(1.8, 3.2), g: 16,
     s: shell ? 0.12 : 0.085, sx: 0.8, sz: shell ? 1.8 : 1.6, ry: Math.random() * 3, rx: Math.random() * 3, col: shell ? 0xe03a24 : 0xffd23c, life: 30, bounce: 1, stay: true, snd: type });
 }
-// Перезарядка закончилась: у арбалета болты берутся из колчана (нет болтов — ждём)
+// Перезарядка закончилась: магазин полон (у арбалета болты бесконечные)
 function loadMag(p, ws) {
-  if (WEAPONS[p.gun].bolt) {
-    const n = Math.min(ws.mag - p.ammo, p.quiver);
-    if (n <= 0) { p.reloadT = 0.2; return; }
-    p.quiver -= n; p.ammo += n;
-  } else p.ammo = ws.mag;
+  p.ammo = ws.mag;
   SFX.reload(false, p.gun);
 }
 function startReload(p, ws) {
@@ -204,7 +203,7 @@ function updateBullets(dt) {
         SFX.impact(so.mat); if (so.expl) { const pv = ATTR; ATTR = b.owner || b.src || null; explDamage(so.expl, b.dmg || 8); ATTR = pv; } dead = true; b.x = bx; b.z = bz; b.wallHit = true; break; }
       forNear(b.x, b.z, z => {
         if (z.dead || b.hits.includes(z.id)) return;
-        const r = z.r + 0.08; if ((z.x - b.x) ** 2 + (z.z - b.z) ** 2 > r * r || b.y < z.y - 0.05 || b.y > z.y + zHeight(z)) return;
+        const r = z.r + 0.08 + (b.fletch ? 0.07 : 0); if ((z.x - b.x) ** 2 + (z.z - b.z) ** 2 > r * r || b.y < z.y - 0.05 || b.y > z.y + zHeight(z)) return;
         if (hitByBullet(z, b) === false) { dead = true; b.inZ = z; return false; }
       });
     }
@@ -220,6 +219,7 @@ function hitByBullet(z, b) {
   if (b.pb && close) d *= 1.5 + 0.25 * (b.pb - 1);
   if (b.core && (z.type === 'armored' || z.type === 'fat')) d *= 1 + 0.5 * b.core;   // «Бронебойный сердечник»
   if (b.helm && z.type === 'armored') d *= 1.5;
+  if (b.silver && (z.type === 'armored' || z.type === 'fat')) d *= 2;                   // «Серебряный наконечник»
   if (b.owner && b.owner.att && b.owner.att.light && inBeam(b.owner, z)) d *= 1.15;   // подствольный фонарь: +15% в луче
   if (b.owner && b.owner.cls === 'cowboy' && (z.type === 'runner' || z.type === 'armored')) d *= 1.15;   // Ковбой                                        // пулемёт: «Бронебойные сердечники»
   if (b.far && Math.hypot(z.x - b.x0, z.z - b.z0) > 5) d *= 1.15;                     // «Выдержка»: дальше 5 клеток
@@ -229,6 +229,7 @@ function hitByBullet(z, b) {
   if (z.form === 'armored' && b.y > z.y + 0.95) sparks(b.x, b.y, b.z);               // пуля звякнула о каску
   dzBy(b.owner || b.src, z, d, b.vx / s, b.vz / s, b.knock, b.y, b.slug || b.boom);
   SFX.hit();
+  if (b.bcrit) { SFX.hit(); blood(z.x, b.y, z.z, b.vx / s, b.vz / s, 10); sparks(b.x, b.y, b.z); shake = Math.max(shake, 0.1); }   // хруст «Меткого выстрела»
   if (b.ignite) { const f = b.burn || { t: 2.5, dps: 6 * (b.owner ? b.owner.st.dmg : 1) }; setBurn(z, f.t, f.dps, f.spread, 0, f.slow); }
   if (z.dead && b.owner && close) onCloseKill(b.owner);
   if (!z.dead) {
@@ -237,7 +238,6 @@ function hitByBullet(z, b) {
     if (b.stag && z.type === 'runner') z.stunT = Math.max(z.stunT || 0, 0.3);           // «Отдача калибра»
     if (b.knee) kneeShot(z);                                                            // «Выстрел в колено»
   }
-  if (b.bolt && z.dead && !b.nopick && !b.boom && b.owner && b.owner.evo.cb_master && b.owner.gun === 'crossbow') { b.owner.quiver++; b.nopick = true; }   // «Мастер-охотник»
   if (b.bolt && b.boom) return false;                                                    // разрывной болт рвётся на первом
   if (z.dead && b.owner && L(b.owner, 'rv_hand')) b.owner.handN = Math.min(3, b.owner.handN + 1);   // «Ловкость рук»
   if (b.rico !== undefined && b.bounceN < 30 && ((z.dead && (b.rico > 0 || b.trick || b.cock)) || (!z.dead && b.cock)) && ricochet(b, z)) {
@@ -414,11 +414,13 @@ function updateUbglFlight(dt) {
 /* ---------- 12б. Арбалет: наконечники, болты на земле и в трупах, подбор; «Ураган» узи ---------- */
 // Наконечник болта: зажигательный или разрывной (тип выбирается один раз за забег)
 function boltTip(p) {
-  const tar = L(p, 'cb_tar'), ch = L(p, 'cb_charge');
+  const f = L(p, 'cb_fire'), bm = L(p, 'cb_boom'), dps = 6 * p.st.dmg;
+  const burn = f ? { t: 3, dps, spread: f >= 3, slow: false } : null;                       // 3-й ур.: подожжённые зомби поджигают соседей
   return {
-    burn: L(p, 'cb_fire') ? { t: 3 + tar, dps: 6 * (1 + 0.3 * tar) * p.st.dmg, spread: false, slow: false } : null,
-    burnBolt: L(p, 'cb_burnbolt') > 0,
-    boom: L(p, 'cb_boom') ? { R: 1.3, mul: 0.7, cluster: ch > 0, panic: L(p, 'cb_delay') > 0 } : null,
+    burn,
+    pool: f ? { rad: f >= 2 ? 1.25 : 0.8, t: f >= 2 ? 6 : 3.5, burn } : null,              // лужа смолы: 2-й ур. — больше и дольше
+    trail: L(p, 'cb_trail') > 0,
+    boom: bm ? { R: bm >= 2 ? 1.9 : 1.3, mul: bm >= 2 ? 0.9 : 0.7, cluster: L(p, 'cb_charge') > 0, sticky: L(p, 'cb_sticky') > 0 } : null,
   };
 }
 const BOLTS = [], BOOMQ = [], BOLT_MAX = 80;
@@ -449,14 +451,19 @@ function boltEnd(b) {
   const Z = b.inZ, x = Z ? Z.x : b.x, zz = Z ? Z.z : b.z, y = Z ? Z.y + 0.6 : b.y;
   if (b.boom) {
     const dmg = b.dmg * b.boom.mul;
-    if (b.boom.panic && Z && !Z.dead) {                                                       // «Паника»: зомби с болтом бежит в толпу
-      const c = densestNear(Z, 6); Z.panicT = 1.2; Z.panicX = c ? c.x : Z.x + rnd(-3, 3); Z.panicZ = c ? c.z : Z.z + rnd(-3, 3);
-      BOOMQ.push({ Z, x, y, z: zz, t: 1.2, dmg: dmg * 1.5, R: b.boom.R * 1.5, owner: b.owner, cluster: b.boom.cluster });
-    } else boltBoom(x, y, zz, dmg, b.boom.R, b.owner, b.boom.cluster);
+    if (b.boom.sticky && Z && !Z.dead) BOOMQ.push({ Z, x, y, z: zz, t: 1, dmg: dmg * 1.5, R: b.boom.R * 1.25, owner: b.owner, cluster: b.boom.cluster });   // «Липкий болт»: рвётся через секунду, сильнее
+     else boltBoom(x, y, zz, dmg, b.boom.R, b.owner, b.boom.cluster);
     return;
   }
   const fy = floorAt(x, zz, y + 0.2);
-  if (b.burnBolt && !(Z && !Z.dead)) fireStrips.push({ owner: b.owner, x0: x, z0: zz, x1: x + 0.01, z1: zz, y: fy, t: 3, burn: b.burn || fireOf(b.owner), acc: 0, noFF: true });   // «Горящая стрела»
+  if (b.pool && fireStrips.length < 60) {                                                    // «Зажигательный наконечник»: лужа смолы
+    const P = b.pool; fireStrips.push({ owner: b.owner, x0: x, z0: zz, x1: x + 0.01, z1: zz, y: fy, t: P.t, burn: P.burn, acc: 0, noFF: true, rad: P.rad }); scorch(x, zz, P.rad * 0.7);
+  }
+  if (b.trail && fireStrips.length < 60) {                                                   // «Огненный след»: горящая линия вдоль полёта
+    const x0 = b.x0, z0 = b.z0, ty = floorAt(x, zz, (b.owner ? b.owner.y : 0) + 0.3);
+    fireStrips.push({ owner: b.owner, x0, z0, x1: x, z1: zz, y: ty, t: 2.5, burn: b.burn, acc: 0, noFF: true });
+    for (let k = 0; k <= 6; k++) scorch(x0 + (x - x0) * k / 6, z0 + (zz - z0) * k / 6, 0.18);
+  }
   if (b.nopick) return;
   if (Z && !Z.dead) { Z.bolts = (Z.bolts || 0) + 1; return; }                        // торчит в живом — выпадет с трупом
   const yaw = Math.atan2(b.vx, b.vz), pitch = Math.atan2(b.vy, Math.hypot(b.vx, b.vz));
@@ -469,24 +476,12 @@ function dropBolts(z) {
   for (let i = 0; i < z.bolts; i++) addStuck(z.x + rnd(-0.25, 0.25), fy + 0.12, z.z + rnd(-0.25, 0.25), Math.random() * TAU, -0.5);
   z.bolts = 0;
 }
-// Подбор: пройти рядом (0.7), со «Сборщиком» болты сами летят с 3 клеток
+// Болты бесконечные: воткнувшиеся в землю — просто декор; здесь тикают отложенные взрывы «Липкого болта»
 function updateBolts(dt) {
   for (let i = BOOMQ.length - 1; i >= 0; i--) {
     const q = BOOMQ[i]; if (q.Z && !q.Z.dead) { q.x = q.Z.x; q.z = q.Z.z; q.y = q.Z.y + 0.6; }
     if (Math.random() < dt * 20) spawnP({ x: q.x, y: q.y + 0.2, z: q.z, s: 0.06, col: 0xff4020, glow: true, life: 0.08 });
     if ((q.t -= dt) <= 0) { BOOMQ.splice(i, 1); boltBoom(q.x, q.y, q.z, q.dmg, q.R, q.owner, q.cluster); }
-  }
-  for (let i = BOLTS.length - 1; i >= 0; i--) {
-    const B = BOLTS[i];
-    for (const p of players) {
-      if (p.down || p.gun !== 'crossbow' || p.ammo + p.quiver >= quiverMax(p)) continue;
-      const d = Math.hypot(p.x - B.x, p.z - B.z), R = L(p, 'cb_gather') ? 3 : p.cls === 'hunter' ? 1.5 : 0.7;   // Охотник подбирает издалека
-      if (d < 0.55 || (d < 0.7 && Math.abs(p.y - B.y) < 1.2)) { p.quiver++; SFX.click(); removeBolt(i); break; }
-      if (d < R && Math.abs(p.y - B.y) < 2) {                                            // «Сборщик»: болт летит к тебе
-        const k = Math.min(1, dt * 9 / d); B.x += (p.x - B.x) * k; B.z += (p.z - B.z) * k; B.y += (p.y + 0.6 - B.y) * Math.min(1, dt * 8);
-        B.g.position.set(B.x, B.y, B.z); B.g.rotation.y += dt * 12; break;
-      }
-    }
   }
 }
 // «Ураган»: на бегу узи бьют в обе стороны от направления бега

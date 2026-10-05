@@ -10,11 +10,10 @@ function makePlayer(idx, gun, x, z, ctl = { ctrl: 'all' }) {
     kx: 0, kz: 0, still: true, spin: 0, bloom: 0, firing: false, pump: 0, lastShot: -9, burstN: 0, fanShots: 0, shotN: 0,
     stam: 1, stamLock: false, stamRegenT: 0, sprinting: false, breathT: 0, slowT: 0, aim: null,
     lv: {}, evo: {}, items: [], branch: null, sub: null, stillT: 0, adrenT: 0, pbKills: 0,
-    shield: false, shieldT: 0, shieldCd: 1, ubglN: 0, ubglQ: 0, ubglT: 0, fanN: 0, handN: 0, serN: 0, twinN: 0, quiver: 0, boltT: 0, volleyN: 0, known: {}, pouch: {}, slots: [], hand: null, dev: {}, hookCd: 0, injReady: false, att: {}, itemCool: 0, msg: '', msgT: 0,
+    shield: false, shieldT: 0, shieldCd: 1, ubglN: 0, ubglQ: 0, ubglT: 0, fanN: 0, handN: 0, serN: 0, twinN: 0, known: {}, pouch: {}, slots: [], hand: null, dev: {}, hookCd: 0, injReady: false, att: {}, itemCool: 0, msg: '', msgT: 0,
     st: { dmg: 1, rate: 1, mag: 1, reload: 1, speed: 1, pierce: 0, proj: 0, pickup: 1, knock: 1, stam: 1, stamRegen: 1 } };
   applyClass(p);
   p.ammo = wStat(p).mag;
-  if (WEAPONS[gun].bolt) p.quiver = (CLS(p) === 'hunter' ? 8 : quiverMax(p)) - p.ammo;   // арбалет: в колчане остальное (Охотник — 8 на старте)
   return p;
 }
 // Пассивки классов (класс = ствол)
@@ -84,10 +83,17 @@ function wStat(p) {
     if (p.evo.rv_500) pierce = 99;
   }
   if (id === 'crossbow') {
-    pierce = b.pierce + s.pierce + L(p, 'cb_ap');                                   // «Бронебойный наконечник»: 2 / 3
-    if (L(p, 'cb_mag')) { mag = 5; rate = 3 * (1 + 0.2 * L(p, 'cb_lever')); dmg *= 0.6; reload = 2 * s.reload; }   // «Магазин на 5»
-    if (p.evo.cb_storm) { mag = 10; pellets = 2; }                       // «Шквал болтов»
-    if (p.evo.cb_master) reload = 0.05;                                  // «Мастер-охотник»
+    pierce += L(p, 'cb_heavy');                                          // «Тяжёлый наконечник»: 2 → 3 зомби
+    dmg *= 1 + 0.2 * L(p, 'cb_taut');                                    // «Тугая тетива»
+    pellets += L(p, 'cb_multi');                                         // «Двойной / Тройной болт»
+    const qk = Math.pow(0.85, L(p, 'cb_quick'));                         // «Быстрая рука»: −15% за уровень
+    reload *= qk;
+    if (L(p, 'cb_fletch')) { speed *= 1.3; life *= 1.3; }                // «Оперение»
+    if (L(p, 'cb_mag')) {                                                // «Барабанный магазин»: 5 → 7 → 9 → 12
+      mag = [5, 7, 9, 12][Math.min(3, L(p, 'cb_vol'))]; dmg *= 0.75;
+      rate = 2.5 / qk * (1 + 0.5 * p.spin * L(p, 'cb_spin'));            // «Раскрутка»: до +50%
+      reload = 1.2 * s.reload * (L(p, 'cb_swap') ? 0.75 : 1);
+    }
   }
   if (id === 'smg') {
     if (L(p, 'smg_mp5')) { mag = 30; rate = 9; spread *= 0.5; dmg *= 5.5 / 4; }   // MP5
@@ -105,7 +111,6 @@ function wStat(p) {
   return { dmg, rate: rate * rateMul, mag: Math.max(1, Math.round(mag * s.mag)), reload, pellets,
     spread: spread + p.bloom + (p.sprinting && !p.evo.mg_rpk && !p.evo.smg_storm ? CFG.SPRINT_SPREAD : 0), speed, life, pierce, knock, fan: b.fan, heavy: !!b.heavy };
 }
-const quiverMax = p => WEAPONS[p.gun].quiver + 6 * L(p, 'cb_quiver');   // арбалет: колчан 12 (+6 за «Колчан»)
 // двойное оружие: «Два кольта» и «Второй узи» — по стволу в каждой руке
 const twinGuns = p => !p.hand && ((p.gun === 'revolver' && !!p.evo.rv_twin) || (p.gun === 'smg' && L(p, 'smg_uzi') > 0));
 const oneHand = p => !!p.hand || p.gun === 'revolver' || (p.gun === 'smg' && L(p, 'smg_uzi') > 0);   // предмет в руке — одной рукой

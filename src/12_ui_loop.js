@@ -8,7 +8,7 @@ function menuBuild() {
   $('cards').innerHTML = MAIN_IDS.map((id, i) => { const W = WEAPONS[id], C = CLASSES[id];
     const rate = W.rateMax ? `${W.rate}→${W.rateMax}` : W.rate;
     return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><b>${C.name}</b><span class="gn">${W.name}</span><p>${W.desc}</p><div class="cl"><span class="pl">+ ${C.plus}</span>${C.minus ? `<br><span class="mi">− ${C.minus}</span>` : ''}</div>
-      <div class="st">урон <span>${W.dmg}${W.pellets > 1 ? '×' + W.pellets : ''}</span> · выстр./с <span>${rate}</span><br>магазин <span>${W.mag}</span> · перезарядка <span>${W.reload} с</span>${W.pierce ? `<br>пробивает <span>${W.pierce}</span>` : ''}${W.quiver ? ` · колчан <span>${W.quiver}</span>` : ''}</div><div class="who"></div></button>`; }).join('');
+      <div class="st">урон <span>${W.dmg}${W.pellets > 1 ? '×' + W.pellets : ''}</span> · выстр./с <span>${rate}</span><br>магазин <span>${W.mag}</span> · перезарядка <span>${W.reload} с</span>${W.pierce ? `<br>пробивает <span>${W.pierce}</span>` : ''}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
     b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; if (i === menuSel) menuConfirm(); else { menuSel = i; menuMark(); SFX.click(); } });
     b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
@@ -94,7 +94,7 @@ function hud() {
     hudSet(q('.stam'), K + 'st', (p.stam * 100).toFixed(0) + '%', 'width'); q('.stam').classList.toggle('lock', p.stamLock);
     hudSet(q('.cls'), K + 'cls', `${CLASSES[p.gun].name}<small>${WEAPONS[p.gun].name}</small>`, 'innerHTML');
     hudSet(q('.gun'), K + 'gun', [p.gun === 'mg' && p.spin > 0.05 ? `раскрутка ${Math.round(p.spin * 100)}%` : '', '', p.handN > 0 ? `ловкость ×${p.handN}` : '', p.curse ? '☠ ' + CURSES[p.curse].name : '',
-      p.gun === 'crossbow' ? `колчан ${p.quiver}${p.quiver <= 0 && p.ammo <= 0 ? ' (болт через ' + Math.ceil(3 - p.boltT) + ' с)' : ''}` : ''].filter(Boolean).join(' · '));
+      ''].filter(Boolean).join(' · '));
     const key = p.ammo + '/' + ws.mag;
     if (hudLast[K + 'am'] !== key) { hudLast[K + 'am'] = key; const el = q('.ammo'); el.classList.toggle('many', ws.mag > 40); q('.am').textContent = key;
       el.innerHTML = ws.mag > 40 ? '' : Array.from({ length: ws.mag }, (_, i) => `<b class="${i < p.ammo ? '' : 'e'}"></b>`).join(''); }

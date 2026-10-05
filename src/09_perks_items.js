@@ -36,7 +36,7 @@ function perkAllowed(p, u) {
 // Финал ветки доступен, когда все перки ветки взяты хотя бы на 1 уровень
 function finaleReady(p) {
   const b = branchOf(p); if (!b || (b.sub && !p.sub)) return null;
-  const path = pathOf(p); if (p.evo[path.fin.id]) return null;
+  const path = pathOf(p); if (!path.fin || p.evo[path.fin.id]) return null;   // у путей арбалета финала нет
   return branchPerks(p.gun, b.id, p.sub).every(u => L(p, u.id) > 0) ? path : null;
 }
 // Полный рандом (просьба автора): все доступные карточки равновероятны, без весов и групп.
@@ -83,8 +83,8 @@ function cardHTML(p, ch, i) {
   if (ch.type === 'branch') {
     const b = ch.b, main = branchOf(p), isSub = ch.sub;
     const perks = isSub ? PERKS.filter(u => u.gun === p.gun && u.branch === main.id && u.sub === b.id) : branchPerks(p.gun, b.id);
-    const fin = b.sub ? `дальше: ${b.sub.map(x => x.name).join(' / ')}` : `финал: ${b.fin.name}`;
-    return { cls: 'wpn', html: `<span class="tag">${isSub ? `ПОДПУТЬ · ${main.name}` : `ПУТЬ · ${WEAPONS[p.gun].name}`}</span><b>${b.name}</b><span>${b.desc}${b.key ? `<br><b style="font-size:inherit">Сразу: ${PERK[b.key].name}</b> — ${PERK[b.key].desc}` : ''}</span><i>${perks.filter(u => u.id !== b.key).map(u => u.name).join(' · ')}<br>${fin} · ${key}</i>` };
+    const fin = b.sub ? `дальше: ${b.sub.map(x => x.name).join(' / ')}` : (b.fin ? `финал: ${b.fin.name}` : '');
+    return { cls: 'wpn', html: `<span class="tag">${isSub ? `ПОДПУТЬ · ${main.name}` : `ПУТЬ · ${WEAPONS[p.gun].name}`}</span><b>${b.name}</b><span>${b.desc}${b.key ? `<br><b style="font-size:inherit">Сразу: ${PERK[b.key].name}</b> — ${PERK[b.key].desc}` : ''}</span><i>${perks.filter(u => u.id !== b.key).map(u => u.name).join(' · ')}${fin ? '<br>' + fin + ' · ' : '<br>'}${key}</i>` };
   }
   if (ch.type === 'finale') {
     const b = ch.b;
