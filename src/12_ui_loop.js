@@ -1081,6 +1081,7 @@ function menuZombie(L, i) {
 }
 const MENU3D_ON = false;                                             // v0.59: пока просто чёрный фон (сцена с шествием осталась в коде — включить здесь)
 function menuRender(T) {
+  if (typeof mhRender === 'function') return mhRender(T);                      // v0.76: главное меню — кладбище и рука (src/12i_menu_graveyard.js)
   if (!MENU3D_ON) { renderer.setRenderTarget(null); renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); renderer.setClearColor(0x000000, 1); renderer.clear(); return true; }
   if (!MENU3D.scene) { try { menu3dBuild(); } catch (e) { console.warn('menu scene', e); MENU3D.fail = true; } }
   if (MENU3D.fail) return false;

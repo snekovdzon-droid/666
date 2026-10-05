@@ -72,6 +72,7 @@ body.touch #btns .dsk{display:none}
 .mmCol{width:min(340px,86vw)}
 .mmTitle{margin:0;font-size:clamp(44px,7.5vw,86px);line-height:.95;font-weight:900;letter-spacing:3px;color:#e6dcc4;text-shadow:0 0 18px rgba(230,200,150,.25),0 4px 0 #000;animation:mmFlick 6s infinite}
 .mmTitle .r{color:#c2331f;text-shadow:0 0 22px rgba(220,50,30,.55),0 4px 0 #2a0803}
+.mmLogo{display:block;width:min(270px,76vw);height:auto;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(220,50,30,.35))}
 .mmSub{color:#9c927c;margin:8px 0 26px;font-size:14px;letter-spacing:1px}
 @keyframes mmFlick{0%,100%{opacity:1}90%{opacity:1}91%{opacity:.35}92%{opacity:1}95%{opacity:.6}96%{opacity:1}}
 @keyframes mmIn{from{opacity:0;transform:translateX(-34px)}to{opacity:1;transform:none}}
@@ -79,6 +80,7 @@ body.touch #btns .dsk{display:none}
 #mmPanel{max-height:calc(100vh - 150px);overflow-y:auto;padding-right:6px}#mmPanel button{font-size:17px;padding:9px 16px;margin:5px 0}#mmPanel::-webkit-scrollbar{width:6px}#mmPanel::-webkit-scrollbar-thumb{background:#4a4032}
 #mmBtns button.sel,#mmBtns button:hover:not(:disabled),#mmPanel button:hover{transform:translateX(10px);border-left-color:#e8a050;background:rgba(62,40,22,.92);color:#fff}
 #mmBtns button:disabled{opacity:.42;cursor:default}#mmBtns small{font-size:11px;color:#e8a050;letter-spacing:1px;text-transform:uppercase;margin-left:6px}
+@media (max-height:520px){.mmLogo{width:150px}.mmSub{margin:4px 0 8px;font-size:12px}#mmBtns button,#mmPanel button{font-size:15px;padding:7px 14px;margin:4px 0}.mmCredits{display:none}#main{padding-left:max(14px,4vw)}}
 #mmPanel{display:none;color:#d8d0bc}#mmPanel h3{margin:0 0 10px;font-size:22px;color:#e8a050}#mmPanel p{font-size:13.5px;color:#a89e88;line-height:1.5}
 /* ---------- интерфейс «досье» ---------- */
 .hud{position:fixed;color:#f2ead6;pointer-events:none;width:226px}
@@ -231,7 +233,7 @@ body.touch .mel{display:none}
 <div id="fps"></div>
 <div id="help">WASD — ход · Shift — бег · мышь — прицел и стрельба · R — перезарядка · 1–6 — предмет в руку · F — обменять · G — крюк · Пробел — ближний бой · Esc — пауза<br>Q/E — повернуть карту · колёсико — зум · N — ночь/закат · F3 — отладка · геймпад: крестовина — предметы, Y — обменять/к стволу, стики, RT огонь, R3 ближний бой, X перезарядка, L3 бег, A — крюк, LB/RB камера</div>
 <div id="flashFx" style="position:fixed;inset:0;background:#fffbe8;opacity:0;pointer-events:none;z-index:4"></div><div id="tItems"></div><button id="fireBtn" class="tctl" aria-label="Огонь"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="2.5" fill="currentColor"/><path d="M24 4v10M24 34v10M4 24h10M34 24h10"/></svg></button><button id="sprintBtn" class="tctl" aria-label="Бег"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2.5h7.5v8.2l5 2.2c1.3.6 1.9 1.6 1.9 3V19a1 1 0 0 1-1 1H5V4.5a2 2 0 0 1 1-2z"/><path d="M3.5 21.5h17" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button><button id="rldBtn" class="tctl" data-k="r" aria-label="Перезарядка"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 3.5v4.6h-4.6"/></svg></button><div id="btns"><button data-k="ql">⟲</button><button data-k="qr">⟳</button><button data-k="zi">＋</button><button data-k="zo">－</button><button class="dsk" data-k="n">☾</button><button class="dsk" data-k="fs">⛶</button><button class="dsk" id="dbgBtn">dbg</button></div>
-<div id="loading">Загрузка…</div><div id="ver">v0.75</div>
+<div id="loading">Загрузка…</div><div id="ver">v0.76</div>
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
@@ -261,6 +263,7 @@ body.touch .mel{display:none}
 <script src="src/01_data.js"></script>
 <script src="src/02_vox_assets.js"></script>
 <script src="src/02f_prison_zombies.js"></script>
+<script src="src/02g_menu_hand.js"></script>
 <script src="src/02b_sound_assets.js"></script>
 <script src="src/02c_gun_assets.js"></script>
 <script src="src/02d_car_asset.js"></script>
@@ -301,4 +304,5 @@ body.touch .mel{display:none}
 <script src="src/12f_map_select.js"></script>
 <script src="src/12g_zsnd_assets.js"></script>
 <script src="src/12h_fxsnd_assets.js"></script>
+<script src="src/12i_menu_graveyard.js"></script>
 </body></html>
