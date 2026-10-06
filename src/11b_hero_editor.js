@@ -9,16 +9,19 @@ function heroApplySlot(i) {
 }
 const heroApplyAll = () => { for (let i = 0; i < 4; i++) heroApplySlot(i); };
 
-// строка «Внешность» в меню выбора класса
+// подписи и кнопки внешности под героями в меню выбора класса (s — левая или правая панель, игрок — CV.pl[s])
 function lookMark() {
-  const h = heroById(HEROES.sel[G.pick]);
-  $('lookWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b>` : 'Внешность';
-  $('lookName').textContent = h ? h.name : 'Стандартный';
+  for (let s = 0; s < 2; s++) {
+    const pl = CV.pl[s], h = heroById(HEROES.sel[pl]);
+    $('lookWho' + s).innerHTML = G.nPlayers > 1 ? `<span style="color:${PLAYER_CSS[pl]}">Игрок ${pl + 1}</span>` : 'Внешность';
+    $('lookName' + s).textContent = h ? h.name : 'Стандартный';
+  }
 }
-function lookCycle(d) {
-  const ids = ['', ...HEROES.list.map(h => h.id)], i = Math.max(0, ids.indexOf(HEROES.sel[G.pick]));
-  HEROES.sel[G.pick] = ids[(i + d + ids.length) % ids.length]; heroSave(); heroApplySlot(G.pick); lookMark(); SFX.click();
+function lookCycle(d, s = 0) {
+  const pl = CV.pl[s], ids = ['', ...HEROES.list.map(h => h.id)], i = Math.max(0, ids.indexOf(HEROES.sel[pl]));
+  HEROES.sel[pl] = ids[(i + d + ids.length) % ids.length]; heroSave(); heroApplySlot(pl); menuMark(); SFX.click();
 }
+function lookEdit(s = 0) { G.pick = CV.pl[s]; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); edOpen(); }
 
 const ED = { cur: null, ready: false, open: false, yaw: 0.5, walk: true, spin: true, drag: null, M: null, parts: {}, dirty: true };
 // Строки панели: opt — кнопки вариантов (из файлов частей), col — цвет, k — поле героя

@@ -17,8 +17,7 @@ function menuBuild() {
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
   $('splitBtn').onclick = e => { e.stopPropagation(); toggleSplit(); };
   $('backMain').onclick = e => { e.stopPropagation(); mmEnter(); };
-  $('lookPrev').onclick = e => { e.stopPropagation(); lookCycle(-1); }; $('lookNext').onclick = e => { e.stopPropagation(); lookCycle(1); };
-  $('lookEdit').onclick = e => { e.stopPropagation(); edOpen(); };
+  for (const s of [0, 1]) { $('lookPrev' + s).onclick = e => { e.stopPropagation(); lookCycle(-1, s); }; $('lookNext' + s).onclick = e => { e.stopPropagation(); lookCycle(1, s); }; $('lookEdit' + s).onclick = e => { e.stopPropagation(); lookEdit(s); }; }
   heroApplyAll();
   $('optSound').checked = Sound.on; $('optSound').onchange = e => setSound(e.target.checked);
   $('againBtn').onclick = e => { e.stopPropagation(); restartRun(); };
@@ -42,7 +41,7 @@ function menuMark() {
   const ctr = assignControls(G.nPlayers);
   $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
   $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
-  lookMark();
+  cvUpdate(); lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
 function toggleSplit() { G.split = !G.split; lsSet('split', G.split); SFX.click(); menuMark(); }

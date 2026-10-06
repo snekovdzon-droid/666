@@ -224,6 +224,24 @@ body.touch .mel{display:none}
 .rs-aw span{font-size:16px;color:#ecd060}.rs-aw b{color:#f2ead6;font-weight:600}.rs-aw em{font-style:normal}.rs-aw i{font-style:normal;font-weight:700}
 .rs-graph{width:100%;max-width:520px;height:auto;display:block;margin-top:4px;background:rgba(0,0,0,.25)}.rs-graph text{fill:#8a806c;font-size:9px}
 .rs-leg{display:flex;gap:14px;font-size:12px;margin-top:4px}
+
+/* ---------- меню выбора класса: герой слева, карточки справа; в коопе — второй герой справа, карточки по центру ---------- */
+#menu{background:linear-gradient(180deg,rgba(10,8,6,.55),rgba(10,8,6,.92))}
+#cmStage{display:flex;align-items:stretch;justify-content:center;gap:18px;width:min(1500px,100%);padding:0 12px;box-sizing:border-box}
+#cmMid{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center}
+#cmMid #pickWho{min-height:0}
+#cards{width:100%;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.cmHero{flex:0 0 clamp(210px,24vw,330px);display:flex;flex-direction:column;border-left:4px solid #4a4032;background:rgba(20,16,12,.72);transition:opacity .2s,border-color .2s}
+.cmHero.off{opacity:.62}
+.cmHero canvas{width:100%;height:clamp(300px,52vh,500px);display:block;cursor:grab;touch-action:none}
+.cmCap{padding:8px 10px 10px;text-align:center;color:#c8bea8;font-size:14px}
+.cmWho{font-weight:700;min-height:18px}.cmCls{font-size:20px;color:#ffd08a;margin:2px 0 6px}.cmCls small{display:block;font-size:12px;color:#a89e88}
+.cmLook{display:flex;align-items:center;justify-content:center;gap:8px}.cmLook b{min-width:110px;color:#ffd08a;font-weight:600}
+.cmLook button,.cmEdit{font:inherit;padding:6px 12px;border-radius:0;border:1px solid #6a6252;background:#2a241e;color:#f2ead6;cursor:pointer}.cmEdit{margin-top:8px;font-size:13px}
+#cmH1{display:none}body.cmCoop #cmH1{display:flex}
+#menu .cmBtns{margin-top:6px}#menu .cmBtns .go{margin:8px 4px 0}
+@media (max-width:820px){#cmStage{flex-direction:column;align-items:stretch}.cmHero{flex:none;flex-direction:row;align-items:center}.cmHero canvas{width:44%;height:210px}.cmCap{flex:1}#cmH1{order:3}#cmMid{order:2}}
+body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10px}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -240,11 +258,16 @@ body.touch .mel{display:none}
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
-<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
-  <div><button class="go alt" id="backMain">← Главное меню</button></div>
-  <div id="lookRow"><span id="lookWho"></span> <button id="lookPrev">◀</button> <b id="lookName"></b> <button id="lookNext">▶</button> <button id="lookEdit">Редактор персонажа</button></div>
-  <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go alt" id="splitBtn">Экран: общий</button> <button class="go" id="goBtn">В бой</button></div>
-  <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
+<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Выбери класс — у каждого свой ствол и своя экипировка.</div>
+  <div id="cmStage">
+    <div class="cmHero" id="cmH0"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho0"></div><div class="cmCls" id="cmCls0"></div>
+      <div class="cmLook"><button id="lookPrev0">◀</button> <b id="lookName0"></b> <button id="lookNext0">▶</button></div><button class="cmEdit" id="lookEdit0">Редактор персонажа</button></div></div>
+    <div id="cmMid"><div id="pickWho" class="sub"></div><div id="cards"></div></div>
+    <div class="cmHero" id="cmH1"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho1"></div><div class="cmCls" id="cmCls1"></div>
+      <div class="cmLook"><button id="lookPrev1">◀</button> <b id="lookName1"></b> <button id="lookNext1">▶</button></div><button class="cmEdit" id="lookEdit1">Редактор персонажа</button></div></div>
+  </div>
+  <div class="cmBtns"><button class="go alt" id="backMain">← Главное меню</button> <button class="go alt" id="plBtn">Игроков: 1</button> <button class="go alt" id="splitBtn">Экран: общий</button> <button class="go" id="goBtn">В бой</button></div>
+  <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–7 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада) · героя можно вращать мышью</div>
   <label class="opts"><input type="checkbox" id="optSound"> звук</label></div>
 <div id="editor" class="scr">
   <div class="edTop"><b>Редактор персонажа</b> <select id="edList"></select> <button id="edNew">Новый</button> <button id="edCopy">Копия</button> <button id="edDel">Удалить</button></div>
@@ -6407,16 +6430,19 @@ function heroApplySlot(i) {
 }
 const heroApplyAll = () => { for (let i = 0; i < 4; i++) heroApplySlot(i); };
 
-// строка «Внешность» в меню выбора класса
+// подписи и кнопки внешности под героями в меню выбора класса (s — левая или правая панель, игрок — CV.pl[s])
 function lookMark() {
-  const h = heroById(HEROES.sel[G.pick]);
-  $('lookWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b>` : 'Внешность';
-  $('lookName').textContent = h ? h.name : 'Стандартный';
+  for (let s = 0; s < 2; s++) {
+    const pl = CV.pl[s], h = heroById(HEROES.sel[pl]);
+    $('lookWho' + s).innerHTML = G.nPlayers > 1 ? `<span style="color:${PLAYER_CSS[pl]}">Игрок ${pl + 1}</span>` : 'Внешность';
+    $('lookName' + s).textContent = h ? h.name : 'Стандартный';
+  }
 }
-function lookCycle(d) {
-  const ids = ['', ...HEROES.list.map(h => h.id)], i = Math.max(0, ids.indexOf(HEROES.sel[G.pick]));
-  HEROES.sel[G.pick] = ids[(i + d + ids.length) % ids.length]; heroSave(); heroApplySlot(G.pick); lookMark(); SFX.click();
+function lookCycle(d, s = 0) {
+  const pl = CV.pl[s], ids = ['', ...HEROES.list.map(h => h.id)], i = Math.max(0, ids.indexOf(HEROES.sel[pl]));
+  HEROES.sel[pl] = ids[(i + d + ids.length) % ids.length]; heroSave(); heroApplySlot(pl); menuMark(); SFX.click();
 }
+function lookEdit(s = 0) { G.pick = CV.pl[s]; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); edOpen(); }
 
 const ED = { cur: null, ready: false, open: false, yaw: 0.5, walk: true, spin: true, drag: null, M: null, parts: {}, dirty: true };
 // Строки панели: opt — кнопки вариантов (из файлов частей), col — цвет, k — поле героя
@@ -7629,6 +7655,87 @@ function gunsFrameBegin() { GFRAME++; }
 function gunsFrameEnd() { for (const m of GM_INST.values()) if (m.userData.f !== GFRAME) m.visible = false; }
 </script>
 <script>'use strict';
+/* ---------- Меню выбора класса: герой слева, карточки справа; в коопе второй герой справа, карточки по центру ----------
+   Герой — тот же воксельный (внешность из редактора), поверх него вещи выбранного класса (GEAR в 01_data — как в бою).
+   Один общий рендерер рисует обоих героев и копирует кадр в canvas каждой панели. */
+const CV = { r: null, slots: [], pl: [0, 1], run: false, last: 0 };
+const CV_BOX = new THREE.BoxGeometry(1, 1, 1), CV_MATS = new Map();
+const cvMat = col => { let m = CV_MATS.get(col); if (!m) CV_MATS.set(col, m = new THREE.MeshLambertMaterial({ color: col })); return m; };
+function cvSlot(s) {
+  if (CV.slots[s]) return CV.slots[s];
+  const cv = $('cmH' + s).querySelector('canvas'), sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(28, 1, 0.1, 30);
+  sc.add(new THREE.HemisphereLight(0xfff4e0, 0x6a6a7a, 0.85));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(2, 4, 5); sc.add(dl);
+  const rim = new THREE.DirectionalLight(0x7a9cff, 0.35); rim.position.set(-3, 2, -3); sc.add(rim);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(0.7, 40), new THREE.MeshBasicMaterial({ color: 0x0a0806, transparent: true, opacity: 0.6 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = 0.002; sc.add(floor);
+  const root = new THREE.Group(); sc.add(root);
+  const S = CV.slots[s] = { cv, sc, cam, root, key: '', M: null, mat: null, parts: {}, gear: [], cls: null, yaw: s ? -0.5 : 0.5, base: s ? -0.5 : 0.5, drag: null, idle: 0 };
+  cv.addEventListener('pointerdown', e => { S.drag = { x: e.clientX, yaw: S.yaw }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+  cv.addEventListener('pointermove', e => { if (S.drag) { S.yaw = S.drag.yaw + (e.clientX - S.drag.x) * 0.012; S.idle = 3; } });
+  const up = () => { S.drag = null; cv.style.cursor = ''; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  return S;
+}
+function cvHero(pl) {
+  const h = heroById(HEROES.sel[pl]);
+  return h || Object.assign({}, HERO_PRESETS[0], { top: '#' + PLAYER_COL[pl].map(v => v.toString(16).padStart(2, '0')).join('') });
+}
+function cvBuild(s) {                                   // внешность героя игрока CV.pl[s] + вещи его класса
+  const S = cvSlot(s), pl = CV.pl[s], hero = cvHero(pl), key = JSON.stringify(hero);
+  if (S.key !== key) {
+    S.key = key; S.cls = null;
+    if (S.M) { S.root.clear(); for (const k of VOX_PARTS) S.M.parts[k].geo.dispose(); S.M.tex.dispose(); S.mat.dispose(); }
+    const M = S.M = buildVoxModel(genHeroVox(hero)), W = VZ.W;
+    S.mat = new THREE.MeshLambertMaterial({ map: M.tex }); S.parts = {};
+    const body = new THREE.Group(); body.scale.set(1, VZ.H, 1); S.root.add(body);   // как в игре: рост ×H, ширина ×W
+    for (const k of VOX_PARTS) {
+      const g = new THREE.Group(), m = new THREE.Mesh(M.parts[k].geo, S.mat), pv = M.parts[k].pivot;
+      g.position.set(pv[0] * W, pv[1], pv[2] * W); g.scale.set(W, 1, W); g.add(m); body.add(g); S.parts[k] = g;
+    }
+    S.gear = [];
+  }
+  const cls = CLASSES[G.guns[pl]] ? CLASSES[G.guns[pl]].id : '';
+  if (S.cls !== cls || !S.gear.length && GEAR[cls]) {
+    for (const m of S.gear) m.parent.remove(m); S.gear = []; S.cls = cls;
+    for (const [k, col, sx, sy, sz, ox, oy, oz] of GEAR[cls] || []) {   // те же коробки, что рисует drawGear в бою
+      const m = new THREE.Mesh(CV_BOX, cvMat(col)); m.scale.set(sx, sy, sz); m.position.set(ox, oy, oz); S.parts[k].add(m); S.gear.push(m);
+    }
+  }
+}
+function cvUpdate() {                                   // вызывается из menuMark: слоты, подписи, подсветка активного героя
+  if (!$('cmH0')) return;
+  const co = G.nPlayers > 1; document.body.classList.toggle('cmCoop', co);
+  CV.pl = [0, co ? Math.max(1, G.pick) : 1];
+  for (let s = 0; s < (co ? 2 : 1); s++) {
+    const pl = CV.pl[s], C = CLASSES[G.guns[pl]], W = WEAPONS[G.guns[pl]], el = $('cmH' + s), act = !co || pl === G.pick;
+    cvBuild(s);
+    el.classList.toggle('off', !act); el.style.borderLeftColor = co ? PLAYER_CSS[pl] : '';
+    $('cmCls' + s).innerHTML = C ? `${C.name}<small>${W.name}</small>` : '';
+  }
+  if (!CV.run && G.state === 'menu') { CV.run = true; CV.last = performance.now(); requestAnimationFrame(cvLoop); }
+}
+function cvLoop(now) {
+  if (G.state !== 'menu' || $('menu').style.display === 'none') { CV.run = false; return; }
+  requestAnimationFrame(cvLoop);
+  const dt = Math.min(0.05, (now - CV.last) / 1000); CV.last = now; const t = now / 1000;
+  if (!CV.r) { CV.r = new THREE.WebGLRenderer({ alpha: true, antialias: true }); CV.r.outputEncoding = THREE.sRGBEncoding; }
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  for (let s = 0; s < (G.nPlayers > 1 ? 2 : 1); s++) {
+    const S = CV.slots[s]; if (!S || !S.M) continue;
+    const w = Math.round(S.cv.clientWidth * dpr), h = Math.round(S.cv.clientHeight * dpr); if (!w || !h) continue;
+    if (S.cv.width !== w || S.cv.height !== h) { S.cv.width = w; S.cv.height = h; }
+    const r = CV.r; r.setPixelRatio(1); if (r.domElement.width !== w || r.domElement.height !== h) r.setSize(w, h, false);
+    S.cam.aspect = w / h; S.cam.updateProjectionMatrix();
+    if (S.idle > 0) S.idle -= dt; else if (!S.drag) S.yaw += (S.base + Math.sin(t * 0.7) * 0.55 - S.yaw) * Math.min(1, dt * 1.5);   // лёгкое покачивание, видно спереди и сбоку
+    S.root.rotation.y = S.yaw; S.root.position.y = Math.sin(t * 1.6) * 0.004;
+    const sw = Math.sin(t * 1.3) * 0.05; S.parts.armA.rotation.x = sw; S.parts.armB.rotation.x = -sw;
+    S.cam.position.set(0, 0.95, w / h < 0.9 ? 3.7 : 3.2); S.cam.lookAt(0, 0.62, 0);
+    r.setClearColor(0, 0); r.render(S.sc, S.cam);
+    const g2 = S.cv.getContext('2d'); g2.clearRect(0, 0, w, h); g2.drawImage(r.domElement, 0, 0);
+  }
+}
+</script>
+<script>'use strict';
 /* ---------- 16. Интерфейс: меню (число игроков, ствол каждому), HUD каждого игрока со своей стороны, пауза, конец ---------- */
 const $ = id => document.getElementById(id);
 const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
@@ -7647,8 +7754,7 @@ function menuBuild() {
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
   $('splitBtn').onclick = e => { e.stopPropagation(); toggleSplit(); };
   $('backMain').onclick = e => { e.stopPropagation(); mmEnter(); };
-  $('lookPrev').onclick = e => { e.stopPropagation(); lookCycle(-1); }; $('lookNext').onclick = e => { e.stopPropagation(); lookCycle(1); };
-  $('lookEdit').onclick = e => { e.stopPropagation(); edOpen(); };
+  for (const s of [0, 1]) { $('lookPrev' + s).onclick = e => { e.stopPropagation(); lookCycle(-1, s); }; $('lookNext' + s).onclick = e => { e.stopPropagation(); lookCycle(1, s); }; $('lookEdit' + s).onclick = e => { e.stopPropagation(); lookEdit(s); }; }
   heroApplyAll();
   $('optSound').checked = Sound.on; $('optSound').onchange = e => setSound(e.target.checked);
   $('againBtn').onclick = e => { e.stopPropagation(); restartRun(); };
@@ -7672,7 +7778,7 @@ function menuMark() {
   const ctr = assignControls(G.nPlayers);
   $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
   $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
-  lookMark();
+  cvUpdate(); lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
 function toggleSplit() { G.split = !G.split; lsSet('split', G.split); SFX.click(); menuMark(); }

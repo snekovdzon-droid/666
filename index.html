@@ -224,6 +224,24 @@ body.touch .mel{display:none}
 .rs-aw span{font-size:16px;color:#ecd060}.rs-aw b{color:#f2ead6;font-weight:600}.rs-aw em{font-style:normal}.rs-aw i{font-style:normal;font-weight:700}
 .rs-graph{width:100%;max-width:520px;height:auto;display:block;margin-top:4px;background:rgba(0,0,0,.25)}.rs-graph text{fill:#8a806c;font-size:9px}
 .rs-leg{display:flex;gap:14px;font-size:12px;margin-top:4px}
+
+/* ---------- меню выбора класса: герой слева, карточки справа; в коопе — второй герой справа, карточки по центру ---------- */
+#menu{background:linear-gradient(180deg,rgba(10,8,6,.55),rgba(10,8,6,.92))}
+#cmStage{display:flex;align-items:stretch;justify-content:center;gap:18px;width:min(1500px,100%);padding:0 12px;box-sizing:border-box}
+#cmMid{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center}
+#cmMid #pickWho{min-height:0}
+#cards{width:100%;grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.cmHero{flex:0 0 clamp(210px,24vw,330px);display:flex;flex-direction:column;border-left:4px solid #4a4032;background:rgba(20,16,12,.72);transition:opacity .2s,border-color .2s}
+.cmHero.off{opacity:.62}
+.cmHero canvas{width:100%;height:clamp(300px,52vh,500px);display:block;cursor:grab;touch-action:none}
+.cmCap{padding:8px 10px 10px;text-align:center;color:#c8bea8;font-size:14px}
+.cmWho{font-weight:700;min-height:18px}.cmCls{font-size:20px;color:#ffd08a;margin:2px 0 6px}.cmCls small{display:block;font-size:12px;color:#a89e88}
+.cmLook{display:flex;align-items:center;justify-content:center;gap:8px}.cmLook b{min-width:110px;color:#ffd08a;font-weight:600}
+.cmLook button,.cmEdit{font:inherit;padding:6px 12px;border-radius:0;border:1px solid #6a6252;background:#2a241e;color:#f2ead6;cursor:pointer}.cmEdit{margin-top:8px;font-size:13px}
+#cmH1{display:none}body.cmCoop #cmH1{display:flex}
+#menu .cmBtns{margin-top:6px}#menu .cmBtns .go{margin:8px 4px 0}
+@media (max-width:820px){#cmStage{flex-direction:column;align-items:stretch}.cmHero{flex:none;flex-direction:row;align-items:center}.cmHero canvas{width:44%;height:210px}.cmCap{flex:1}#cmH1{order:3}#cmMid{order:2}}
+body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10px}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -240,11 +258,16 @@ body.touch .mel{display:none}
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
-<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Тюрьма. Закат. 20 минут до глубокой ночи. Выбери класс — у каждого свой ствол.</div><div id="pickWho" class="sub"></div><div id="cards"></div>
-  <div><button class="go alt" id="backMain">← Главное меню</button></div>
-  <div id="lookRow"><span id="lookWho"></span> <button id="lookPrev">◀</button> <b id="lookName"></b> <button id="lookNext">▶</button> <button id="lookEdit">Редактор персонажа</button></div>
-  <div><button class="go alt" id="plBtn">Игроков: 1</button> <button class="go alt" id="splitBtn">Экран: общий</button> <button class="go" id="goBtn">В бой</button></div>
-  <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–5 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада)</div>
+<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Выбери класс — у каждого свой ствол и своя экипировка.</div>
+  <div id="cmStage">
+    <div class="cmHero" id="cmH0"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho0"></div><div class="cmCls" id="cmCls0"></div>
+      <div class="cmLook"><button id="lookPrev0">◀</button> <b id="lookName0"></b> <button id="lookNext0">▶</button></div><button class="cmEdit" id="lookEdit0">Редактор персонажа</button></div></div>
+    <div id="cmMid"><div id="pickWho" class="sub"></div><div id="cards"></div></div>
+    <div class="cmHero" id="cmH1"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho1"></div><div class="cmCls" id="cmCls1"></div>
+      <div class="cmLook"><button id="lookPrev1">◀</button> <b id="lookName1"></b> <button id="lookNext1">▶</button></div><button class="cmEdit" id="lookEdit1">Редактор персонажа</button></div></div>
+  </div>
+  <div class="cmBtns"><button class="go alt" id="backMain">← Главное меню</button> <button class="go alt" id="plBtn">Игроков: 1</button> <button class="go alt" id="splitBtn">Экран: общий</button> <button class="go" id="goBtn">В бой</button></div>
+  <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–7 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада) · героя можно вращать мышью</div>
   <label class="opts"><input type="checkbox" id="optSound"> звук</label></div>
 <div id="editor" class="scr">
   <div class="edTop"><b>Редактор персонажа</b> <select id="edList"></select> <button id="edNew">Новый</button> <button id="edCopy">Копия</button> <button id="edDel">Удалить</button></div>
@@ -299,6 +322,7 @@ body.touch .mel{display:none}
 <script src="src/11i_gibs.js"></script>
 <script src="src/11j_anim.js"></script>
 <script src="src/11k_guns.js"></script>
+<script src="src/11l_class_view.js"></script>
 <script src="src/12_ui_loop.js"></script>
 <script src="src/12b_events.js"></script>
 <script src="src/12c_prison_v27.js"></script>
