@@ -1,6 +1,6 @@
 # MANY DEAD (voxel)
 
-Версия: v0.18. Браузерный выживач на three.js.
+Версия: v0.78. Браузерный выживач на three.js.
 
 - `index.html` — разметка и стили, запуск: открыть файл в браузере
 - Редактор персонажа: `src/04b_hero_gen.js` (сборка героя из частей), `src/11b_hero_editor.js` (окно редактора). Кнопка — в меню выбора класса. Герои хранятся в браузере.
@@ -39,3 +39,6 @@
 
 ## Бочки
 `assets/props/barrel_old.vox` (обычная) и `red_barrel.vox` (красная взрывная) — рисуются в MagicaVoxel (исходно получены из Meshy `.glb` скриптом `tools/glb2vox_faithful.js`). После правок: `python3 tools/vox2props.py`, затем `python3 tools/build.py`. Код — `src/04f_barrel_vox.js`.
+
+## Церковь и склепы на карте «Кладбище»
+`assets/graveyard/church.vox` и `crypt.vox` (рисуются в MagicaVoxel) → записи `MH_CVOX` в `src/12i_menu_v76.js` скриптом `node tools/vox2cvox.js`, затем `python3 tools/build.py`. Склеп получен из Meshy `.glb` (Sanctum of Stone) скриптом `node tools/glb2cvox.js` (72 вокселя по высоте, цвета из текстуры, 200 цветов); цвет (1,2,3) в `crypt.vox` — дверь (у открытых склепов — чёрный проём).
