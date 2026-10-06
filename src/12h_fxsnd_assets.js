@@ -18,7 +18,7 @@ function humBuild(c) {
 function humCrackle(c, at, vol) { const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = Sound.noise; f.type = 'highpass'; f.frequency.value = 2500; g.gain.setValueAtTime(vol, c.currentTime); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.06 + Math.random() * 0.08); s.connect(f); f.connect(g); g.connect(at); s.start(c.currentTime, Math.random() * 0.5); s.stop(c.currentTime + 0.2); }
 function ambTick() {
   if (!Sound.ctx || !Sound.master || Sound.ctx.state !== 'running') return;
-  const inRun = G.state !== 'main' && G.state !== 'menu', want = inRun ? (MAPID === 'cemetery' ? 'cemetery' : 'prison') : null, c = Sound.ctx, now = c.currentTime;
+  const inRun = G.state !== 'main' && G.state !== 'menu' && G.state !== 'maps', want = inRun ? (MAPID === 'cemetery' ? 'cemetery' : 'prison') : null, c = Sound.ctx, now = c.currentTime;
   if (want !== AMB.map && AMB.on) {                                     // выход из забега или смена карты — плавно глушим
     const g = AMB.g, ss = AMB.srcs, hum = AMB.hum; g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0, now + 1.2);
     if (hum) hum.out.gain.setTargetAtTime(0, now, 0.3);
