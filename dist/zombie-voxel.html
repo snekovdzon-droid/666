@@ -241,7 +241,6 @@ body.touch .mel{display:none}
 #cmH1{display:none}body.cmCoop #cmH1{display:flex}
 #menu .cmBtns{margin-top:6px}#menu .cmBtns .go{margin:8px 4px 0}
 @media (max-width:820px){#cmStage{flex-direction:column;align-items:stretch}.cmHero{flex:none;flex-direction:row;align-items:center}.cmHero canvas{width:44%;height:210px}.cmCap{flex:1}#cmH1{order:3}#cmMid{order:2}}
-body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10px}
 #mapPick{display:none;width:100%}body.cmMaps #cards{display:none}body.cmMaps #mapPick{display:block}
 #mpList{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .mp{display:flex;flex-direction:column;padding:0;text-align:left;font:inherit;color:#f2ead6;cursor:pointer;border:0;border-left:4px solid #4a4032;background:rgba(20,16,12,.82);overflow:hidden}
@@ -249,6 +248,13 @@ body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10p
 .mp .mpImg{aspect-ratio:3/2;background:#14100c center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#6a6252;font-size:34px}
 .mp .mpImg.none{background-image:linear-gradient(135deg,#1c1812,#2c261d),repeating-linear-gradient(0deg,transparent 0 15px,rgba(255,255,255,.04) 15px 16px);background-blend-mode:normal}
 .mp .mpName{padding:8px 12px 2px;font-size:18px;font-weight:700;color:#ffd08a}.mp .mpSub{padding:0 12px 10px;font-size:12px;color:#a89e88}
+#cards .card{display:flex;flex-direction:column;padding:10px 12px 12px;position:relative}
+#cards .card .k{position:absolute;right:10px;top:8px;float:none}
+#cards .card .gunImg{aspect-ratio:2/1;display:flex;align-items:center;justify-content:center;margin:2px 0 8px;background:radial-gradient(ellipse at 50% 60%,rgba(255,200,130,.10),transparent 70%)}
+#cards .card .gunImg img{max-width:100%;max-height:100%;display:block;image-rendering:auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
+#cards .card b{font-size:19px}#cards .card .gn{margin-top:1px}
+#cards .card .cl{margin:6px 0 0;display:flex;flex-direction:column;gap:2px;min-height:34px}
+body.cmCoop #cards{grid-template-columns:repeat(4,1fr);gap:8px}body.cmCoop #cards .card{padding:8px 9px 10px}body.cmCoop #cards .card .gunImg{aspect-ratio:5/2}body.cmCoop #cards .card b{font-size:17px}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -7741,6 +7747,33 @@ function cvLoop(now) {
     const g2 = S.cv.getContext('2d'); g2.clearRect(0, 0, w, h); g2.drawImage(r.domElement, 0, 0);
   }
 }
+
+/* ---------- карточки классов: уменьшенная модель ствола сверху, подпись снизу ---------- */
+const CARD_TXT = {   // [название ствола, строки: [текст, '+' зелёный | '-' красный | '' обычный]]
+  shotgun:  ['Дробовик', [['Укусивший зомби отталкивается', '+']]],
+  sawnoff:  ['Обрез', [['Быстрый', '+'], ['−1 сердце', '-']]],
+  rifle:    ['Автомат', []],
+  mg:       ['Пулемёт', [['Медленный', '-'], ['+1 сердце', '+']]],
+  revolver: ['Револьвер', [['Повышенный урон по особым зомби', '+']]],
+  crossbow: ['Арбалет', [['Выше радиус сбора опыта', '+']]],
+  smg:      ['Пистолет-пулемёт', [['Увеличенный подсумок', '+'], ['+1 слот под девайс', '+']]],
+};
+const CV_GUNIMG = {};
+function cvGunImg(id) {                                  // картинка ствола сбоку (дуло вправо), рисуется один раз общим рендерером
+  if (CV_GUNIMG[id] !== undefined) return CV_GUNIMG[id];
+  const G = gunModel(id); if (!G) return CV_GUNIMG[id] = '';
+  if (!CV.r) { CV.r = new THREE.WebGLRenderer({ alpha: true, antialias: true }); CV.r.outputEncoding = THREE.sRGBEncoding; }
+  const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xfff4e0, 0x5a5a6a, 1.0)); const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(-2, 3, 1.5); sc.add(dl);
+  const m = new THREE.Mesh(G.geo, GUN_MAT); sc.add(m);
+  const bb = new THREE.Box3().setFromBufferAttribute(G.geo.attributes.position), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+  const W = 320, H = 160, cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 20), asp = W / H;
+  const hw = Math.max(sz.z * 0.62, sz.y * 0.62 * asp), hh = hw / asp;                 // с запасом по краям
+  cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.updateProjectionMatrix();
+  const dir = new THREE.Vector3(-1, 0.32, -0.28).normalize();                           // слева-сверху-чуть спереди: дуло смотрит вправо
+  cam.position.copy(c).addScaledVector(dir, 3); cam.lookAt(c);
+  const r = CV.r; r.setPixelRatio(1); r.setSize(W, H, false); r.setClearColor(0, 0); r.render(sc, cam);
+  return CV_GUNIMG[id] = r.domElement.toDataURL('image/png');
+}
 </script>
 <script>'use strict';
 /* ---------- 16. Интерфейс: меню (число игроков, ствол каждому), HUD каждого игрока со своей стороны, пауза, конец ---------- */
@@ -7749,10 +7782,8 @@ const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2
 G.guns[0] = G.gun;
 let menuSel = Math.max(0, MAIN_IDS.indexOf(G.gun));
 function menuBuild() {
-  $('cards').innerHTML = MAIN_IDS.map((id, i) => { const W = WEAPONS[id], C = CLASSES[id];
-    const rate = W.rateMax ? `${W.rate}→${W.rateMax}` : W.rate;
-    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><b>${C.name}</b><span class="gn">${W.name}</span><p>${W.desc}</p><div class="cl"><span class="pl">+ ${C.plus}</span>${C.minus ? `<br><span class="mi">− ${C.minus}</span>` : ''}</div>
-      <div class="st">урон <span>${W.dmg}${W.pellets > 1 ? '×' + W.pellets : ''}</span> · выстр./с <span>${rate}</span><br>магазин <span>${W.mag}</span> · перезарядка <span>${W.reload} с</span>${W.pierce ? `<br>пробивает <span>${W.pierce}</span>` : ''}</div><div class="who"></div></button>`; }).join('');
+  $('cards').innerHTML = MAIN_IDS.map((id, i) => { const C = CLASSES[id], T = CARD_TXT[id], img = cvGunImg(id);
+    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
     b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; if (i === menuSel) menuConfirm(); else { menuSel = i; menuMark(); SFX.click(); } });
     b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });

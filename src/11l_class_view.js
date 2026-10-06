@@ -78,3 +78,30 @@ function cvLoop(now) {
     const g2 = S.cv.getContext('2d'); g2.clearRect(0, 0, w, h); g2.drawImage(r.domElement, 0, 0);
   }
 }
+
+/* ---------- карточки классов: уменьшенная модель ствола сверху, подпись снизу ---------- */
+const CARD_TXT = {   // [название ствола, строки: [текст, '+' зелёный | '-' красный | '' обычный]]
+  shotgun:  ['Дробовик', [['Укусивший зомби отталкивается', '+']]],
+  sawnoff:  ['Обрез', [['Быстрый', '+'], ['−1 сердце', '-']]],
+  rifle:    ['Автомат', []],
+  mg:       ['Пулемёт', [['Медленный', '-'], ['+1 сердце', '+']]],
+  revolver: ['Револьвер', [['Повышенный урон по особым зомби', '+']]],
+  crossbow: ['Арбалет', [['Выше радиус сбора опыта', '+']]],
+  smg:      ['Пистолет-пулемёт', [['Увеличенный подсумок', '+'], ['+1 слот под девайс', '+']]],
+};
+const CV_GUNIMG = {};
+function cvGunImg(id) {                                  // картинка ствола сбоку (дуло вправо), рисуется один раз общим рендерером
+  if (CV_GUNIMG[id] !== undefined) return CV_GUNIMG[id];
+  const G = gunModel(id); if (!G) return CV_GUNIMG[id] = '';
+  if (!CV.r) { CV.r = new THREE.WebGLRenderer({ alpha: true, antialias: true }); CV.r.outputEncoding = THREE.sRGBEncoding; }
+  const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xfff4e0, 0x5a5a6a, 1.0)); const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(-2, 3, 1.5); sc.add(dl);
+  const m = new THREE.Mesh(G.geo, GUN_MAT); sc.add(m);
+  const bb = new THREE.Box3().setFromBufferAttribute(G.geo.attributes.position), c = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3());
+  const W = 320, H = 160, cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 20), asp = W / H;
+  const hw = Math.max(sz.z * 0.62, sz.y * 0.62 * asp), hh = hw / asp;                 // с запасом по краям
+  cam.left = -hw; cam.right = hw; cam.top = hh; cam.bottom = -hh; cam.updateProjectionMatrix();
+  const dir = new THREE.Vector3(-1, 0.32, -0.28).normalize();                           // слева-сверху-чуть спереди: дуло смотрит вправо
+  cam.position.copy(c).addScaledVector(dir, 3); cam.lookAt(c);
+  const r = CV.r; r.setPixelRatio(1); r.setSize(W, H, false); r.setClearColor(0, 0); r.render(sc, cam);
+  return CV_GUNIMG[id] = r.domElement.toDataURL('image/png');
+}

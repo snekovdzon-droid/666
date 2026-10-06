@@ -5,10 +5,8 @@ const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2
 G.guns[0] = G.gun;
 let menuSel = Math.max(0, MAIN_IDS.indexOf(G.gun));
 function menuBuild() {
-  $('cards').innerHTML = MAIN_IDS.map((id, i) => { const W = WEAPONS[id], C = CLASSES[id];
-    const rate = W.rateMax ? `${W.rate}→${W.rateMax}` : W.rate;
-    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><b>${C.name}</b><span class="gn">${W.name}</span><p>${W.desc}</p><div class="cl"><span class="pl">+ ${C.plus}</span>${C.minus ? `<br><span class="mi">− ${C.minus}</span>` : ''}</div>
-      <div class="st">урон <span>${W.dmg}${W.pellets > 1 ? '×' + W.pellets : ''}</span> · выстр./с <span>${rate}</span><br>магазин <span>${W.mag}</span> · перезарядка <span>${W.reload} с</span>${W.pierce ? `<br>пробивает <span>${W.pierce}</span>` : ''}</div><div class="who"></div></button>`; }).join('');
+  $('cards').innerHTML = MAIN_IDS.map((id, i) => { const C = CLASSES[id], T = CARD_TXT[id], img = cvGunImg(id);
+    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
     b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; if (i === menuSel) menuConfirm(); else { menuSel = i; menuMark(); SFX.click(); } });
     b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
