@@ -2,7 +2,7 @@
 /* ---------- v0.30: выбор карты списком (после класса), свои карты и редактор карты (ПК) ---------- */
 const BASE_MAPS = [
   { id: 'prison', name: 'Тюрьма', size: 96, info: 'Корпуса, дворы с воротами, карцер и оружейка. Вертолёт на крыше администрации' },
-  { id: 'city', name: 'Город', size: 128, info: 'Тесные улицы, много крыш с мостами и лестницами. Вертолёт на центральной башне' },
+  { id: 'cemetery', name: 'Кладбище', size: 128, info: 'Ночь, полная луна. Склепы, часовня с колокольней, старые и новые могилы, свечи и тыквы' },
 ];
 const customMaps = () => lsGet('cmaps', []);
 const allMaps = () => BASE_MAPS.concat(customMaps().map(m => ({ id: 'c:' + m.id, name: m.name, size: m.size, info: 'Своя карта', custom: true })));
@@ -84,7 +84,7 @@ function mapPickKey(code) {
 function mapEditPanelHtml() {
   const c = customMaps();
   return `<h3>Редактор карты</h3><p style="opacity:.7;font-size:12px;margin:0 0 8px">Правки хранятся поверх карты — их можно сбросить. Только для компьютера.</p>
-    <button data-s="ed:prison">Тюрьма — править</button><button data-s="ed:city">Город — править</button>`
+    <button data-s="ed:prison">Тюрьма — править</button><button data-s="ed:cemetery">Кладбище — править</button>`
     + c.map(m => `<div style="display:flex;gap:4px"><button data-s="ed:c:${m.id}" style="flex:1">${m.name} (${m.size}×${m.size}) — править</button><button data-s="delmap:${m.id}" title="Удалить карту" style="width:44px">✕</button></div>`).join('')
     + `<p style="opacity:.7;font-size:12px;margin:10px 0 4px">Создать новую (пустую):</p>
     <button data-s="newmap:64">Маленькая 64×64</button><button data-s="newmap:96">Средняя 96×96</button><button data-s="newmap:128">Большая 128×128</button><button data-s="back">← Назад</button>`;
@@ -116,7 +116,7 @@ const EDM = { added: [], removed: new Set(), removedCrates: new Set(), start: nu
 const EDV = { cx: 0, cz: 0, s: 6 };
 const EDO = { floors: 1, zone: 'asphalt', rot: false, tool: 'erase' };
 const MEd = { mouse: null, drag: null, pan: null, hover: null };
-const EDCOL = { block: '#d2b078', cbuild: '#d2b078', shed: '#b8a070', wall: '#c4bcac', fenceX: '#6cc4f0', fenceZ: '#6cc4f0', gate: '#ffb030', car: '#8ab0e0', barrel: '#d86a44', xbarrel: '#ff5a20', lamp: '#fff090', tree: '#58c058', bush: '#78d060', cone: '#ffa030', bench: '#b88a58', trashbin: '#7a8a6a', trashbag: '#3a3a3a', crate: '#e8b860', ladder: '#ffffff', generator: '#60ff80', helipad: '#40ffa0', post: '#9aa0a0', tank: '#e0c030', xtank: '#ffc020' };
+const EDCOL = { block: '#d2b078', cbuild: '#d2b078', shed: '#b8a070', wall: '#c4bcac', fenceX: '#6cc4f0', fenceZ: '#6cc4f0', gate: '#ffb030', car: '#8ab0e0', barrel: '#d86a44', xbarrel: '#ff5a20', lamp: '#fff090', mast: '#ffe060', tree: '#58c058', bush: '#78d060', cone: '#ffa030', bench: '#b88a58', trashbin: '#7a8a6a', trashbag: '#3a3a3a', crate: '#e8b860', ladder: '#ffffff', generator: '#60ff80', helipad: '#40ffa0', post: '#9aa0a0', tank: '#e0c030', xtank: '#ffc020' };
 const EDZ = { asphalt: '#2c2a28', road: '#36342f', paving: '#5e5a52', grass: '#44602e', gravel: '#6a645a', dark: '#4a4642', court: '#2e5878', dirt: '#6a4a30' };
 const EDZN = { asphalt: 'Асфальт', paving: 'Бетон', grass: 'Трава', gravel: 'Гравий', dark: 'Тёмная земля', court: 'Площадка', road: 'Дорога', dirt: 'Грунт' };
 const BLOCK_COLS = [0xc8b8a0, 0xbcac94, 0xb4a48a, 0xc0b098, 0xa8a294, 0xd0c4ac, 0xb0a08a];
@@ -124,7 +124,7 @@ const CAR_COLS = [0x3e5270, 0x8c3a30, 0x60707e, 0x6e7a50, 0xc8c4ba, 0x8a8a3a];
 const EDTOOLS = [
   ['erase', 'Ластик', 'Клик по объекту — удалить'], ['fence', 'Забор', 'Тяни линию: сетка-рабица'], ['wall', 'Стена', 'Тяни линию: бетонная стена'], ['gate', 'Ворота', 'Тяни линию по забору: ворота (открывает игрок)'],
   ['block', 'Здание', 'Тяни прямоугольник: здание с лестницей на крышу (если влезет)'], ['shed', 'Сарай', 'Тяни прямоугольник: стены с открытой южной стороной'], ['zone', 'Покрытие', 'Тяни прямоугольник: асфальт, трава и т.д.'],
-  ['car', 'Машина', 'Клик: машина (R — повернуть)'], ['barrel', 'Бочка', 'Клик'], ['xbarrel', 'Взрывная бочка', 'Клик'], ['lamp', 'Фонарь', 'Клик'], ['tree', 'Дерево', 'Клик'], ['bush', 'Куст', 'Клик'], ['cone', 'Конус', 'Клик'], ['bench', 'Скамейка', 'Клик'], ['trashbin', 'Мусорный бак', 'Клик (R — повернуть)'], ['trashbag', 'Мешки с мусором', 'Клик'],
+  ['car', 'Машина', 'Клик: машина (R — повернуть)'], ['barrel', 'Бочка', 'Клик'], ['xbarrel', 'Взрывная бочка', 'Клик'], ['lamp', 'Фонарь', 'Клик'], ['mast', 'Мачта с прожекторами', 'Клик'], ['tree', 'Дерево', 'Клик'], ['bush', 'Куст', 'Клик'], ['cone', 'Конус', 'Клик'], ['bench', 'Скамейка', 'Клик'], ['trashbin', 'Мусорный бак', 'Клик (R — повернуть)'], ['trashbag', 'Мешки с мусором', 'Клик'],
   ['crate', 'Ящик (точка)', 'Клик: здесь будут появляться ящики'], ['ladder', 'Лестница верт.', 'Клик у стены здания: вертикальная лестница на крышу'], ['start', 'Старт игроков', 'Клик: где начинается забег'],
   ['gen', 'Генератор', 'Клик: генератор для события «Свет отключён»'], ['pad', 'Вертолётная площадка', 'Клик внутри здания (от 10×8): вертолёт-эвакуация'],
 ];
@@ -217,7 +217,7 @@ function edMake(tool, x0, z0, x1, z1) {
     case 'zone': if (xb - xa < 1 || zb - za < 1) return null; return [cmdAdd(['zone', EDO.zone, xa, za, xb, zb])];
     case 'car': { if (!inb(x1, z1)) return null; const al = !EDO.rot; return [cmdAdd(['car', al ? x1 - 1.6 : x1 - 0.75, al ? z1 - 0.75 : z1 - 1.6, al, CAR_COLS[EDM.nid % CAR_COLS.length], true, false])]; }
     case 'barrel': return inb(x1, z1) ? [cmdAdd(['barrel', x1, z1, false])] : null;
-    case 'xbarrel': case 'lamp': case 'tree': case 'bush': case 'cone': return inb(x1, z1) ? [cmdAdd([tool, x1, z1])] : null;
+    case 'xbarrel': case 'lamp': case 'mast': case 'tree': case 'bush': case 'cone': return inb(x1, z1) ? [cmdAdd([tool, x1, z1])] : null;
     case 'bench': return inb(x1, z1) ? [cmdAdd(['bench', x1, z1, true])] : null;
     case 'trashbin': return inb(x1, z1) ? [cmdAdd(['trashbin', x1, z1, EDO.rot ? Math.PI / 2 : 0])] : null;
     case 'trashbag': return inb(x1, z1) ? [cmdAdd(['trashbag', x1, z1])] : null;
@@ -377,8 +377,8 @@ function edPaste() {
   let d; try { d = JSON.parse(decodeURIComponent(escape(atob(s.trim().replace(/^MD1:/, ''))))); } catch (e) { alert('Не получилось прочитать код'); return; }
   if (!d || d.v !== 1 || !d.ov) { alert('Это не код карты'); return; }
   if (d.base === 'blank') { const id = createCustomMap(d.size || 96, (d.name || 'Чужая карта').slice(0, 30), d.ov); startEditorFor('c:' + id); return; }
-  if (d.base !== 'prison' && d.base !== 'city') { alert('Неизвестная карта в коде'); return; }
-  if (!confirm('Заменить твои правки карты «' + (d.base === 'city' ? 'Город' : 'Тюрьма') + '» этим кодом?')) return;
+  if (d.base !== 'prison' && d.base !== 'cemetery') { alert('Неизвестная карта в коде'); return; }
+  if (!confirm('Заменить твои правки карты «' + (d.base === 'cemetery' ? 'Кладбище' : 'Тюрьма') + '» этим кодом?')) return;
   lsSet('ov_' + d.base, d.ov); lsSet('map', d.base);
   try { sessionStorage.setItem('zsv_pending', JSON.stringify({ editor: true })); } catch (e) {} showLoadingFx('Применяю код…'); setTimeout(() => location.reload(), 40);
 }

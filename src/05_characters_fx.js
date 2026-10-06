@@ -125,7 +125,7 @@ const MAX_P = 2400;
 const pLit = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial(), MAX_P);
 const pGlow = new THREE.InstancedMesh(boxGeo, new THREE.MeshBasicMaterial({ toneMapped: false }), MAX_P);
 for (const m of [pLit, pGlow]) { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_P * 3), 3); m.frustumCulled = false; scene.add(m); }
-const pSoft = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.3, depthWrite: false }), MAX_P);   // полупрозрачный дым выстрелов
+const pSoft = new THREE.InstancedMesh(boxGeo, new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.2, depthWrite: false }), MAX_P);   // полупрозрачный дым и пыль (v0.38: 30% → 20%)
 pSoft.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pSoft.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_P * 3), 3); pSoft.frustumCulled = false; pSoft.castShadow = false; pSoft.renderOrder = 2; scene.add(pSoft);
 pLit.castShadow = false;                              // тени от дыма и крошек дорогие, почти не видны
 const parts = [], _c2 = new THREE.Color();
@@ -275,7 +275,13 @@ function navDir(e) {
 
 
 /* ---------- Зомби из воксельного пака: части тела — InstancedMesh, тени — от простых коробок ---------- */
-const VOXMS = Object.values(VOX_ASSETS).map(b => buildVoxModel(b));          // все модели пака: Zed_1 … Zed_6
+const VOXMS = [...Object.values(VOX_ASSETS), ...Object.values(PRISON_ZED)].map(b => buildVoxModel(b));          // все модели пака: Zed_1 … Zed_6, затем тюремные p1…p4
+const VOX_N0 = Object.keys(VOX_ASSETS).length;                                // обычные модели — индексы 0…VOX_N0-1, тюремные — дальше
+// Какая модель у зомби. На карте «Тюрьма» 70% обычных ходоков и бегунов — тюремные (оранжевые робы), остальные и другие карты — обычный пак
+function pickVm(z) {
+  if (MAPID === 'prison' && (z.form === 'walk' || z.form === 'run') && Math.random() < 0.7) return VOX_N0 + Math.floor(Math.random() * (VOXMS.length - VOX_N0));
+  return Math.floor(Math.random() * VOX_N0);
+}
 const VOXM = VOXMS[0];
 const MAX_VZ = Math.max(420, (IS_TOUCH ? CFG.MAX_ENEMIES_MOBILE : CFG.MAX_ENEMIES_PC) + 120);
 const VZ = { on: lsGet('voxZ', true), fullShadow: false, H: lsGet('voxH', 1.35), W: lsGet('voxW', 1.5), pn: 0, hero: lsGet('voxHero', true) };
@@ -316,7 +322,7 @@ function setVoxShadow(full) { VZ.fullShadow = full; for (const M of VOXALL) for 
 const _vs = new THREE.Matrix4(), _vr = new THREE.Matrix4(), _vl = new THREE.Matrix4(), _vm = new THREE.Matrix4(), _vb = new THREE.Matrix4();
 const isVoxZ = c => VZ.on && c.zombie && (c.form === 'walk' || c.form === 'run' || c.form === 'crawl' || c.form === 'fat' || c.form === 'armored' || FORM_H[c.form] !== undefined);   // толстяк и бронированный — тоже из пака (черновые)
 function drawVoxZombie(c) {
-  if (c.vm === undefined) c.vm = Math.floor(Math.random() * VOXMS.length);   // какая модель из пака
+  if (c.vm === undefined) c.vm = pickVm(c);   // какая модель из пака
   const M = VOXMS[c.vm % VOXMS.length]; if (M.n >= MAX_VZ || c.boomed) return;
   const fat = c.form === 'fat', arm = c.form === 'armored', sw1 = fat && c.swell ? 1 + c.swell * 0.55 : 1;
   const H = VZ.H * (c.form === 'run' ? 0.95 : fat ? 1.05 : arm ? 1.04 : FORM_H[c.form] || 1) * (fat ? Math.sqrt(sw1) : 1), crawl = c.form === 'crawl', run = c.form === 'run';

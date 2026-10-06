@@ -33,7 +33,7 @@ function mmBuild() {
 function mmMark() { $('mmBtns').querySelectorAll('button').forEach((b, i) => b.classList.toggle('sel', i === MM.sel)); }
 function mmEnter() {
   G.state = 'main'; MM.panel = ''; G.nightT = 1; $('lvlUp').style.display = 'none'; $('editor').style.display = 'none';
-  showScreen('main'); mmPanel('');
+  showScreen('main'); mmPanel(''); if (typeof mhReset === 'function') mhReset();
 }
 function mmLeave() { G.nightT = 0; }
 function mmPanel(name) {
@@ -65,8 +65,8 @@ function mmSetting(s) {
 }
 function mmAct(a) {
   SFX.click();
-  if (a === 'single') { G.nPlayers = 1; mmClass(); }
-  else if (a === 'coop') { if (IS_TOUCH) return; G.nPlayers = Math.max(2, Math.min(G.nPlayers, maxPlayers())); mmClass(); }
+  if (a === 'single') { G.nPlayers = 1; menuFist(mmClass); }                    // рука сжимается в кулак, потом выбор класса
+  else if (a === 'coop') { if (IS_TOUCH) return; G.nPlayers = Math.max(2, Math.min(G.nPlayers, maxPlayers())); menuFist(mmClass); }
   else if (a === 'mapedit') { if (!IS_TOUCH) mmPanel('mapedit'); }
   else if (a === 'hero') { G.pick = 0; mmLeave(); edOpen(); }
   else if (a === 'settings') mmPanel('settings');
