@@ -4,7 +4,7 @@ const MMD = MAPDEF.menu || { cam: { x: 48, z: 80 }, zoom: 6.8, x0: 45.4, x1: 50.
 const MM = { z: [], cam: { x: MMD.cam.x, z: MMD.cam.z }, zoom: MMD.zoom, sel: 0, panel: '', Z0: MMD.Z0, Z1: MMD.Z1 };
 // форма зомби, шанс, скорость (клеток/с)
 const MM_FORMS = [['walk', 0.6, 0.72], ['run', 0.1, 1.8], ['fat', 0.1, 0.5], ['armored', 0.1, 0.62], ['crawl', 0.1, 0.3]];
-const MM_BTNS = [['single', 'Одиночная игра'], ['coop', 'Кооп'], ['hero', 'Редактор персонажа'], ['mapedit', 'Редактор карты', IS_TOUCH ? 'только ПК' : ''], ['settings', 'Настройки'], ['exit', 'Выйти']];
+const MM_BTNS = [['single', 'Играть'], ['hero', 'Редактор персонажа'], ['mapedit', 'Редактор карты', IS_TOUCH ? 'только ПК' : ''], ['settings', 'Настройки'], ['exit', 'Выйти']];
 
 function mmSpawnZ(initial) {
   let r = Math.random(), form = 'walk', spd = 0.72;
@@ -23,7 +23,7 @@ function mmUpdate(dt) {
 function mmDraw() { for (const c of MM.z) drawVoxZombie(c); }
 
 function mmBuild() {
-  $('mmBtns').innerHTML = MM_BTNS.map(([a, n, tag], i) => `<button data-a="${a}" style="animation-delay:${0.15 + i * 0.07}s"${tag || (a === 'coop' && IS_TOUCH) ? ' disabled' : ''}>${n}${tag ? ` <small>${tag}</small>` : ''}</button>`).join('');
+  $('mmBtns').innerHTML = MM_BTNS.map(([a, n, tag], i) => `<button data-a="${a}" style="animation-delay:${0.15 + i * 0.07}s"${tag ? ' disabled' : ''}>${n}${tag ? ` <small>${tag}</small>` : ''}</button>`).join('');
   $('mmBtns').querySelectorAll('button').forEach((b, i) => {
     b.onclick = e => { e.stopPropagation(); mmAct(b.dataset.a); };
     b.onmouseenter = () => { if (!b.disabled) { MM.sel = i; mmMark(); } };
@@ -66,7 +66,6 @@ function mmSetting(s) {
 function mmAct(a) {
   SFX.click();
   if (a === 'single') { G.nPlayers = 1; menuFist(mmClass); }                    // рука сжимается в кулак, потом выбор класса
-  else if (a === 'coop') { if (IS_TOUCH) return; G.nPlayers = Math.max(2, Math.min(G.nPlayers, maxPlayers())); menuFist(mmClass); }
   else if (a === 'mapedit') { if (!IS_TOUCH) mmPanel('mapedit'); }
   else if (a === 'hero') { G.pick = 0; mmLeave(); edOpen(); }
   else if (a === 'settings') mmPanel('settings');
@@ -76,7 +75,7 @@ function mmClass() { mmLeave(); G.pick = 0; menuSel = Math.max(0, MAIN_IDS.index
 function mainKey(code) {
   if (HUDL.on) { if (code === 'Escape') heClose(); return; }
   if (MM.panel) { if (code === 'Escape' || code === 'Backspace') mmPanel(''); return; }
-  const on = MM_BTNS.map((b, i) => (b[2] || (b[0] === 'coop' && IS_TOUCH)) ? -1 : i).filter(i => i >= 0);
+  const on = MM_BTNS.map((b, i) => b[2] ? -1 : i).filter(i => i >= 0);
   let k = on.indexOf(MM.sel); if (k < 0) k = 0;
   if (code === 'ArrowDown' || code === 'KeyS') k = (k + 1) % on.length;
   else if (code === 'ArrowUp' || code === 'KeyW') k = (k + on.length - 1) % on.length;

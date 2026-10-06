@@ -48,7 +48,7 @@ function cvBuild(s) {                                   // внешность г
 }
 function cvUpdate() {                                   // вызывается из menuMark: слоты, подписи, подсветка активного героя
   if (!$('cmH0')) return;
-  const co = G.nPlayers > 1; document.body.classList.toggle('cmCoop', co);
+  const co = G.nPlayers > 1; document.body.classList.toggle('cmCoop', co); $('cmH1').classList.toggle('empty', !co);
   CV.pl = [0, co ? Math.max(1, G.pick) : 1];
   for (let s = 0; s < (co ? 2 : 1); s++) {
     const pl = CV.pl[s], C = CLASSES[G.guns[pl]], W = WEAPONS[G.guns[pl]], el = $('cmH' + s), act = !co || pl === G.pick || G.state === 'maps';

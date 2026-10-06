@@ -238,7 +238,7 @@ body.touch .mel{display:none}
 .cmWho{font-weight:700;min-height:18px}.cmCls{font-size:20px;color:#ffd08a;margin:2px 0 6px}.cmCls small{display:block;font-size:12px;color:#a89e88}
 .cmLook{display:flex;align-items:center;justify-content:center;gap:8px}.cmLook b{min-width:110px;color:#ffd08a;font-weight:600}
 .cmLook button,.cmEdit{font:inherit;padding:6px 12px;border-radius:0;border:1px solid #6a6252;background:#2a241e;color:#f2ead6;cursor:pointer}.cmEdit{margin-top:8px;font-size:13px}
-#cmH1{display:none}body.cmCoop #cmH1{display:flex}
+
 #menu .cmBtns{margin-top:6px}#menu .cmBtns .go{margin:8px 4px 0}
 @media (max-width:820px){#cmStage{flex-direction:column;align-items:stretch}.cmHero{flex:none;flex-direction:row;align-items:center}.cmHero canvas{width:44%;height:210px}.cmCap{flex:1}#cmH1{order:3}#cmMid{order:2}}
 #mapPick{display:none;width:100%}body.cmMaps #cards{display:none}body.cmMaps #mapPick{display:block}
@@ -254,7 +254,24 @@ body.touch .mel{display:none}
 #cards .card .gunImg img{max-width:100%;max-height:100%;display:block;image-rendering:auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.6))}
 #cards .card b{font-size:19px}#cards .card .gn{margin-top:1px}
 #cards .card .cl{margin:6px 0 0;display:flex;flex-direction:column;gap:2px;min-height:34px}
-body.cmCoop #cards{grid-template-columns:repeat(4,1fr);gap:8px}body.cmCoop #cards .card{padding:8px 9px 10px}body.cmCoop #cards .card .gunImg{aspect-ratio:5/2}body.cmCoop #cards .card b{font-size:17px}
+#cards{grid-template-columns:repeat(4,1fr);gap:8px}#cards .card{padding:8px 9px 10px}#cards .card .gunImg{aspect-ratio:5/2}#cards .card b{font-size:17px}
+
+/* ---------- меню класса: кнопки в стиле главного меню, окно второго игрока всегда на месте ---------- */
+#menu{justify-content:center;padding-top:12px;padding-bottom:12px}
+#menu .cmBtns{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:14px}
+#menu button.px{font-family:'PixMenu',monospace;font-weight:400;font-size:20px;letter-spacing:1px;text-transform:uppercase;padding:11px 26px;margin:6px 0;border:3px solid #0a0807;border-radius:0;background:#211d19;color:#cfc4ae;cursor:pointer;position:relative;box-shadow:inset 3px 3px 0 #3d352c,inset -3px -3px 0 #110e0c,4px 4px 0 rgba(0,0,0,.55);text-shadow:2px 2px 0 #000;transition:background .08s,color .08s;display:inline-flex;align-items:center;gap:12px}
+#menu button.px:hover,#menu button.px.pri{background:#a63518;color:#ffe9cc;box-shadow:inset 3px 3px 0 #dc6a3c,inset -3px -3px 0 #5a160a,4px 4px 0 rgba(0,0,0,.55),0 0 18px rgba(220,80,30,.35)}
+#menu button.px.pri:hover{background:#c0421f}
+#menu button.px.sm{font-size:14px;padding:6px 12px;margin:0;box-shadow:inset 2px 2px 0 #3d352c,inset -2px -2px 0 #110e0c,3px 3px 0 rgba(0,0,0,.55)}
+#menu .cmEdit{margin-top:10px}
+#menu .tg .sw{display:inline-block;width:40px;height:20px;border:3px solid #0a0807;background:#0e0c0a;position:relative;box-shadow:inset 2px 2px 0 #000}
+#menu .tg .sw::after{content:'';position:absolute;top:1px;left:1px;width:12px;height:12px;background:#6a6252;transition:left .1s,background .1s}
+#menu .tg.on .sw{background:#5a2a10}#menu .tg.on .sw::after{left:21px;background:#ffb040}
+#menu .tg.on{color:#ffe9cc}
+.cmLook b{font-family:'PixMenu',monospace;font-weight:400;font-size:15px;letter-spacing:1px;text-transform:uppercase}
+.cmHero.empty{background:rgba(14,11,8,.5);border-left-color:#2a241c!important;opacity:1}.cmHero.empty canvas,.cmHero.empty .cmCap{visibility:hidden}
+body.touch #cmH1{display:none}body.touch #coopBtn{display:none}
+#menu #pickWho{min-height:22px;font-family:'PixMenu',monospace;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:#cfc4ae}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -271,16 +288,15 @@ body.cmCoop #cards{grid-template-columns:repeat(4,1fr);gap:8px}body.cmCoop #card
 <div id="main" class="scr"><div class="mmCol">
   <h1 class="mmTitle"><span>MANY</span> <span class="r">DEAD</span></h1><div class="mmSub">Ночь. Они идут.</div>
   <div id="mmBtns"></div><div id="mmPanel"></div><div class="mmCredits" style="margin-top:22px;font-size:12px;opacity:.55">Music by Clement Panchout – <a href="https://www.clementpanchout.com" target="_blank" rel="noopener" style="color:inherit">www.clementpanchout.com</a></div></div></div>
-<div id="menu" class="scr"><h1>MANY DEAD</h1><div class="sub">Выбери класс — у каждого свой ствол и своя экипировка.</div>
+<div id="menu" class="scr">
   <div id="cmStage">
     <div class="cmHero" id="cmH0"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho0"></div><div class="cmCls" id="cmCls0"></div>
-      <div class="cmLook"><button id="lookPrev0">◀</button> <b id="lookName0"></b> <button id="lookNext0">▶</button></div><button class="cmEdit" id="lookEdit0">Редактор персонажа</button></div></div>
+      <div class="cmLook"><button class="px sm" id="lookPrev0">◀</button> <b id="lookName0"></b> <button class="px sm" id="lookNext0">▶</button></div><button class="px sm cmEdit" id="lookEdit0">Редактор персонажа</button></div></div>
     <div id="cmMid"><div id="pickWho" class="sub"></div><div id="cards"></div><div id="mapPick"><div id="mpList"></div></div></div>
-    <div class="cmHero" id="cmH1"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho1"></div><div class="cmCls" id="cmCls1"></div>
-      <div class="cmLook"><button id="lookPrev1">◀</button> <b id="lookName1"></b> <button id="lookNext1">▶</button></div><button class="cmEdit" id="lookEdit1">Редактор персонажа</button></div></div>
+    <div class="cmHero empty" id="cmH1"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho1"></div><div class="cmCls" id="cmCls1"></div>
+      <div class="cmLook"><button class="px sm" id="lookPrev1">◀</button> <b id="lookName1"></b> <button class="px sm" id="lookNext1">▶</button></div><button class="px sm cmEdit" id="lookEdit1">Редактор персонажа</button></div></div>
   </div>
-  <div class="cmBtns"><button class="go alt" id="backMain">← Главное меню</button> <button class="go alt" id="plBtn">Игроков: 1</button> <button class="go alt" id="splitBtn">Экран: общий</button> <button class="go" id="goBtn">В бой</button></div>
-  <div class="hint">Стрелки / крестовина — выбор · Enter / A — дальше · 1–7 — быстрый выбор · Tab / Y — число игроков (кооп: второй — на стрелках или с геймпада) · героя можно вращать мышью</div>
+  <div class="cmBtns"><button class="px" id="backMain">Назад</button><button class="px tg" id="coopBtn">Кооп <i class="sw"></i></button><button class="px" id="splitBtn">Экран: общий</button><button class="px pri" id="goBtn">Продолжить</button></div>
   <label class="opts"><input type="checkbox" id="optSound"> звук</label></div>
 <div id="editor" class="scr">
   <div class="edTop"><b>Редактор персонажа</b> <select id="edList"></select> <button id="edNew">Новый</button> <button id="edCopy">Копия</button> <button id="edDel">Удалить</button></div>
@@ -6618,7 +6634,7 @@ const MMD = MAPDEF.menu || { cam: { x: 48, z: 80 }, zoom: 6.8, x0: 45.4, x1: 50.
 const MM = { z: [], cam: { x: MMD.cam.x, z: MMD.cam.z }, zoom: MMD.zoom, sel: 0, panel: '', Z0: MMD.Z0, Z1: MMD.Z1 };
 // форма зомби, шанс, скорость (клеток/с)
 const MM_FORMS = [['walk', 0.6, 0.72], ['run', 0.1, 1.8], ['fat', 0.1, 0.5], ['armored', 0.1, 0.62], ['crawl', 0.1, 0.3]];
-const MM_BTNS = [['single', 'Одиночная игра'], ['coop', 'Кооп'], ['hero', 'Редактор персонажа'], ['mapedit', 'Редактор карты', IS_TOUCH ? 'только ПК' : ''], ['settings', 'Настройки'], ['exit', 'Выйти']];
+const MM_BTNS = [['single', 'Играть'], ['hero', 'Редактор персонажа'], ['mapedit', 'Редактор карты', IS_TOUCH ? 'только ПК' : ''], ['settings', 'Настройки'], ['exit', 'Выйти']];
 
 function mmSpawnZ(initial) {
   let r = Math.random(), form = 'walk', spd = 0.72;
@@ -6637,7 +6653,7 @@ function mmUpdate(dt) {
 function mmDraw() { for (const c of MM.z) drawVoxZombie(c); }
 
 function mmBuild() {
-  $('mmBtns').innerHTML = MM_BTNS.map(([a, n, tag], i) => `<button data-a="${a}" style="animation-delay:${0.15 + i * 0.07}s"${tag || (a === 'coop' && IS_TOUCH) ? ' disabled' : ''}>${n}${tag ? ` <small>${tag}</small>` : ''}</button>`).join('');
+  $('mmBtns').innerHTML = MM_BTNS.map(([a, n, tag], i) => `<button data-a="${a}" style="animation-delay:${0.15 + i * 0.07}s"${tag ? ' disabled' : ''}>${n}${tag ? ` <small>${tag}</small>` : ''}</button>`).join('');
   $('mmBtns').querySelectorAll('button').forEach((b, i) => {
     b.onclick = e => { e.stopPropagation(); mmAct(b.dataset.a); };
     b.onmouseenter = () => { if (!b.disabled) { MM.sel = i; mmMark(); } };
@@ -6680,7 +6696,6 @@ function mmSetting(s) {
 function mmAct(a) {
   SFX.click();
   if (a === 'single') { G.nPlayers = 1; menuFist(mmClass); }                    // рука сжимается в кулак, потом выбор класса
-  else if (a === 'coop') { if (IS_TOUCH) return; G.nPlayers = Math.max(2, Math.min(G.nPlayers, maxPlayers())); menuFist(mmClass); }
   else if (a === 'mapedit') { if (!IS_TOUCH) mmPanel('mapedit'); }
   else if (a === 'hero') { G.pick = 0; mmLeave(); edOpen(); }
   else if (a === 'settings') mmPanel('settings');
@@ -6690,7 +6705,7 @@ function mmClass() { mmLeave(); G.pick = 0; menuSel = Math.max(0, MAIN_IDS.index
 function mainKey(code) {
   if (HUDL.on) { if (code === 'Escape') heClose(); return; }
   if (MM.panel) { if (code === 'Escape' || code === 'Backspace') mmPanel(''); return; }
-  const on = MM_BTNS.map((b, i) => (b[2] || (b[0] === 'coop' && IS_TOUCH)) ? -1 : i).filter(i => i >= 0);
+  const on = MM_BTNS.map((b, i) => b[2] ? -1 : i).filter(i => i >= 0);
   let k = on.indexOf(MM.sel); if (k < 0) k = 0;
   if (code === 'ArrowDown' || code === 'KeyS') k = (k + 1) % on.length;
   else if (code === 'ArrowUp' || code === 'KeyW') k = (k + on.length - 1) % on.length;
@@ -7717,7 +7732,7 @@ function cvBuild(s) {                                   // внешность г
 }
 function cvUpdate() {                                   // вызывается из menuMark: слоты, подписи, подсветка активного героя
   if (!$('cmH0')) return;
-  const co = G.nPlayers > 1; document.body.classList.toggle('cmCoop', co);
+  const co = G.nPlayers > 1; document.body.classList.toggle('cmCoop', co); $('cmH1').classList.toggle('empty', !co);
   CV.pl = [0, co ? Math.max(1, G.pick) : 1];
   for (let s = 0; s < (co ? 2 : 1); s++) {
     const pl = CV.pl[s], C = CLASSES[G.guns[pl]], W = WEAPONS[G.guns[pl]], el = $('cmH' + s), act = !co || pl === G.pick || G.state === 'maps';
@@ -7785,11 +7800,13 @@ function menuBuild() {
   $('cards').innerHTML = MAIN_IDS.map((id, i) => { const C = CLASSES[id], T = CARD_TXT[id], img = cvGunImg(id);
     return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
-    b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; if (i === menuSel) menuConfirm(); else { menuSel = i; menuMark(); SFX.click(); } });
+    b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; menuSel = i; menuMark(); SFX.click(); });
     b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
   });
   $('goBtn').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickKey('Enter'); else menuConfirm(); };
-  $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('coopBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('cmH0').onclick = () => { if (G.state === 'menu' && G.nPlayers > 1 && G.pick !== 0) { G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); menuMark(); SFX.click(); } };
+  $('cmH1').onclick = () => { if (G.state === 'menu' && G.nPlayers > 1 && G.pick !== 1) { G.pick = 1; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[1])); menuMark(); SFX.click(); } };
   $('splitBtn').onclick = e => { e.stopPropagation(); toggleSplit(); };
   $('backMain').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickBack(); else mmEnter(); };
   for (const s of [0, 1]) { $('lookPrev' + s).onclick = e => { e.stopPropagation(); lookCycle(-1, s); }; $('lookNext' + s).onclick = e => { e.stopPropagation(); lookCycle(1, s); }; $('lookEdit' + s).onclick = e => { e.stopPropagation(); lookEdit(s); }; }
@@ -7801,7 +7818,6 @@ function menuBuild() {
   $('quitBtn').onclick = e => { e.stopPropagation(); G.paused = false; toMenu(); };
   $('pMainBtn').onclick = e => { e.stopPropagation(); G.paused = false; toMenu(); mmEnter(); };
   $('mainBtn').onclick = e => { e.stopPropagation(); toMenu(); mmEnter(); };
-  if (IS_TOUCH) $('plBtn').style.display = 'none';
   menuMark();
 }
 function menuMark() {
@@ -7811,15 +7827,13 @@ function menuMark() {
     b.classList.toggle('sel', i === menuSel); b.style.borderColor = i === menuSel && G.nPlayers > 1 ? PLAYER_CSS[G.pick] : '';
     b.querySelector('.who').innerHTML = G.nPlayers > 1 ? G.guns.slice(0, G.pick).map((g, k) => g === MAIN_IDS[i] ? `<i style="background:${PLAYER_CSS[k]}">И${k + 1}</i>` : '').join('') : '';
   });
-  $('plBtn').textContent = 'Игроков: ' + G.nPlayers;
+  $('coopBtn').classList.toggle('on', G.nPlayers > 1);
   $('splitBtn').style.display = G.nPlayers > 1 && !IS_TOUCH ? '' : 'none'; $('splitBtn').textContent = 'Экран: ' + (G.split ? 'раздельный' : 'общий');
-  const ctr = assignControls(G.nPlayers);
-  $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
   const mp = G.state === 'maps'; document.body.classList.toggle('cmMaps', mp);
-  $('goBtn').textContent = mp ? 'В бой' : G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
-  $('backMain').textContent = mp ? '← К выбору класса' : '← Главное меню';
-  if (mp) { $('plBtn').style.display = 'none'; $('pickWho').textContent = 'Выбор карты'; }
-  else if (G.state === 'menu') $('plBtn').style.display = IS_TOUCH ? 'none' : '';
+  $('pickWho').innerHTML = mp ? 'Выбор карты' : G.nPlayers > 1 ? `<span style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</span> выбирает класс` : '';
+  $('goBtn').textContent = mp ? 'В бой' : 'Продолжить';
+  $('backMain').textContent = mp ? 'К классам' : 'Назад';
+  $('coopBtn').style.display = mp || IS_TOUCH ? 'none' : '';
   cvUpdate(); lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
@@ -7830,13 +7844,13 @@ function menuConfirm() {
   openMapPick();                                                       // режим → класс → карта списком
 }
 function menuKey(code) {
-  const cols = Math.max(1, Math.round($('cards').clientWidth / 170));
+  const cols = 4;                                                       // сетка карточек — 4 в ряд
   if (code === 'ArrowRight' || code === 'KeyD') menuSel = (menuSel + 1) % MAIN_IDS.length;
   else if (code === 'ArrowLeft' || code === 'KeyA') menuSel = (menuSel + MAIN_IDS.length - 1) % MAIN_IDS.length;
   else if (code === 'ArrowDown' || code === 'KeyS') menuSel = Math.min(MAIN_IDS.length - 1, menuSel + cols);
   else if (code === 'ArrowUp' || code === 'KeyW') menuSel = Math.max(0, menuSel - cols);
   else if (/^Digit[1-7]$/.test(code) && +code.slice(5) <= MAIN_IDS.length) menuSel = +code.slice(5) - 1;
-  else if (code === 'Tab') { G.nPlayers = G.nPlayers >= maxPlayers() ? 1 : G.nPlayers + 1; G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); }
+  else if (code === 'Tab') { if (maxPlayers() < 2) return; G.nPlayers = G.nPlayers > 1 ? 1 : 2; G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); }
   else if (code === 'Backspace' || code === 'Escape') { if (G.pick > 0) { G.pick--; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); } else { mmEnter(); return; } }
   else if (code === 'Enter' || code === 'Space' || code === 'NumpadEnter') { menuConfirm(); return; }
   else return;

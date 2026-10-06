@@ -8,11 +8,13 @@ function menuBuild() {
   $('cards').innerHTML = MAIN_IDS.map((id, i) => { const C = CLASSES[id], T = CARD_TXT[id], img = cvGunImg(id);
     return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
-    b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; if (i === menuSel) menuConfirm(); else { menuSel = i; menuMark(); SFX.click(); } });
+    b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; menuSel = i; menuMark(); SFX.click(); });
     b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
   });
   $('goBtn').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickKey('Enter'); else menuConfirm(); };
-  $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('coopBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
+  $('cmH0').onclick = () => { if (G.state === 'menu' && G.nPlayers > 1 && G.pick !== 0) { G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); menuMark(); SFX.click(); } };
+  $('cmH1').onclick = () => { if (G.state === 'menu' && G.nPlayers > 1 && G.pick !== 1) { G.pick = 1; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[1])); menuMark(); SFX.click(); } };
   $('splitBtn').onclick = e => { e.stopPropagation(); toggleSplit(); };
   $('backMain').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickBack(); else mmEnter(); };
   for (const s of [0, 1]) { $('lookPrev' + s).onclick = e => { e.stopPropagation(); lookCycle(-1, s); }; $('lookNext' + s).onclick = e => { e.stopPropagation(); lookCycle(1, s); }; $('lookEdit' + s).onclick = e => { e.stopPropagation(); lookEdit(s); }; }
@@ -24,7 +26,6 @@ function menuBuild() {
   $('quitBtn').onclick = e => { e.stopPropagation(); G.paused = false; toMenu(); };
   $('pMainBtn').onclick = e => { e.stopPropagation(); G.paused = false; toMenu(); mmEnter(); };
   $('mainBtn').onclick = e => { e.stopPropagation(); toMenu(); mmEnter(); };
-  if (IS_TOUCH) $('plBtn').style.display = 'none';
   menuMark();
 }
 function menuMark() {
@@ -34,15 +35,13 @@ function menuMark() {
     b.classList.toggle('sel', i === menuSel); b.style.borderColor = i === menuSel && G.nPlayers > 1 ? PLAYER_CSS[G.pick] : '';
     b.querySelector('.who').innerHTML = G.nPlayers > 1 ? G.guns.slice(0, G.pick).map((g, k) => g === MAIN_IDS[i] ? `<i style="background:${PLAYER_CSS[k]}">И${k + 1}</i>` : '').join('') : '';
   });
-  $('plBtn').textContent = 'Игроков: ' + G.nPlayers;
+  $('coopBtn').classList.toggle('on', G.nPlayers > 1);
   $('splitBtn').style.display = G.nPlayers > 1 && !IS_TOUCH ? '' : 'none'; $('splitBtn').textContent = 'Экран: ' + (G.split ? 'раздельный' : 'общий');
-  const ctr = assignControls(G.nPlayers);
-  $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
   const mp = G.state === 'maps'; document.body.classList.toggle('cmMaps', mp);
-  $('goBtn').textContent = mp ? 'В бой' : G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
-  $('backMain').textContent = mp ? '← К выбору класса' : '← Главное меню';
-  if (mp) { $('plBtn').style.display = 'none'; $('pickWho').textContent = 'Выбор карты'; }
-  else if (G.state === 'menu') $('plBtn').style.display = IS_TOUCH ? 'none' : '';
+  $('pickWho').innerHTML = mp ? 'Выбор карты' : G.nPlayers > 1 ? `<span style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</span> выбирает класс` : '';
+  $('goBtn').textContent = mp ? 'В бой' : 'Продолжить';
+  $('backMain').textContent = mp ? 'К классам' : 'Назад';
+  $('coopBtn').style.display = mp || IS_TOUCH ? 'none' : '';
   cvUpdate(); lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
@@ -53,13 +52,13 @@ function menuConfirm() {
   openMapPick();                                                       // режим → класс → карта списком
 }
 function menuKey(code) {
-  const cols = Math.max(1, Math.round($('cards').clientWidth / 170));
+  const cols = 4;                                                       // сетка карточек — 4 в ряд
   if (code === 'ArrowRight' || code === 'KeyD') menuSel = (menuSel + 1) % MAIN_IDS.length;
   else if (code === 'ArrowLeft' || code === 'KeyA') menuSel = (menuSel + MAIN_IDS.length - 1) % MAIN_IDS.length;
   else if (code === 'ArrowDown' || code === 'KeyS') menuSel = Math.min(MAIN_IDS.length - 1, menuSel + cols);
   else if (code === 'ArrowUp' || code === 'KeyW') menuSel = Math.max(0, menuSel - cols);
   else if (/^Digit[1-7]$/.test(code) && +code.slice(5) <= MAIN_IDS.length) menuSel = +code.slice(5) - 1;
-  else if (code === 'Tab') { G.nPlayers = G.nPlayers >= maxPlayers() ? 1 : G.nPlayers + 1; G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); }
+  else if (code === 'Tab') { if (maxPlayers() < 2) return; G.nPlayers = G.nPlayers > 1 ? 1 : 2; G.pick = 0; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[0])); }
   else if (code === 'Backspace' || code === 'Escape') { if (G.pick > 0) { G.pick--; menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); } else { mmEnter(); return; } }
   else if (code === 'Enter' || code === 'Space' || code === 'NumpadEnter') { menuConfirm(); return; }
   else return;
