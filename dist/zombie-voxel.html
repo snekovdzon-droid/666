@@ -226,7 +226,7 @@ body.touch .mel{display:none}
 .rs-leg{display:flex;gap:14px;font-size:12px;margin-top:4px}
 
 /* ---------- меню выбора класса: герой слева, карточки справа; в коопе — второй герой справа, карточки по центру ---------- */
-#menu{background:radial-gradient(ellipse 75% 70% at 50% 46%,#241a13 0%,#171009 42%,#0a0705 78%,#030202 100%);box-shadow:inset 0 0 18vmax 2vmax rgba(0,0,0,.85)}
+#menu{background:radial-gradient(ellipse 80% 75% at 50% 48%,rgba(8,6,5,.62) 0%,rgba(6,5,4,.8) 55%,rgba(2,2,2,.94) 100%);box-shadow:inset 0 0 16vmax 2vmax rgba(0,0,0,.7)}
 #cmStage{display:flex;align-items:stretch;justify-content:center;gap:18px;width:min(1500px,100%);padding:0 12px;box-sizing:border-box}
 #cmMid{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center}
 #cmMid #pickWho{min-height:0}
@@ -7992,7 +7992,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 function tick(dt, T) {
-  if (G.state === 'main') mmUpdate(dt);
+  if (G.state === 'main' || G.state === 'menu' || G.state === 'maps') mmUpdate(dt);
   const run = G.state === 'play' && !G.paused, live = (G.state === 'play' || G.state === 'end') && !G.paused;
   if (run) {
     G.t += dt;
@@ -8893,7 +8893,7 @@ function menuRender(T) {
   return true;
 }
 function render(T) {
-  if (G.state === 'main' && menuRender(T)) return;                                 // v0.57: главное меню — своя сцена с шествием
+  if ((G.state === 'main' || G.state === 'menu' || G.state === 'maps') && menuRender(T)) return;   // фон меню класса и карт — та же сцена главного меню, затемнённая                                 // v0.57: главное меню — своя сцена с шествием
   updateFade(); updateArcs();
   chN = 0; voxFrameBegin(); gunsFrameBegin();
   for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }

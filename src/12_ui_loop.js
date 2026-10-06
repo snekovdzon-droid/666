@@ -200,7 +200,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 function tick(dt, T) {
-  if (G.state === 'main') mmUpdate(dt);
+  if (G.state === 'main' || G.state === 'menu' || G.state === 'maps') mmUpdate(dt);
   const run = G.state === 'play' && !G.paused, live = (G.state === 'play' || G.state === 'end') && !G.paused;
   if (run) {
     G.t += dt;
@@ -1101,7 +1101,7 @@ function menuRender(T) {
   return true;
 }
 function render(T) {
-  if (G.state === 'main' && menuRender(T)) return;                                 // v0.57: главное меню — своя сцена с шествием
+  if ((G.state === 'main' || G.state === 'menu' || G.state === 'maps') && menuRender(T)) return;   // фон меню класса и карт — та же сцена главного меню, затемнённая                                 // v0.57: главное меню — своя сцена с шествием
   updateFade(); updateArcs();
   chN = 0; voxFrameBegin(); gunsFrameBegin();
   for (const p of G.state === 'main' ? [] : players) if (!(p.inv > 0 && !p.down && Math.floor(p.inv * 12) % 2)) { if (VZ.hero) { drawVoxHero(p); drawHeroGunOnly(p); } else drawChar(p, T); if (p.down && players.length > 1) drawDownPistol(p); }
