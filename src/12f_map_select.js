@@ -14,13 +14,6 @@ MAP_OPS.zone = () => {}; MAP_OPS.crate = () => {};                 // служе
   const st = document.createElement('style');
   st.textContent = `
   #mapLoad{position:fixed;inset:0;z-index:50;background:#0e0b08;color:#e8dcc0;display:flex;align-items:center;justify-content:center;font-size:22px;letter-spacing:3px}
-  #mapPick{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,8,6,.9);z-index:8;flex-direction:column;color:#e8dcc0}
-  #mapPick h2{margin:0 0 6px;letter-spacing:4px;font-size:clamp(22px,4vw,34px);text-transform:uppercase}#mapPick .sub{opacity:.7;font-size:13px;margin-bottom:14px}
-  #mpList{display:flex;flex-direction:column;gap:8px;width:min(620px,92vw);max-height:62vh;overflow:auto}
-  .mp{display:grid;grid-template-columns:1fr auto;gap:2px 12px;text-align:left;font:inherit;padding:12px 16px;border:0;border-left:4px solid #4a4032;background:rgba(24,19,14,.9);color:#d8d0bc;cursor:pointer}
-  .mp b{font-size:19px;letter-spacing:1px}.mp small{opacity:.7;align-self:center}.mp span{grid-column:1/3;font-size:12.5px;opacity:.75}
-  .mp.sel,.mp:hover{border-left-color:#ffb040;background:rgba(48,36,22,.95);color:#fff}
-  #mpBack{margin-top:14px;font:inherit;padding:9px 20px;border:1px solid #4a4032;background:transparent;color:#d8d0bc;cursor:pointer}
   #mapEd{position:fixed;inset:0;display:none;flex-direction:column;background:#14110e;color:#e8dcc0;z-index:20;font-size:13px;user-select:none}
   #meTop{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#1f1a14;border-bottom:1px solid #3a3025;flex-wrap:wrap}
   #meTop button,#meSide button,#meSide select{font:inherit;color:#e8dcc0;background:#2a2218;border:1px solid #4a3c2a;padding:6px 10px;cursor:pointer}
@@ -33,21 +26,17 @@ MAP_OPS.zone = () => {}; MAP_OPS.crate = () => {};                 // служе
   #meInfo{padding:4px 10px;background:#1f1a14;border-top:1px solid #3a3025;color:#a89a80;display:flex;gap:16px}
   #meSide .help{font-size:11.5px;color:#8a806c;line-height:1.45;margin-top:8px}`;
   document.head.appendChild(st);
-  const mp = document.createElement('div'); mp.id = 'mapPick';
-  mp.innerHTML = '<h2>Выбор карты</h2><div class="sub" id="mpWho"></div><div id="mpList"></div><button id="mpBack">← К выбору класса</button>';
-  document.body.appendChild(mp);
   const ed = document.createElement('div'); ed.id = 'mapEd';
   ed.innerHTML = `<div id="meTop"><button id="meExit">← Выйти</button><span id="meName"></span><button id="meUndo">⟲ Отменить</button><button id="meRedo">⟳ Вернуть</button><span class="sp"></span>
     <button id="meCopy">Копировать код</button><button id="mePaste">Вставить код</button><button id="meReset">Сбросить правки</button><button id="mePlay">▶ Играть</button></div>
     <div id="meBody"><div id="meSide"></div><div id="meCvW"><canvas id="meCv"></canvas></div></div><div id="meInfo"><span id="meCoord"></span><span id="meHint"></span><span id="meCount"></span></div>`;
   document.body.appendChild(ed);
-  $m('mpBack').onclick = () => mapPickKey('Escape');
 }
 
 /* ---- запуск на выбранной карте: если карта другая — запоминаем настройки забега, перезагружаем страницу и стартуем сами ---- */
 function showLoadingFx(txt) { if ($m('mapLoad')) return; const el = document.createElement('div'); el.id = 'mapLoad'; el.textContent = txt; document.body.appendChild(el); }
 function launchOnMap(id) {
-  $m('mapPick').style.display = 'none';
+  closeMapPick();
   if (id === MAPID) { startRun(); return; }
   try { sessionStorage.setItem('zsv_pending', JSON.stringify({ run: true, n: G.nPlayers, guns: G.guns.slice(), split: !!G.split })); } catch (e) {}
   lsSet('map', id); showLoadingFx('Загрузка карты…'); setTimeout(() => location.reload(), 40);
@@ -59,26 +48,30 @@ function bootPending() {
   if (p.run) { G.nPlayers = p.n || 1; if (p.guns && p.guns.length) G.guns = p.guns; G.gun = G.guns[0]; G.split = !!p.split; startRun(); }
 }
 const MP = { sel: 0, list: [] };
-function openMapPick() {
+function openMapPick() {                       // карточки карт — в том же экране, что и выбор класса; герои по бокам остаются
   MP.list = allMaps(); MP.sel = Math.max(0, MP.list.findIndex(m => m.id === MAPID));
-  G.state = 'maps'; showScreen('maps'); $m('mapPick').style.display = 'flex';
-  $m('mpWho').textContent = G.nPlayers > 1 ? `Игроков: ${G.nPlayers}` : 'Одиночная игра';
-  renderMapPick();
+  G.state = 'maps'; showScreen('menu');
+  renderMapPick(); menuMark();
 }
+function closeMapPick() {}                     // видимость карточек карт — по классу body.cmMaps (его ставит menuMark по G.state === 'maps')
 function renderMapPick() {
   const el = $m('mpList');
-  el.innerHTML = MP.list.map((m, i) => `<button class="mp${i === MP.sel ? ' sel' : ''}" data-i="${i}"><b>${m.name}</b><small>${m.size}×${m.size}${m.id === MAPID ? ' · сейчас загружена' : ''}</small><span>${m.info}</span></button>`).join('');
-  el.querySelectorAll('button').forEach(b => { b.onclick = e => { e.stopPropagation(); MP.sel = +b.dataset.i; launchOnMap(MP.list[MP.sel].id); }; b.onmouseenter = () => { MP.sel = +b.dataset.i; markMapPick(); }; });
+  el.innerHTML = MP.list.map((m, i) => `<button class="mp${i === MP.sel ? ' sel' : ''}" data-i="${i}"><div class="mpImg${MAP_THUMBS[m.id] ? '' : ' none'}" ${MAP_THUMBS[m.id] ? `style="background-image:url(${MAP_THUMBS[m.id]})"` : ''}>${MAP_THUMBS[m.id] ? '' : '?'}</div><span class="mpName">${m.name}</span><span class="mpSub">${m.size}×${m.size}${m.custom ? ' · своя карта' : ''}</span></button>`).join('');
+  el.querySelectorAll('button').forEach(b => { b.onclick = e => { e.stopPropagation(); const i = +b.dataset.i; if (i === MP.sel) launchOnMap(MP.list[i].id); else { MP.sel = i; markMapPick(); SFX.click(); } }; b.onmouseenter = () => { MP.sel = +b.dataset.i; markMapPick(); }; });
 }
-function markMapPick() { $m('mpList').querySelectorAll('.mp').forEach((b, i) => b.classList.toggle('sel', i === MP.sel)); const s = $m('mpList').querySelector('.mp.sel'); if (s && s.scrollIntoView) s.scrollIntoView({ block: 'nearest' }); }
+function markMapPick() { $m('mpList').querySelectorAll('.mp').forEach((b, i) => b.classList.toggle('sel', i === MP.sel)); menuMark(); }
 function mapPickKey(code) {
-  if (code === 'ArrowDown' || code === 'KeyS') MP.sel = (MP.sel + 1) % MP.list.length;
-  else if (code === 'ArrowUp' || code === 'KeyW') MP.sel = (MP.sel + MP.list.length - 1) % MP.list.length;
+  const n = MP.list.length, cols = Math.max(1, Math.round($m('mpList').clientWidth / 250));
+  if (code === 'ArrowRight' || code === 'KeyD') MP.sel = (MP.sel + 1) % n;
+  else if (code === 'ArrowLeft' || code === 'KeyA') MP.sel = (MP.sel + n - 1) % n;
+  else if (code === 'ArrowDown' || code === 'KeyS') MP.sel = Math.min(n - 1, MP.sel + cols);
+  else if (code === 'ArrowUp' || code === 'KeyW') MP.sel = Math.max(0, MP.sel - cols);
   else if (code === 'Enter' || code === 'Space' || code === 'NumpadEnter') { launchOnMap(MP.list[MP.sel].id); return; }
-  else if (code === 'Escape' || code === 'Backspace') { $m('mapPick').style.display = 'none'; G.state = 'menu'; showScreen('menu'); G.pick = Math.max(0, G.nPlayers - 1); menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); menuMark(); return; }
+  else if (code === 'Escape' || code === 'Backspace') { mapPickBack(); return; }
   else return;
   markMapPick(); SFX.click();
 }
+function mapPickBack() { closeMapPick(); G.state = 'menu'; showScreen('menu'); G.pick = Math.max(0, G.nPlayers - 1); menuSel = Math.max(0, MAIN_IDS.indexOf(G.guns[G.pick])); menuMark(); }
 
 /* ---- меню «Редактор карты»: выбор карты для правки, создание и удаление своих ---- */
 function mapEditPanelHtml() {

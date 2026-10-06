@@ -13,10 +13,10 @@ function menuBuild() {
     b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; if (i === menuSel) menuConfirm(); else { menuSel = i; menuMark(); SFX.click(); } });
     b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
   });
-  $('goBtn').onclick = e => { e.stopPropagation(); menuConfirm(); };
+  $('goBtn').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickKey('Enter'); else menuConfirm(); };
   $('plBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
   $('splitBtn').onclick = e => { e.stopPropagation(); toggleSplit(); };
-  $('backMain').onclick = e => { e.stopPropagation(); mmEnter(); };
+  $('backMain').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickBack(); else mmEnter(); };
   for (const s of [0, 1]) { $('lookPrev' + s).onclick = e => { e.stopPropagation(); lookCycle(-1, s); }; $('lookNext' + s).onclick = e => { e.stopPropagation(); lookCycle(1, s); }; $('lookEdit' + s).onclick = e => { e.stopPropagation(); lookEdit(s); }; }
   heroApplyAll();
   $('optSound').checked = Sound.on; $('optSound').onchange = e => setSound(e.target.checked);
@@ -40,7 +40,11 @@ function menuMark() {
   $('splitBtn').style.display = G.nPlayers > 1 && !IS_TOUCH ? '' : 'none'; $('splitBtn').textContent = 'Экран: ' + (G.split ? 'раздельный' : 'общий');
   const ctr = assignControls(G.nPlayers);
   $('pickWho').innerHTML = G.nPlayers > 1 ? `<b style="color:${PLAYER_CSS[G.pick]}">Игрок ${G.pick + 1}</b> выбирает класс` + ctr.map((c, k) => `<br><span style="color:${PLAYER_CSS[k]}">И${k + 1}</span>: ${CTRL_NAME[c.ctrl]}${c.ctrl === 'pad' ? ' ' + (c.pad + 1) : ''}`).join('') : '';
-  $('goBtn').textContent = G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
+  const mp = G.state === 'maps'; document.body.classList.toggle('cmMaps', mp);
+  $('goBtn').textContent = mp ? 'В бой' : G.nPlayers > 1 && G.pick < G.nPlayers - 1 ? 'Дальше — игрок ' + (G.pick + 2) : 'Выбор карты';
+  $('backMain').textContent = mp ? '← К выбору класса' : '← Главное меню';
+  if (mp) { $('plBtn').style.display = 'none'; $('pickWho').textContent = 'Выбор карты'; }
+  else if (G.state === 'menu') $('plBtn').style.display = IS_TOUCH ? 'none' : '';
   cvUpdate(); lookMark();
   if (player && G.state === 'menu') { player.idx = G.pick; debugGun(G.guns[G.pick]); }
 }
@@ -993,7 +997,7 @@ function musicTick() {
   if (!Sound.ctx || Sound.ctx.state !== 'running') return;
   musicInit();
   const MAP_MUSIC = false;                                              // v0.56: музыка карт выключена (треки prison/cemetery оставлены в коде — включить здесь)
-  const want = G.state === 'main' || G.state === 'menu' ? 'menu' : (MAP_MUSIC ? (MAPID === 'cemetery' ? 'cemetery' : 'prison') : null), c = Sound.ctx, now = c.currentTime;
+  const want = G.state === 'main' || G.state === 'menu' || G.state === 'maps' ? 'menu' : (MAP_MUSIC ? (MAPID === 'cemetery' ? 'cemetery' : 'prison') : null), c = Sound.ctx, now = c.currentTime;
   if (want !== MUSIC.track) {
     MUSIC.bus.gain.cancelScheduledValues(now); MUSIC.bus.gain.setValueAtTime(MUSIC.bus.gain.value, now);
     if (want) { MUSIC.track = want; MUSIC.next = now + 0.1; MUSIC.beat = 0; MUSIC.idx = 0; MUSIC.lastF = 0; MUSIC.bus.gain.linearRampToValueAtTime(TRACKS[want].vol || MUSIC.vol, now + 1.5); }   // в бою потише, чтобы не глушить выстрелы

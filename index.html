@@ -242,6 +242,13 @@ body.touch .mel{display:none}
 #menu .cmBtns{margin-top:6px}#menu .cmBtns .go{margin:8px 4px 0}
 @media (max-width:820px){#cmStage{flex-direction:column;align-items:stretch}.cmHero{flex:none;flex-direction:row;align-items:center}.cmHero canvas{width:44%;height:210px}.cmCap{flex:1}#cmH1{order:3}#cmMid{order:2}}
 body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10px}
+#mapPick{display:none;width:100%}body.cmMaps #cards{display:none}body.cmMaps #mapPick{display:block}
+#mpList{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.mp{display:flex;flex-direction:column;padding:0;text-align:left;font:inherit;color:#f2ead6;cursor:pointer;border:0;border-left:4px solid #4a4032;background:rgba(20,16,12,.82);overflow:hidden}
+.mp:hover,.mp.sel{border-left-color:#e8a050;background:rgba(62,40,22,.94)}
+.mp .mpImg{aspect-ratio:3/2;background:#14100c center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:#6a6252;font-size:34px}
+.mp .mpImg.none{background-image:linear-gradient(135deg,#1c1812,#2c261d),repeating-linear-gradient(0deg,transparent 0 15px,rgba(255,255,255,.04) 15px 16px);background-blend-mode:normal}
+.mp .mpName{padding:8px 12px 2px;font-size:18px;font-weight:700;color:#ffd08a}.mp .mpSub{padding:0 12px 10px;font-size:12px;color:#a89e88}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -262,7 +269,7 @@ body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10p
   <div id="cmStage">
     <div class="cmHero" id="cmH0"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho0"></div><div class="cmCls" id="cmCls0"></div>
       <div class="cmLook"><button id="lookPrev0">◀</button> <b id="lookName0"></b> <button id="lookNext0">▶</button></div><button class="cmEdit" id="lookEdit0">Редактор персонажа</button></div></div>
-    <div id="cmMid"><div id="pickWho" class="sub"></div><div id="cards"></div></div>
+    <div id="cmMid"><div id="pickWho" class="sub"></div><div id="cards"></div><div id="mapPick"><div id="mpList"></div></div></div>
     <div class="cmHero" id="cmH1"><canvas></canvas><div class="cmCap"><div class="cmWho" id="lookWho1"></div><div class="cmCls" id="cmCls1"></div>
       <div class="cmLook"><button id="lookPrev1">◀</button> <b id="lookName1"></b> <button id="lookNext1">▶</button></div><button class="cmEdit" id="lookEdit1">Редактор персонажа</button></div></div>
   </div>
@@ -329,6 +336,7 @@ body.cmCoop #cards .card p{display:none}body.cmCoop #cards .card{padding:8px 10p
 <script src="src/12d_melee.js"></script>
 <script src="src/12e_runstats.js"></script>
 <script src="src/12f_map_select.js"></script>
+<script src="src/12j_map_thumbs.js"></script>
 <script src="src/12g_zsnd_assets.js"></script>
 <script src="src/12h_fxsnd_assets.js"></script>
 <script src="src/12i_menu_v76.js"></script>

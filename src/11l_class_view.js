@@ -51,15 +51,15 @@ function cvUpdate() {                                   // вызывается 
   const co = G.nPlayers > 1; document.body.classList.toggle('cmCoop', co);
   CV.pl = [0, co ? Math.max(1, G.pick) : 1];
   for (let s = 0; s < (co ? 2 : 1); s++) {
-    const pl = CV.pl[s], C = CLASSES[G.guns[pl]], W = WEAPONS[G.guns[pl]], el = $('cmH' + s), act = !co || pl === G.pick;
+    const pl = CV.pl[s], C = CLASSES[G.guns[pl]], W = WEAPONS[G.guns[pl]], el = $('cmH' + s), act = !co || pl === G.pick || G.state === 'maps';
     cvBuild(s);
     el.classList.toggle('off', !act); el.style.borderLeftColor = co ? PLAYER_CSS[pl] : '';
     $('cmCls' + s).innerHTML = C ? `${C.name}<small>${W.name}</small>` : '';
   }
-  if (!CV.run && G.state === 'menu') { CV.run = true; CV.last = performance.now(); requestAnimationFrame(cvLoop); }
+  if (!CV.run && (G.state === 'menu' || G.state === 'maps')) { CV.run = true; CV.last = performance.now(); requestAnimationFrame(cvLoop); }
 }
 function cvLoop(now) {
-  if (G.state !== 'menu' || $('menu').style.display === 'none') { CV.run = false; return; }
+  if ((G.state !== 'menu' && G.state !== 'maps') || $('menu').style.display === 'none') { CV.run = false; return; }
   requestAnimationFrame(cvLoop);
   const dt = Math.min(0.05, (now - CV.last) / 1000); CV.last = now; const t = now / 1000;
   if (!CV.r) { CV.r = new THREE.WebGLRenderer({ alpha: true, antialias: true }); CV.r.outputEncoding = THREE.sRGBEncoding; }
