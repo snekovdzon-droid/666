@@ -345,7 +345,7 @@ function mhRender(T) {
   const fl = 1 + Math.sin(now * 7.1) * 0.05 + Math.sin(now * 13.3) * 0.03;                       // мерцание фонаря
   MH.lanternL.intensity = 3.4 * fl; MH.lanternGlow.material.opacity = 0.6 * fl;
   for (const f of MH.fogs) { f.m.position.x -= f.v * dt; if (f.m.position.x < -26) f.m.position.x = 26; }
-  renderer.setRenderTarget(MH.rt); renderer.setScissorTest(false); renderer.setViewport(0, 0, rw, rh); renderer.toneMapping = THREE.NoToneMapping; renderer.render(MH.scene, cam);
+  renderer.setRenderTarget(MH.rt); renderer.setScissorTest(false); renderer.setViewport(0, 0, rw / pr, rh / pr);   /* вьюпорт умножается на pixelRatio (на «Низкой» 0,6) — делим, иначе сцена занимает только часть буфера */ renderer.toneMapping = THREE.NoToneMapping; renderer.render(MH.scene, cam);
   renderer.setRenderTarget(null); renderer.setViewport(0, 0, rw * MH.psc, rh * MH.psc); MH.pp.uniforms.t.value = MH.rt.texture; renderer.render(MH.ppS, MH.ppC);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   return true;
