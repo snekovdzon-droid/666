@@ -5,7 +5,7 @@ const SLOT_KEY = ['', '', '', ''];
 function heroApplySlot(i) {
   const h = heroById(HEROES.sel[i]), key = h ? JSON.stringify(h) : '';
   if (SLOT_KEY[i] === key) return; SLOT_KEY[i] = key;
-  setHeroModel(i, buildVoxModel(genHeroVox(h || Object.assign({}, HERO_PRESETS[0], { top: '#' + PLAYER_COL[i].map(v => v.toString(16).padStart(2, '0')).join('') }))));   // v0.51: герой по умолчанию — тоже из слоёв
+  setHeroModel(i, buildVoxModel(genHeroVox(h || Object.assign({}, HERO_PRESETS[0], { top2: '#' + PLAYER_COL[i].map(v => v.toString(16).padStart(2, '0')).join('') }))));   // v0.51: герой по умолчанию — тоже из слоёв
 }
 const heroApplyAll = () => { for (let i = 0; i < 4; i++) heroApplySlot(i); };
 
@@ -26,17 +26,13 @@ function lookEdit(s = 0) { G.pick = CV.pl[s]; menuSel = Math.max(0, MAIN_IDS.ind
 const ED = { cur: null, ready: false, open: false, yaw: 0.5, walk: true, spin: true, drag: null, M: null, parts: {}, dirty: true };
 // Строки панели: opt — кнопки вариантов (из файлов частей), col — цвет, k — поле героя
 const ED_UI = [
-  ['opt', 'gender', 'Пол', GENDERS],
   ['col', 'skin', 'Кожа', 'skin'],
   ['cat', 'hairStyle'], ['col', 'hair', 'Цвет волос', 'hair'],
   ['cat', 'beard'], ['col', 'beardCol', 'Цвет бороды', 'hair', 'как у волос'],
-  ['cat', 'topStyle'], ['col', 'top2', 'Цвет нижнего верха', 'cloth'],
-  ['cat', 'outer'], ['col', 'top', 'Цвет верхней одежды', 'cloth'], ['col', 'trim', 'Отделка', 'cloth'],
+  ['cat', 'topStyle'], ['col', 'top2', 'Цвет верха', 'cloth'],
   ['cat', 'legs'], ['col', 'pants', 'Цвет низа', 'pants'],
   ['cat', 'shoesStyle'], ['col', 'shoes', 'Цвет обуви', 'shoes'],
-  ['cat', 'hat'], ['col', 'hatCol', 'Цвет головного убора', 'cloth'],
   ['cat', 'glasses'],
-  ['cat', 'pack'], ['col', 'packCol', 'Цвет рюкзака', 'cloth'],
 ];
 const edClone = h => JSON.parse(JSON.stringify(h));
 const edPick = a => a[Math.floor(Math.random() * a.length)];
@@ -46,7 +42,7 @@ function edBuildPanel() {
   $('edPanel').innerHTML = ED_UI.map(([t, k, label, src, none]) => {
     if (t === 'opt') return `<div class="edRow" data-row="${k}"><label>${label}</label><div class="edOpts">${optBtns(k, src)}</div></div>`;
     if (t === 'cat') { const c = HERO_CATS.find(x => x.k === k);
-      return `<div class="edRow" data-row="${k}"><label>${c.label}</label><div class="edOpts">${optBtns(k, heroOptions(c))}<button class="load" data-load="${k}" title="Загрузить свою модель (.vox) для этого пункта">＋ .vox</button><button class="del" data-del="${k}" title="Удалить загруженную модель">✕</button></div></div>`; }
+      return `<div class="edRow" data-row="${k}"><label>${c.label}</label><div class="edOpts">${optBtns(k, heroOptions(c))}</div></div>`; }
     return `<div class="edRow" data-row="${k}"><label>${label}</label><div class="edSw">${none ? `<button class="sw none" data-k="${k}" data-c="" title="${none}">${none}</button>` : ''}${HERO_SWATCH[src].map(c => `<button class="sw" data-k="${k}" data-c="${c}" style="background:${c}"></button>`).join('')}<input type="color" data-k="${k}"></div></div>`;
   }).join('');
 }
@@ -61,10 +57,7 @@ function edSync() {
     else b.classList.toggle('on', (c[k] || '') === b.dataset.c);
   });
   // женское тело: бороду можно, но это решает игрок; рюкзак выключен — его цвет не нужен
-  $('edPanel').querySelector('[data-row="packCol"]').style.opacity = c.pack !== 'none' ? 1 : 0.4;
-  $('edPanel').querySelector('[data-row="hatCol"]').style.opacity = c.hat !== 'none' ? 1 : 0.4;
   $('edPanel').querySelector('[data-row="beardCol"]').style.opacity = c.beard !== 'none' ? 1 : 0.4;
-  $('edPanel').querySelectorAll('button.del').forEach(b => { const cat = HERO_CATS.find(x => x.k === b.dataset.del); b.style.display = String(c[cat.k]).startsWith('c_') ? '' : 'none'; });
   const sel = $('edList'); sel.innerHTML = HEROES.list.map(h => `<option value="${h.id}">${h.name}</option>`).join('') + (c.id ? '' : '<option value="" selected>— новый (не сохранён) —</option>');
   if (c.id) sel.value = c.id;
 }
@@ -114,9 +107,6 @@ function edOpen() {
   if (!ED.ready) {
     edBuildPanel(); edPreviewInit(); ED.ready = true;
     $('edPanel').addEventListener('click', e => {
-      const ld = e.target.closest('button[data-load]'), dl = e.target.closest('button[data-del]');
-      if (ld) { edLoadPart(HERO_CATS.find(x => x.k === ld.dataset.load)); return; }
-      if (dl) { const cat = HERO_CATS.find(x => x.k === dl.dataset.del); heroRemoveCustom(cat, ED.cur[cat.k]); ED.cur[cat.k] = (cat.none || heroOptions(cat)[0])[0]; edRefresh(); return; }
       const b = e.target.closest('button[data-k]'); if (!b) return;
       const k = b.dataset.k;
       if (b.dataset.v !== undefined) edSet(k, b.dataset.v); else edSet(k, b.dataset.c);
@@ -133,10 +123,10 @@ function edOpen() {
       edLoad(HEROES.list[0] || HERO_DEFAULT);
     };
     $('edRand').onclick = () => {
-      const c = ED.cur, f = Math.random() < 0.5, ids = k => heroOptions(HERO_CATS.find(x => x.k === k)).map(o => o[0]).filter(v => !String(v).startsWith('c_') || Math.random() < 0.3);
-      Object.assign(c, { gender: f ? 'f' : 'm', skin: edPick(HERO_SWATCH.skin), hair: edPick(HERO_SWATCH.hair), hairStyle: edPick(ids('hairStyle')), beard: f || Math.random() < 0.5 ? 'none' : edPick(ids('beard')), beardCol: '',
-        top: edPick(HERO_SWATCH.cloth), topStyle: edPick(ids('topStyle')), trim: edPick(HERO_SWATCH.cloth), pants: edPick(HERO_SWATCH.pants), legs: Math.random() < 0.2 ? 'shorts' : 'long', shoesStyle: edPick(ids('shoesStyle')), shoes: edPick(HERO_SWATCH.shoes),
-        hat: Math.random() < 0.4 ? edPick(ids('hat')) : 'none', hatCol: edPick(HERO_SWATCH.cloth), glasses: Math.random() < 0.25 ? edPick(ids('glasses')) : 'none', pack: Math.random() < 0.5 ? edPick(ids('pack')) : 'none', packCol: edPick(HERO_SWATCH.cloth) });
+      const c = ED.cur, ids = k => heroOptions(HERO_CATS.find(x => x.k === k)).map(o => o[0]);
+      Object.assign(c, { gender: 'm', skin: edPick(HERO_SWATCH.skin), hair: edPick(HERO_SWATCH.hair), hairStyle: edPick(ids('hairStyle')), beard: Math.random() < 0.5 ? 'none' : edPick(ids('beard').filter(v => v !== 'none')), beardCol: '',
+        top2: edPick(HERO_SWATCH.cloth), topStyle: edPick(ids('topStyle')), pants: edPick(HERO_SWATCH.pants), legs: Math.random() < 0.2 ? 'shorts' : 'long', shoesStyle: edPick(ids('shoesStyle')), shoes: edPick(HERO_SWATCH.shoes),
+        glasses: Math.random() < 0.25 ? edPick(ids('glasses').filter(v => v !== 'none')) : 'none' });
       ED.dirty = true; edSync(); SFX.click();
     };
     $('edVox').onclick = () => {
@@ -156,15 +146,7 @@ function edOpen() {
   G.state = 'editor'; showScreen(null); $('huds').style.display = $('top').style.display = $('help').style.display = 'none'; $('editor').style.display = 'flex';
   edSync(); requestAnimationFrame(edLoop);
 }
-// пересобрать кнопки вариантов (после загрузки своей модели)
 function edRefresh() { edBuildPanel(); ED.dirty = true; edSync(); }
-function edLoadPart(cat) {
-  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.vox';
-  inp.onchange = () => { const f = inp.files[0]; if (!f) return; f.arrayBuffer().then(buf => {
-    try { ED.cur[cat.k] = heroAddCustom(cat, f.name, buf); edRefresh(); } catch (e) { alert('Не удалось прочитать файл .vox'); }
-  }); };
-  inp.click();
-}
 function edSyncSwatches() { $('edPanel').querySelectorAll('button.sw').forEach(b => b.classList.toggle('on', (ED.cur[b.dataset.k] || '') === b.dataset.c)); }
 function edSaveCur() {
   const c = ED.cur; c.name = (c.name || '').trim() || 'Герой';

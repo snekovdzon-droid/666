@@ -22,7 +22,7 @@ function cvSlot(s) {
 }
 function cvHero(pl) {
   const h = heroById(HEROES.sel[pl]);
-  return h || Object.assign({}, HERO_PRESETS[0], { top: '#' + PLAYER_COL[pl].map(v => v.toString(16).padStart(2, '0')).join('') });
+  return h || Object.assign({}, HERO_PRESETS[0], { top2: '#' + PLAYER_COL[pl].map(v => v.toString(16).padStart(2, '0')).join('') });
 }
 function cvBuild(s) {                                   // внешность героя игрока CV.pl[s] + вещи его класса
   const S = cvSlot(s), pl = CV.pl[s], hero = cvHero(pl), key = JSON.stringify(hero);
