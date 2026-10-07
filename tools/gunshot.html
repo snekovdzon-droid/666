@@ -1,0 +1,30 @@
+<!doctype html><meta charset=utf-8><body style="margin:0;background:#222"><canvas id=c></canvas>
+<script src="../vendor/three.min.js"></script><script src="../vendor/gltf-meshopt.js"></script>
+<script>
+// Картинка ствола из GLB для карточки класса (запускается из tools/gunshot.js): ствол сбоку, дуло вправо, прозрачный фон
+window.shoot = async function (url, o) {
+  o = Object.assign({ W: 640, H: 320, axis: 'auto', flip: false, yaw: 0.28, pitch: 0.2, roll: 0 }, o || {});
+  const buf = await (await fetch(url)).arrayBuffer();
+  const g = await new Promise((ok, bad) => new GLTFLoader().parse(buf, '', ok, bad));
+  const root = g.scene; root.updateMatrixWorld(true);
+  let bb = new THREE.Box3().setFromObject(root), sz = bb.getSize(new THREE.Vector3());
+  const ax = o.axis === 'auto' ? (sz.x >= sz.y && sz.x >= sz.z ? 'x' : sz.y >= sz.z ? 'y' : 'z') : o.axis;
+  const pivot = new THREE.Group(); pivot.add(root);
+  const c = bb.getCenter(new THREE.Vector3()); root.position.sub(c);
+  // длинную ось — вдоль экранной X (дуло вправо)
+  const wrap = new THREE.Group(); wrap.add(pivot);
+  if (ax === 'z') pivot.rotation.y = -Math.PI / 2; else if (ax === 'y') pivot.rotation.z = -Math.PI / 2;
+  if (o.flip) wrap.rotation.y += Math.PI;
+  wrap.rotation.x = o.roll * Math.PI / 180;
+  const scene = new THREE.Scene(); scene.add(wrap);
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x6a6a7a, 1.05)); const dl = new THREE.DirectionalLight(0xffffff, 1.1); dl.position.set(-2, 3, 4); scene.add(dl);
+  const rim = new THREE.DirectionalLight(0x9ab8ff, 0.5); rim.position.set(3, 1, -3); scene.add(rim);
+  wrap.rotation.y += o.yaw; wrap.updateMatrixWorld(true);
+  const b2 = new THREE.Box3().setFromObject(wrap), s2 = b2.getSize(new THREE.Vector3()), c2 = b2.getCenter(new THREE.Vector3());
+  const asp = o.W / o.H, hw = Math.max(s2.x * 0.54, s2.y * 0.54 * asp), hh = hw / asp;
+  const cam = new THREE.OrthographicCamera(-hw, hw, hh, -hh, 0.01, 100); cam.position.set(c2.x, c2.y + Math.sin(o.pitch) * 10, c2.z + Math.cos(o.pitch) * 10); cam.lookAt(c2);
+  const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), alpha: true, antialias: true, preserveDrawingBuffer: true }); r.outputEncoding = THREE.sRGBEncoding; r.setSize(o.W, o.H, false); r.setClearColor(0, 0);
+  r.render(scene, cam);
+  return { url: r.domElement.toDataURL('image/png'), ax, size: sz.toArray().map(v => +v.toFixed(2)) };
+};
+</script>

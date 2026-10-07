@@ -91,6 +91,7 @@ const CARD_TXT = {   // [название ствола, строки: [текс�
 };
 const CV_GUNIMG = {};
 function cvGunImg(id) {                                  // картинка ствола сбоку (дуло вправо), рисуется один раз общим рендерером
+  if (typeof GUN_CARD_IMG !== 'undefined' && GUN_CARD_IMG[id]) return GUN_CARD_IMG[id];   // детальный рендер из оригинальной модели
   if (CV_GUNIMG[id] !== undefined) return CV_GUNIMG[id];
   const G = gunModel(id); if (!G) return CV_GUNIMG[id] = '';
   if (!CV.r) { CV.r = new THREE.WebGLRenderer({ alpha: true, antialias: true }); CV.r.outputEncoding = THREE.sRGBEncoding; }
