@@ -6,10 +6,9 @@ G.guns[0] = G.gun;
 let menuSel = Math.max(0, MAIN_IDS.indexOf(G.gun));
 function menuBuild() {
   $('cards').innerHTML = MAIN_IDS.map((id, i) => { const C = CLASSES[id], T = CARD_TXT[id], img = cvGunImg(id);
-    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
+    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="" data-g="${id}">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
     b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; menuSel = i; menuMark(); SFX.click(); });
-    b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
   });
   $('goBtn').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickKey('Enter'); else menuConfirm(); };
   $('coopBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };

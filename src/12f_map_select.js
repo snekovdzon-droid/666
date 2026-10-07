@@ -57,7 +57,7 @@ function closeMapPick() {}                     // видимость карто�
 function renderMapPick() {
   const el = $m('mpList');
   el.innerHTML = MP.list.map((m, i) => `<button class="mp${i === MP.sel ? ' sel' : ''}" data-i="${i}"><div class="mpImg${MAP_THUMBS[m.id] ? '' : ' none'}" ${MAP_THUMBS[m.id] ? `style="background-image:url(${MAP_THUMBS[m.id]})"` : ''}>${MAP_THUMBS[m.id] ? '' : '?'}</div><span class="mpName">${m.name}</span><span class="mpSub">${m.size}×${m.size}${m.custom ? ' · своя карта' : ''}</span></button>`).join('');
-  el.querySelectorAll('button').forEach(b => { b.onclick = e => { e.stopPropagation(); const i = +b.dataset.i; if (i === MP.sel) launchOnMap(MP.list[i].id); else { MP.sel = i; markMapPick(); SFX.click(); } }; b.onmouseenter = () => { MP.sel = +b.dataset.i; markMapPick(); }; });
+  el.querySelectorAll('button').forEach(b => { b.onclick = e => { e.stopPropagation(); const i = +b.dataset.i; if (i === MP.sel) launchOnMap(MP.list[i].id); else { MP.sel = i; markMapPick(); SFX.click(); } } });
 }
 function markMapPick() { $m('mpList').querySelectorAll('.mp').forEach((b, i) => b.classList.toggle('sel', i === MP.sel)); menuMark(); }
 function mapPickKey(code) {

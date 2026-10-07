@@ -272,6 +272,8 @@ body.touch .mel{display:none}
 .cmHero.empty{background:rgba(14,11,8,.5);border-left-color:#2a241c!important;opacity:1}.cmHero.empty canvas,.cmHero.empty .cmCap{visibility:hidden}
 body.touch #cmH1{display:none}body.touch #coopBtn{display:none}
 #menu #pickWho{min-height:22px;font-family:'PixMenu',monospace;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:#cfc4ae}
+#cards .card .gunImg img[data-g=revolver]{transform:scale(.72)}
+#menu .card:hover:not(.sel){border-left-color:#7a6a52;background:rgba(36,28,21,.92)}#menu .mp:hover:not(.sel){border-left-color:#7a6a52;background:rgba(36,28,21,.92)}
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
@@ -7799,10 +7801,9 @@ G.guns[0] = G.gun;
 let menuSel = Math.max(0, MAIN_IDS.indexOf(G.gun));
 function menuBuild() {
   $('cards').innerHTML = MAIN_IDS.map((id, i) => { const C = CLASSES[id], T = CARD_TXT[id], img = cvGunImg(id);
-    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
+    return `<button class="card" data-i="${i}"><span class="k">${i + 1}</span><div class="gunImg">${img ? `<img src="${img}" alt="" data-g="${id}">` : ''}</div><b>${C.name}</b><span class="gn">${T[0]}</span><div class="cl">${T[1].map(([t, k]) => `<span class="${k === '+' ? 'pl' : k === '-' ? 'mi' : ''}">${t}</span>`).join('')}</div><div class="who"></div></button>`; }).join('');
   $('cards').querySelectorAll('.card').forEach(b => {
     b.addEventListener('click', e => { e.stopPropagation(); const i = +b.dataset.i; menuSel = i; menuMark(); SFX.click(); });
-    b.addEventListener('mouseenter', () => { menuSel = +b.dataset.i; menuMark(); });
   });
   $('goBtn').onclick = e => { e.stopPropagation(); if (G.state === 'maps') mapPickKey('Enter'); else menuConfirm(); };
   $('coopBtn').onclick = e => { e.stopPropagation(); menuKey('Tab'); };
@@ -9734,7 +9735,7 @@ function closeMapPick() {}                     // видимость карто�
 function renderMapPick() {
   const el = $m('mpList');
   el.innerHTML = MP.list.map((m, i) => `<button class="mp${i === MP.sel ? ' sel' : ''}" data-i="${i}"><div class="mpImg${MAP_THUMBS[m.id] ? '' : ' none'}" ${MAP_THUMBS[m.id] ? `style="background-image:url(${MAP_THUMBS[m.id]})"` : ''}>${MAP_THUMBS[m.id] ? '' : '?'}</div><span class="mpName">${m.name}</span><span class="mpSub">${m.size}×${m.size}${m.custom ? ' · своя карта' : ''}</span></button>`).join('');
-  el.querySelectorAll('button').forEach(b => { b.onclick = e => { e.stopPropagation(); const i = +b.dataset.i; if (i === MP.sel) launchOnMap(MP.list[i].id); else { MP.sel = i; markMapPick(); SFX.click(); } }; b.onmouseenter = () => { MP.sel = +b.dataset.i; markMapPick(); }; });
+  el.querySelectorAll('button').forEach(b => { b.onclick = e => { e.stopPropagation(); const i = +b.dataset.i; if (i === MP.sel) launchOnMap(MP.list[i].id); else { MP.sel = i; markMapPick(); SFX.click(); } } });
 }
 function markMapPick() { $m('mpList').querySelectorAll('.mp').forEach((b, i) => b.classList.toggle('sel', i === MP.sel)); menuMark(); }
 function mapPickKey(code) {
