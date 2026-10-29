@@ -45,19 +45,30 @@ function relFree(def, x1, z1, x2, z2, margin, types) {
   if (typeof GATES !== 'undefined') for (const G of GATES) if ((G.x1 + G.x2) / 2 > x1 - 4 && (G.x1 + G.x2) / 2 < x2 + 4 && (G.z1 + G.z2) / 2 > z1 - 4 && (G.z1 + G.z2) / 2 < z2 + 4) return false;
   return true;
 }
-const CURB_TOP = [158, 158, 160], RIM_TOP = [142, 142, 144];
+const CURB_TOP = MAPID === 'cemetery' ? [56, 54, 62] : GRADE_ON ? [68, 66, 62] : [158, 158, 160], RIM_TOP = MAPID === 'cemetery' ? [52, 50, 58] : GRADE_ON ? [64, 62, 58] : [142, 142, 144];   // v0.38: ещё темнее   // v0.37: бордюры не светятся на закате
 // бордюры: вдоль краёв дорог и асфальта (снаружи) и низкая обводка вокруг площадок
 function reliefCurbs(def) {
   const zs = def.zones, road = t => t === 'road' || t === 'asphalt';
-  const seg = (x, z, w, d, h, c) => { if (!solidsNear(x + w / 2, z + d / 2, 1).some(s => s.x2 > x - 0.05 && s.x1 < x + w + 0.05 && s.z2 > z - 0.05 && s.z1 < z + d + 0.05 && s.y2 > h)) relBox(x, z, x + w, z + d, 0, h, c, { cell: 0.2, var: 0.07 }); };
+  const seg0 = (x, z, w, d, h, c) => { if (!solidsNear(x + w / 2, z + d / 2, 1).some(s => s.x2 > x - 0.05 && s.x1 < x + w + 0.05 && s.z2 > z - 0.05 && s.z1 < z + d + 0.05 && s.y2 > h)) relBox(x, z, x + w, z + d, 0, h, c, { cell: 0.2, var: 0.07 }); };
+  // v0.38: бордюр из отдельных камней — швы, разная высота и оттенок, сколы, кое-где камня нет (крошка вместо него)
+  const seg = !GRADE_ON ? seg0 : (x, z, w, d, h, c) => {
+    if (solidsNear(x + w / 2, z + d / 2, 1).some(s => s.x2 > x - 0.05 && s.x1 < x + w + 0.05 && s.z2 > z - 0.05 && s.z1 < z + d + 0.05 && s.y2 > h)) return;
+    const along = w > d, L = along ? w : d, hs = hash2(Math.round(x * 20), Math.round(z * 20), 41), j = 0.03;
+    const box = (a, b, hh, k, o = {}) => along ? relBox(x + a, z, x + b, z + d, 0, hh, shadeC(c, k), o) : relBox(x, z + a, x + w, z + b, 0, hh, shadeC(c, k), o);
+    const k = 0.84 + hash2(Math.round(x * 20), Math.round(z * 20), 42) * 0.24, hh = h * (0.82 + hash2(Math.round(x * 20), Math.round(z * 20), 43) * 0.26);
+    if (hs < 0.05) { box(L * 0.2, L * 0.38, h * 0.35, 0.8, { solid: false, cell: 0.1, var: 0.15 }); box(L * 0.55, L * 0.66, h * 0.25, 0.75, { solid: false, cell: 0.1, var: 0.15 }); return; }   // выломан
+    if (hs < 0.17) { const m = L * (0.3 + hash2(Math.round(x * 20), Math.round(z * 20), 44) * 0.4); box(j, m, hh, k, { cell: 0.1, var: 0.12, sideK: 0.6 }); box(m + 0.01, L - j, hh * 0.62, k * 0.92, { cell: 0.1, var: 0.12, sideK: 0.6 }); return; }   // скол
+    box(j, L - j, hh, k, { cell: 0.1, var: 0.12, sideK: 0.6 });
+  };
   for (const Z of zs) {
     const [t, x1, z1, x2, z2] = Z;
     if (road(t)) {
-      const W = 0.22, H = 0.14, step = 0.5;
-      for (let x = x1; x < x2; x += step) for (const [zz, dz] of [[z1 - 0.2, -W], [z2 + 0.2, 0]]) {                  // северный и южный края
+      const W = 0.22, H = 0.14, step = GRADE_ON ? 0.9 : 0.5;
+      const lenZ = GRADE_ON && t === 'road' && z2 - z1 > x2 - x1, lenX = GRADE_ON && t === 'road' && x2 - x1 > z2 - z1;   // v0.38: поперёк дороги на её концах (въезд в тюрьму, ворота) бордюра нет
+      if (!lenZ) for (let x = x1; x < x2; x += step) for (const [zz, dz] of [[z1 - 0.2, -W], [z2 + 0.2, 0]]) {                  // северный и южный края
         const mx = Math.min(x + step, x2), nt = zoneTypeAt(zs, (x + mx) / 2, zz); if (!road(nt) && nt !== 'court') seg(x, dz < 0 ? z1 - W : z2, mx - x, W, H, CURB_TOP);
       }
-      for (let z = z1; z < z2; z += step) for (const [xx, dx] of [[x1 - 0.2, -W], [x2 + 0.2, 0]]) {                  // западный и восточный
+      if (!lenX) for (let z = z1; z < z2; z += step) for (const [xx, dx] of [[x1 - 0.2, -W], [x2 + 0.2, 0]]) {                  // западный и восточный
         const mz = Math.min(z + step, z2), nt = zoneTypeAt(zs, xx, (z + mz) / 2); if (!road(nt) && nt !== 'court') seg(dx < 0 ? x1 - W : x2, z, W, mz - z, H, CURB_TOP);
       }
     } else if ((t === 'court' || t === 'dark') && (x2 - x1) * (z2 - z1) < MAP * MAP * 0.2) {                       // площадка: низкая рамка

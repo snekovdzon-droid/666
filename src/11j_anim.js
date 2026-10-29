@@ -75,7 +75,7 @@ function heroPose(p) {
   }
   P.dip = rdip;
   const hand = oneHand(p), tw = hand && twinGuns(p), rest = Math.sin(G.t * 2.2) * 0.015 * (spd < 0.1 ? 1 : 0);
-  const HD = !p.hand ? gunHold(p, A.ready === undefined ? 1 : A.ready, gp, kick, rdip) : null;
+  const HD = !p.hand ? gunHold(p, A.ready === undefined ? 1 : A.ready, gp, kick, rdip) : null; p.gunReady = A.ready === undefined ? 1 : A.ready; p.gunPitchVis = gp;   // для ЛЦУ: как реально держится ствол
   if (HD) {                                                                                      // воксельный ствол: руки тянутся к рукояти и цевью
     P.hold = HD; P.sc = { armA: HD.armA.sc, armB: 1 };
     const wIK = k > 0 && bOv !== null ? 1 - ss(0, 0.1, k) * (1 - ss(0.9, 1, k)) : 1;           // середина перезарядки: вторая рука занята своим делом
