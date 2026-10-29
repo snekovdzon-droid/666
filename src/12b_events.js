@@ -170,8 +170,7 @@ function lootItems(p, c, n, pref) {
 function openLootCrate(p, c) {
   SFX.crate(); dust(c.x, c.y + 0.3, c.z, 0xc9a45a, 14);
   if (c.loot === 'armory') {
-    const fa = freeAttach(p); if (fa.length) giveAttach(p, fa[Math.floor(Math.random() * fa.length)]);
-    lootItems(p, c, fa.length ? 2 : 4, ['grenade', 'claymore', 'molotov', 'turret', 'flash']);
+    lootItems(p, c, 4, ['grenade', 'claymore', 'molotov', 'turret', 'flash']);              // v0.52: без модулей
   } else {
     lootItems(p, c, 4, null);
     if (!EV.trap) { EV.trap = true; ambush(); }
@@ -242,10 +241,12 @@ function evRadar(g, pt, dot, T, rad, c) {
 
 /* ---- свет: сирена мигает, потом тьма; поправки к фонарям, окнам и прожекторам ---- */
 function lampOn(L) {
+  if (L.dead) return 0;                                                                   // разбитый фонарь
   const ph = L.x * 7.3 + L.z * 3.1;
   if (EV.alarm) return (Math.sin(EV.clock * 11 + ph) + Math.sin(EV.clock * 17.3 + ph * 2) > 0.3) ? 1 : 0.08;
   if (EV.blackout) return 0;
   if (EV.flickT > 0) return Math.random() < 1 - EV.flickT / 3 ? 1 : 0.1;
+  if (L.flick) { const r = hash2(Math.floor(G.t * 7 + L.x), Math.round(L.z * 10), 5); if (r < 0.2) return 0.05; if (r < 0.3) return 0.45; }   // барахлящий: гаснет и вспыхивает
   return 1;
 }
 const evLights = () => EV.blackout ? 0 : EV.alarm ? 0.5 : 1;   // окна и прожекторы вышек: тьма — совсем выключены, тревога — мерцают

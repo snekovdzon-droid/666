@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- v0.27: тюрьма — вертикальные лестницы, низкий туман, пепел и тела на карте. Карту города модуль не трогает ---------- */
-const MOOD = { on: MAPID !== 'city', bodiesOn: MAPID === 'prison', built: false };
+const MOOD = { on: MAPID !== 'city', bodiesOn: false, built: false };   // v0.37: тела на карте убраны
 const moodRnd = (() => { let s = 7741; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
 const dimHex = (hex, k) => { const c = new THREE.Color(hex); return c.multiplyScalar(k).getHex(); };
 
@@ -8,7 +8,7 @@ const dimHex = (hex, k) => { const c = new THREE.Color(hex); return c.multiplySc
 const FACES = [[[1, 0, 0], [0, 0, -1], [0, 1, 0]], [[-1, 0, 0], [0, 0, 1], [0, 1, 0]], [[0, 1, 0], [1, 0, 0], [0, 0, -1]], [[0, -1, 0], [1, 0, 0], [0, 0, 1]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]];
 const newBatch = () => ({ pos: [], nor: [], col: [], idx: [] });
 function pushBox(B, cx, cy, cz, sx, sy, sz, yaw, hex) {
-  const c = Math.cos(yaw), s = Math.sin(yaw), col = new THREE.Color(hex), hx = sx / 2, hy = sy / 2, hz = sz / 2;
+  const c = Math.cos(yaw), s = Math.sin(yaw), col = new THREE.Color(gradeHex(hex)), hx = sx / 2, hy = sy / 2, hz = sz / 2;
   for (const [n, u, v] of FACES) {
     const base = B.pos.length / 3;
     for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
@@ -155,7 +155,8 @@ function buildBodies() {
 }
 function nearGate(x, z) { for (const g of GATES) if (x > g.x1 - 0.8 && x < g.x2 + 0.8 && z > g.z1 - 0.8 && z < g.z2 + 0.8) return true; return false; }
 function bodiesBlood() { for (const [x, z] of BODY_BLOOD) bloodDecal(x, z, 0.5 + moodRnd() * 0.3, moodRnd() - 0.5, moodRnd() - 0.5); }
-function moodStart() {                                         // начало забега: лестницы строятся один раз, тела тоже, кровь под ними перерисовывается каждый забег
+function moodStart() {
+  if (typeof buildRavens === 'function') buildRavens();                                         // начало забега: лестницы строятся один раз, тела тоже, кровь под ними перерисовывается каждый забег
   if (!LAD_B.done && LAD_B.pos.length) { LAD_B.done = true; batchMesh(LAD_B, false); }
   for (const L of LADS) L.seen = false;
   if (!MOOD.on) return;

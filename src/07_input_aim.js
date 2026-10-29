@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- 10. Управление: клавиатура, мышь, палец, несколько геймпадов → «пульт» каждого игрока ---------- */
 const keys = new Set(); const mouse = { x: 0, y: 0, down: false, has: false };
-const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
+const act = { reload: false, reload2: false, slot: -1, slot2: -1, swap: false, swap2: false, slotT: -1, swapT: false, hook: false, hook2: false, hookT: false, alt: false, alt2: false, altT: false, melee: false, melee2: false, meleeT: false, fireT: false, sprintT: false };   // alt — подствольник   // + слоты предметов и «обменять»        // разовые нажатия за кадр: R (игрок 1 / один игрок), Enter (игрок на стрелках)
 addEventListener('keydown', e => {
   if (G.state === 'editor') return;                  // редактор персонажа: клавиши (имя героя) игре не нужны
   if (e.code === 'Tab') e.preventDefault();
@@ -31,9 +31,10 @@ addEventListener('blur', () => { keys.clear(); mouse.down = false; });
 addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.has = true; });
 addEventListener('mousedown', e => { if (e.button === 0 && !e.target.closest('button,#menu,#dbg')) mouse.down = true; if (e.button === 2 && !e.target.closest('button,#menu,#dbg')) act.alt = true; });
 addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
-addEventListener('wheel', e => { CAM.zoomT = clamp(CAM.zoomT * (e.deltaY > 0 ? 1.12 : 0.89), 6, 20); }, { passive: true });
+addEventListener('wheel', e => { CAM.zoomT = clamp(CAM.zoomT * (e.deltaY > 0 ? 1.12 : 0.89), ZMIN, 20); }, { passive: true });
 addEventListener('contextmenu', e => e.preventDefault());
 // Телефон: левая часть экрана — стик (двойной тап и держать — бег), стрельба сама по ближайшему
+const ZMIN = IS_TOUCH ? 3.2 : 6;                  // ближе всего камера: на телефоне можно приблизить сильнее
 const touch = { id: null, ox: 0, oy: 0, dx: 0, dy: 0, run: false, upT: -9 };
 if (IS_TOUCH) {
   addEventListener('touchstart', e => { for (const t of e.changedTouches) if (touch.id === null && t.clientX < innerWidth * 0.6 && !t.target.closest('button,#menu,#dbg')) {
@@ -46,10 +47,16 @@ if (IS_TOUCH) {
   const pd = () => { const a = [...pinch.values()]; return a.length >= 2 ? Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) : 0; };
   addEventListener('touchstart', e => { for (const t of e.changedTouches) if (t.identifier !== touch.id && !t.target.closest('button,#menu,#dbg,#lvlUp')) pinch.set(t.identifier, { x: t.clientX, y: t.clientY }); pinchD = pd(); }, { passive: true });
   addEventListener('touchmove', e => { let ch = false; for (const t of e.changedTouches) if (pinch.has(t.identifier)) { pinch.set(t.identifier, { x: t.clientX, y: t.clientY }); ch = true; }
-    if (ch && pinch.size >= 2) { const d = pd(); if (pinchD > 0 && d > 0) CAM.zoomT = clamp(CAM.zoomT * pinchD / d, 6, 20); pinchD = d; } }, { passive: true });
+    if (ch && pinch.size >= 2) { const d = pd(); if (pinchD > 0 && d > 0) CAM.zoomT = clamp(CAM.zoomT * pinchD / d, ZMIN, 20); pinchD = d; } }, { passive: true });
   const pend = e => { for (const t of e.changedTouches) pinch.delete(t.identifier); pinchD = pd(); };
   addEventListener('touchend', pend); addEventListener('touchcancel', pend);
 }
+// Кнопки на телефоне, пока зажаты: огонь (авто-огня нет, авто-прицел остаётся) и бег
+function holdBtn(id, key) { const el = document.getElementById(id), ids = new Set(), upd = () => { act[key] = ids.size > 0; el.classList.toggle('on', act[key]); };
+  el.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); for (const t of e.changedTouches) ids.add(t.identifier); upd(); }, { passive: false });
+  const fe = e => { e.stopPropagation(); for (const t of e.changedTouches) ids.delete(t.identifier); upd(); };
+  el.addEventListener('touchend', fe); el.addEventListener('touchcancel', fe); }
+if (IS_TOUCH) { holdBtn('fireBtn', 'fireT'); holdBtn('sprintBtn', 'sprintT'); }
 // Полный экран (телефон: убрать адресную строку). iPhone в Safari не умеет — подсказка «На экран Домой»
 function goFullscreen(force) {
   const d = document.documentElement, on = document.fullscreenElement || document.webkitFullscreenElement;
@@ -61,27 +68,76 @@ function goFullscreen(force) {
 }
 document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); const k = b.dataset.k;
   if (k === 'ql') CAM.yawT += Math.PI / 2; if (k === 'qr') CAM.yawT -= Math.PI / 2; if (k === 'n') G.nightT = G.nightT > 0.5 ? 0 : 1;
-  if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, 6, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, 6, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
+  if (k === 'zi') CAM.zoomT = clamp(CAM.zoomT * 0.85, ZMIN, 20); if (k === 'zo') CAM.zoomT = clamp(CAM.zoomT * 1.18, ZMIN, 20); if (k === 'r') act.reload = true; if (k === 'fs') goFullscreen(); }));
 
 // Геймпады: у каждого своё состояние. Кнопки: RT огонь, R3 ближний бой, X перезарядка, L3 или B бег, LB/RB камера (любой игрок),
-// Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
-const PADS = new Map();                                // индекс геймпада → { lx, ly, rx, ry, pr[], just[], gp }
-const PAD = { active: false, navT: 0 };                // active — последний ввод был с геймпада (для одиночной игры)
+// A крюк-кошка (не срабатывает от нажатия, выбравшего карточку), Back ночь, Start пауза. В меню: крестовина/стик — выбор, A — дальше, Y — число игроков.
+const PADS = new Map();                                // индекс геймпада → { lx, ly, rx, ry, pr[], just[], gp } (только настоящие пульты, без копий)
+const PADRAW = new Map();                              // все устройства-геймпады, включая копии: индекс → состояние
+const PAD = { active: false, navT: 0, last: -1 };      // active — последний ввод был с геймпада (для одиночной игры); last — какой геймпад трогали последним
+// Нестандартная раскладка (DirectInput, DualShock без драйвера, Firefox, дешёвые пады): приводим к стандартной Xbox-раскладке.
+// Оси калибруются по положению покоя при первом появлении: курки в покое стоят на −1 (это не правый стик), «шляпа»-крестовина — около 1.29.
+function padRead(gp, s) {
+  const ax = i => (i >= 0 && i < gp.axes.length ? +gp.axes[i] || 0 : 0);
+  const pr = Array.from(gp.buttons, b => !!(b && b.pressed)), val = Array.from(gp.buttons, b => (b ? +b.value || 0 : 0));
+  if (gp.mapping === 'standard') return { pr, lx: ax(0), ly: ax(1), rx: ax(2), ry: ax(3), rt: val[7] || 0 };
+  if (!s.rest) s.rest = Array.from(gp.axes, v => +v || 0);
+  const sony = /054c|sony|playstation|dualshock|dualsense|wireless controller/i.test(gp.id);
+  const out = pr.slice(); while (out.length < 17) out.push(false);
+  if (sony) { out[0] = !!pr[1]; out[1] = !!pr[2]; out[2] = !!pr[0]; out[3] = !!pr[3]; }   // DirectInput DualShock: □ ✕ ○ △ → ✕ ○ □ △
+  const free = [], trig = []; let hat = -1;
+  for (let i = 2; i < s.rest.length; i++) { const r = s.rest[i]; if (Math.abs(r) > 1.05) hat = i; else if (r < -0.6) trig.push(i); else if (Math.abs(r) < 0.3) free.push(i); }
+  let rt = val[7] || 0;
+  if (trig.length >= 2) { const lt = (ax(trig[0]) + 1) / 2, r2 = (ax(trig[1]) + 1) / 2; if (lt > 0.5) out[6] = true; if (r2 > 0.5) out[7] = true; rt = Math.max(rt, r2); }
+  if (hat >= 0) { const v = ax(hat); if (Math.abs(v) <= 1.01) { const d = Math.round((v + 1) * 3.5) & 7;   // 0 ↑, 1 ↗, 2 →, 3 ↘, 4 ↓, 5 ↙, 6 ←, 7 ↖
+    if (d === 7 || d <= 1) out[12] = true; if (d >= 1 && d <= 3) out[15] = true; if (d >= 3 && d <= 5) out[13] = true; if (d >= 5 && d <= 7) out[14] = true; } }
+  return { pr: out, lx: ax(0), ly: ax(1), rx: ax(free[0] ?? -1), ry: ax(free[1] ?? -1), rt };
+}
+// Один пульт бывает виден дважды (Steam Input, DS4Windows, x360ce): копия жмёт кнопки ровно вместе с оригиналом. Такую копию прячем,
+// иначе двум игрокам достаётся один и тот же пульт. Если «копия» нажала что-то сама — значит, это отдельный пульт, возвращаем.
+function padMirrors(now) {
+  const all = [...PADRAW.values()];
+  const fin = s => s.hist.filter(t => now - t > 150);
+  const matched = (A, B) => A.every(t => B.hist.some(u => Math.abs(u - t) < 100));
+  for (const s of all) {
+    if (s.mirrorOf != null) { const o = PADRAW.get(s.mirrorOf); if (!o || !matched(fin(s), o)) s.mirrorOf = null; continue; }
+    for (const o of all) {
+      if (o === s || o.mirrorOf != null) continue;
+      const keepO = o.std !== s.std ? o.std : o.index < s.index;            // оставляем пульт со стандартной раскладкой, иначе — с меньшим номером
+      if (!keepO) continue;
+      const fs = fin(s), fo = fin(o);
+      if (fs.length >= 3 && fo.length >= 3 && matched(fs, o) && matched(fo, s)) { s.mirrorOf = o.index; break; }
+    }
+  }
+}
 function pollPad(dt) {
   const list = navigator.getGamepads ? navigator.getGamepads() : [];
-  const seen = new Set();
+  const seen = new Set(), now = performance.now();
+  const dz = v => Math.abs(v) < 0.18 ? 0 : v;
   for (const gp of list) {
-    if (!gp || !gp.connected) continue;
+    if (!gp || !gp.connected || gp.buttons.length < 4 || gp.axes.length < 2) continue;   // не геймпад (гарнитура, педали и т. п.)
     seen.add(gp.index);
-    let s = PADS.get(gp.index); if (!s) PADS.set(gp.index, s = { pr: [], just: [] });
-    const dz = v => Math.abs(v) < 0.18 ? 0 : v;
-    const pr = gp.buttons.map(b => !!b.pressed);
+    let s = PADRAW.get(gp.index);
+    if (!s || s.id !== gp.id) PADRAW.set(gp.index, s = { index: gp.index, id: gp.id, pr: [], just: [], hist: [], mirrorOf: null });
+    s.std = gp.mapping === 'standard';
+    const R = padRead(gp, s), pr = R.pr;
     s.just = pr.map((v, i) => v && !s.pr[i]); s.pr = pr; s.gp = gp;
-    s.lx = dz(gp.axes[0] || 0); s.ly = dz(gp.axes[1] || 0); s.rx = dz(gp.axes[2] || 0); s.ry = dz(gp.axes[3] || 0);
-    s.fire = pr[7] || (gp.buttons[7] && gp.buttons[7].value > 0.3);
-    if (s.lx || s.ly || s.rx || s.ry || pr.some(Boolean)) PAD.active = true;
+    s.lx = dz(R.lx); s.ly = dz(R.ly); s.rx = dz(R.rx); s.ry = dz(R.ry);
+    s.fire = !!pr[7] || R.rt > 0.3;
+    if (s.just.some(Boolean)) { s.hist.push(now); if (s.hist.length > 6) s.hist.shift(); }
+    s.used = s.lx || s.ly || s.rx || s.ry || pr.some(Boolean);
   }
-  for (const k of [...PADS.keys()]) if (!seen.has(k)) PADS.delete(k);
+  for (const k of [...PADRAW.keys()]) if (!seen.has(k)) PADRAW.delete(k);
+  padMirrors(now);
+  PADS.clear();
+  for (const [k, s] of PADRAW) if (s.mirrorOf == null) PADS.set(k, s);
+  for (const [k, s] of PADS) if (s.used) { PAD.active = true; if (s.just.some(Boolean) || PAD.last < 0 || !PADS.has(PAD.last) || !PADS.get(PAD.last).used) PAD.last = k; }
+  if (!PADS.has(PAD.last)) PAD.last = PADS.size ? [...PADS.keys()][0] : -1;
+  // игрок, чей пульт пропал (отключился, переподключился под другим номером, оказался копией), получает свободный пульт
+  if (players.length > 1) for (const p of players) if (p.ctrl === 'pad' && !PADS.has(p.pad)) {
+    const free = [...PADS.keys()].sort((a, b) => a - b).find(k => !players.some(q => q.ctrl === 'pad' && q.pad === k));
+    if (free != null) p.pad = free;
+  }
   const any = i => [...PADS.values()].some(s => s.just[i]);
   if (G.state === 'main' || G.state === 'menu' || G.state === 'maps' || G.state === 'end' || G.state === 'levelup') {
     PAD.navT -= dt;
@@ -91,10 +147,11 @@ function pollPad(dt) {
       if (s.just[13] || (s.ly > 0.5 && PAD.navT <= 0)) v = 1; if (s.just[12] || (s.ly < -0.5 && PAD.navT <= 0)) v = -1;
     }
     if (h || v) PAD.navT = 0.25;
+    if (any(0)) PAD.menuA = performance.now();                                   // A ушла на меню/карточку уровня — крюк на этот кадр и чуть дольше не срабатывает
     if (G.state === 'levelup') { if (h || v) lvKey((h || v) > 0 ? 'ArrowRight' : 'ArrowLeft'); if (any(0)) lvKey('Enter'); }
     else if (G.state === 'main') { if (v) mainKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mainKey('Enter'); if (any(1)) mainKey('Escape'); }
     else if (G.state === 'menu') { if (h) menuKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) menuKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) menuKey('Enter'); if (any(3)) menuKey('Tab'); if (any(1)) menuKey('Backspace'); }
-    else if (G.state === 'maps') { if (v) mapPickKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mapPickKey('Enter'); if (any(1)) mapPickKey('Escape'); }
+    else if (G.state === 'maps') { if (h) mapPickKey(h > 0 ? 'ArrowRight' : 'ArrowLeft'); if (v) mapPickKey(v > 0 ? 'ArrowDown' : 'ArrowUp'); if (any(0) || any(9)) mapPickKey('Enter'); if (any(1)) mapPickKey('Escape'); }
     else { if (any(0) || any(9)) restartRun(); if (any(1)) toMenu(); }
   } else {
     for (const [gi, s] of PADS) { const own = players.find(q => (q.ctrl === 'pad' && q.pad === gi) || q.ctrl === 'all'); if (s.just[4]) rotCam(own, 1); if (s.just[5]) rotCam(own, -1); }   // у каждого геймпада — свой экран
@@ -102,7 +159,7 @@ function pollPad(dt) {
     if (any(9)) G.paused = !G.paused;
   }
 }
-function padOf(p) { return p.ctrl === 'pad' ? PADS.get(p.pad) : p.ctrl === 'all' && PAD.active ? [...PADS.values()][0] : null; }
+function padOf(p) { return p.ctrl === 'pad' ? PADS.get(p.pad) : p.ctrl === 'all' && PAD.active ? PADS.get(PAD.last) : null; }
 function rumble(p, s = 0.6, ms = 120) {
   const P = padOf(p); if (!P || !P.gp || !P.gp.vibrationActuator) return;
   try { P.gp.vibrationActuator.playEffect('dual-rumble', { duration: ms, strongMagnitude: s, weakMagnitude: s * 0.6 }); } catch (e) {}
@@ -137,22 +194,23 @@ function readControl(p) {
   if (t === 'all' && act.altT) alt = true;
   if (t === 'all' && (act.slotT >= 0 || act.swapT)) { if (act.slotT >= 0) slot = act.slotT; if (act.swapT) swap = true; }   // кнопки на экране
   if (t === 'all' && touch.id !== null) { ix = touch.dx; iz = touch.dy; sprint = touch.run; }
-  const pads = t === 'pad' ? [PADS.get(p.pad)] : t === 'all' && PAD.active ? [...PADS.values()] : [];
+  if (t === 'all' && act.sprintT) sprint = true;                      // кнопка бега на телефоне
+  const pads = t === 'pad' ? [PADS.get(p.pad)] : t === 'all' && PAD.active ? [PADS.get(PAD.last)] : [];   // один игрок — только тот геймпад, который трогали последним (второй с дрейфом не мешает)
   for (const s of pads) {
     if (!s) continue;
     ix += s.lx; iz += s.ly;                                              // крестовина больше не двигает героя — на ней предметы
     const dp = [12, 15, 13, 14].findIndex(b => s.just[b]); if (dp >= 0) slot = dp;   // ↑ → ↓ ← — слоты 1–4
     if (s.just[3]) { swap = true; back = true; }                           // Y — обменять / обратно к стволу / листать слоты
-    if (s.just[0]) hook = true;
+    if (s.just[0] && performance.now() - (PAD.menuA || 0) > 500) hook = true;   // A — крюк-кошка; нажатие, которым выбрали карточку/пункт меню, крюк не запускает
     if (s.just[11]) melee = true;                                          // R3 — ближний бой
-    if (s.just[6]) alt = true;                                           // LT — подствольник                                          // A — крюк-кошка
+    if (s.just[6]) alt = true;                                           // LT — подствольник
     if (s.just[2]) reload = true; if (s.pr[10] || s.pr[1]) sprint = true;
     manual = true; auto = true; fire = fire || s.fire;
     if (Math.hypot(s.rx, s.ry) > 0.35) { const [wx, wz] = screenToWorld(s.rx, s.ry, yawOf(p)), l = Math.hypot(wx, wz); aim = [wx / l, wz / l]; }
   }
   const l = Math.hypot(ix, iz); if (l > 1) { ix /= l; iz /= l; }
   const [wx, wz] = screenToWorld(ix, iz, yawOf(p));
-  return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? null : fire, reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
+  return { wx, wz, move: Math.min(1, l), sprint, auto, manual, fire: IS_TOUCH && t === 'all' ? act.fireT : fire, touchBtn: IS_TOUCH && t === 'all', reload, aim, pad: manual, slot, swap, back, hook, alt, melee };
 }
 
 /* ---------- 11. Прицел: луч из-под курсора в мир / автоприцел ---------- */

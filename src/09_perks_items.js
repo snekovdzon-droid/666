@@ -36,7 +36,7 @@ function perkAllowed(p, u) {
 // Финал ветки доступен, когда все перки ветки взяты хотя бы на 1 уровень
 function finaleReady(p) {
   const b = branchOf(p); if (!b || (b.sub && !p.sub)) return null;
-  const path = pathOf(p); if (p.evo[path.fin.id]) return null;
+  const path = pathOf(p); if (!path.fin || p.evo[path.fin.id]) return null;   // у путей арбалета финала нет
   return branchPerks(p.gun, b.id, p.sub).every(u => L(p, u.id) > 0) ? path : null;
 }
 // Полный рандом (просьба автора): все доступные карточки равновероятны, без весов и групп.
@@ -48,8 +48,7 @@ function rollChoices(p) {
   for (const u of PERKS) if (perkAllowed(p, u)) pool.push({ type: 'perk', perk: u });
   for (const id of freeAttach(p)) pool.push({ type: 'att', id });
   for (const id of DEV_IDS) { if ((id === 'dog' && devLv(p, 'drone')) || (id === 'drone' && devLv(p, 'dog'))) continue; const lv = devLv(p, id); if (lv ? lv < devMaxOf(id) : devCount(p) < devSlotsOf(p)) pool.push({ type: 'dev', id }); }
-  for (const id in p.known) if (p.known[id] < ITEM_MAX_LV) pool.push({ type: 'itemlv', id });
-  for (const id of ITEM_IDS) if (!p.known[id]) pool.push({ type: 'newitem', id });
+  for (const id of ITEM_IDS) if (id !== 'medkit' && itemLv(p, id) < ITEM_MAX_LV) pool.push({ type: 'itemlv', id });   // v0.60: прокачка любого предмета; новые — только из ящиков; аптечка без прокачки
   for (const c2 of meleeCardPool(p)) pool.push(c2);                                               // оружие ближнего боя и его улучшения             // новый предмет: открывает тип и даёт 1 заряд
   const out = [];
   // модули ствола (ЛЦУ, фонарь, удлинённый ствол) выпадают заметно чаще остальных карточек: ~30% на уровень, после пропусков шанс растёт, после двух подряд — наверняка
@@ -84,8 +83,8 @@ function cardHTML(p, ch, i) {
   if (ch.type === 'branch') {
     const b = ch.b, main = branchOf(p), isSub = ch.sub;
     const perks = isSub ? PERKS.filter(u => u.gun === p.gun && u.branch === main.id && u.sub === b.id) : branchPerks(p.gun, b.id);
-    const fin = b.sub ? `дальше: ${b.sub.map(x => x.name).join(' / ')}` : `финал: ${b.fin.name}`;
-    return { cls: 'wpn', html: `<span class="tag">${isSub ? `ПОДПУТЬ · ${main.name}` : `ПУТЬ · ${WEAPONS[p.gun].name}`}</span><b>${b.name}</b><span>${b.desc}${b.key ? `<br><b style="font-size:inherit">Сразу: ${PERK[b.key].name}</b> — ${PERK[b.key].desc}` : ''}</span><i>${perks.filter(u => u.id !== b.key).map(u => u.name).join(' · ')}<br>${fin} · ${key}</i>` };
+    const fin = b.sub ? `дальше: ${b.sub.map(x => x.name).join(' / ')}` : (b.fin ? `финал: ${b.fin.name}` : '');
+    return { cls: 'wpn', html: `<span class="tag">${isSub ? `ПОДПУТЬ · ${main.name}` : `ПУТЬ · ${WEAPONS[p.gun].name}`}</span><b>${b.name}</b><span>${b.desc}${b.key ? `<br><b style="font-size:inherit">Сразу: ${PERK[b.key].name}</b> — ${PERK[b.key].desc}` : ''}</span><i>${perks.filter(u => u.id !== b.key).map(u => u.name).join(' · ')}${fin ? '<br>' + fin + ' · ' : '<br>'}${key}</i>` };
   }
   if (ch.type === 'finale') {
     const b = ch.b;
@@ -138,7 +137,7 @@ function pickCard(i) {
   else if (ch.type === 'perk') givePerk(p, ch.perk);
   else if (ch.type === 'curse') applyCurse(p, ch.id);
   else if (ch.type === 'melee' || ch.type === 'meleeup') meleePick(p, ch);
-  else if (ch.type === 'newitem') { p.known[ch.id] = 1; if (giveItem(p, ch.id)) toast(p, 'Новый предмет: ' + ITEMS[ch.id].name, '#7cc0ff'); else toast(p, 'Подсумок полон — тип открыт, заряды ищи на карте', '#ffb080'); }
+  else if (ch.type === 'newitem') { p.known[ch.id] = 1; if (giveItem(p, ch.id)) toast(p, 'Новый предмет: ' + ITEMS[ch.id].name, '#7cc0ff'); else toast(p, 'Подсумок полон', '#ffb080'); }
   else if (ch.type === 'itemlv') p.known[ch.id] = itemLv(p, ch.id) + 1;      // уровень найденного предмета
   else if (ch.type === 'dev') giveDevice(p, ch.id);
   else if (ch.type === 'att') giveAttach(p, ch.id);                          // девайс: новый в слот или +1 уровень
@@ -246,7 +245,7 @@ const ITEM_VIS = {
   wire:    { muz: 0.2,  parts: [[0x9a9a92, 0, 0, 0.1, 0.2, 0.13, 0.13], [0x6a6a62, 0, 0, 0.1, 0.22, 0.04, 0.15], [0x5a4a36, 0, -0.08, 0.1, 0.04, 0.1, 0.04]] },
 };
 const ITEM_SHORT = { grenade: 'ГРАН', molotov: 'МОЛОТ', turret: 'ТУРЕЛЬ', wire: 'КОЛЮЧ' };
-const pouchCap = p => 2 + 2 * L(p, 'pouch') + (p.pouchBonus || 0) + 2 * L(p, 'smg_rig');
+const pouchCap = p => 3 + 2 * L(p, 'pouch') + (p.pouchBonus || 0) + 2 * L(p, 'smg_rig');
 const pouchN = p => Object.values(p.pouch).reduce((a, b) => a + b, 0);
 const itemLv = (p, id) => p.known[id] || 1;
 const itemStat = (p, id) => ITEMS[id].stat(itemLv(p, id));
@@ -254,10 +253,8 @@ const slotTypes = p => p.slots.filter(id => p.pouch[id] > 0);           // сл�
 function toast(p, txt, col = '#ffe38a') { p.msg = txt; p.msgCol = col; p.msgT = 2.2; }
 // Положить заряд в подсумок: false — места нет. Первая находка типа — «умею» на 1-м уровне
 // Какие предметы может выдать ящик: только уже открытые карточкой (pref — предпочтительные из них). Пока ничего не открыто — первая находка открывает тип
-function itemPool(p, pref) {
-  const kn = ITEM_IDS.filter(i => p.known[i]);
-  if (!kn.length) return pref && pref.length ? pref : ITEM_IDS;
-  const pk = pref ? kn.filter(i => pref.includes(i)) : kn; return pk.length ? pk : kn;
+function itemPool(p, pref) {                                      // v0.52: из ящиков доступны все предметы сразу; карточки их только прокачивают
+  const pk = pref ? ITEM_IDS.filter(i => pref.includes(i)) : ITEM_IDS; return pk.length ? pk : ITEM_IDS;
 }
 function giveItem(p, id) {
   if (pouchN(p) >= pouchCap(p)) return false;
@@ -286,6 +283,7 @@ function updateHand(p, c, A, fire, dt) {
     if (p.hand === 'canister') endCanister(p); p.hand = null; return true;
   }
   if (p.hand === 'canister') { if ((fire || (c.auto && !c.manual && c.move > 0.2)) && !(p.itemCool > 0)) pourGas(p, dt); return true; }   // зажал огонь — льёшь (телефон: льёшь, пока идёшь)
+  if (ITEMS[p.hand].throw) { const S = itemStat(p, p.hand); p.thr = throwPoint(p, c, A, S.range * (L(p, 'nimble') > 0 ? 1.3 : 1)); p.thrR = S.R || 1; p.thrT = G.t; }   // v0.52: для дуги броска
   const place = !ITEMS[p.hand].throw && p.hand !== 'canister' && c.auto && !c.manual;   // телефон / без мыши: ставится и применяется сразу, не ждёт цели
   if ((fire || place) && !(p.itemCool > 0)) { useItem(p, p.hand, c, A); p.hand = null; p.cool = Math.max(p.cool, 0.25); }
   return true;
@@ -517,8 +515,7 @@ function dropFromZombie(z) { if (Math.random() < CRATE.dropChance * (players.som
 function openCrate(p, c) {
   if (c.loot) return openLootCrate(p, c);
   SFX.crate(); dust(c.x, c.y + 0.3, c.z, 0xc9a45a, 10);
-  const fa = c.big ? freeAttach(p) : [];
-  if (fa.length && Math.random() < 0.2) { giveAttach(p, fa[Math.floor(Math.random() * fa.length)]); return; }   // большой ящик: иногда обвес
+  // v0.52: модули (обвесы) из ящиков не выпадают — только из карточек
   const n = (c.big ? 1 + (Math.random() < 0.5 ? 1 : 0) : 1) + (c.big && p.cls === 'tech' ? 1 : 0), got = [];   // Техник: из большого +1
   for (let i = 0; i < n; i++) {
     const pool = itemPool(p), id = pool[Math.floor(Math.random() * pool.length)];
@@ -543,7 +540,7 @@ function trySwap(p) {
   }
   const gi = GITEMS.findIndex(g => Math.hypot(g.x - p.x, g.z - p.z) < 0.8 && Math.abs(g.y - p.y) < 1);
   if (gi < 0) return false;
-  const G2 = GITEMS[gi]; if (!p.known[G2.id]) return false;
+  const G2 = GITEMS[gi];   // v0.78: подбирается любой предмет — карточка не нужна (giveItem сам отметит «новый предмет»)
   let out = p.hand && p.hand !== G2.id && p.pouch[p.hand] > 0 ? p.hand : null;
   if (!out) { let bn = 0; for (const id of p.slots) if (id !== G2.id && p.pouch[id] > bn) { bn = p.pouch[id]; out = id; } }
   if (!out) return false;
@@ -564,7 +561,6 @@ function updateCratesItems(dt) {
     if (g.t > 120) { removeGItem(i); continue; }
     for (const p of players) {
       if (p.down || Math.hypot(p.x - g.x, p.z - g.z) > 0.6 || Math.abs(p.y - g.y) > 1) continue;
-      if (!p.known[g.id]) { if (!(p.msgT > 0.5)) toast(p, 'Нужна карточка предмета: ' + ITEMS[g.id].name, '#ffb080'); continue; }
       if (giveItem(p, g.id)) { SFX.pickup(); toast(p, '+ ' + ITEMS[g.id].name); removeGItem(i); break; }
       if (!(p.msgT > 0.5)) toast(p, 'Подсумок полон — ' + swapKey(p) + ': обменять на «' + ITEMS[g.id].name + '»', '#ffb080');
     }
@@ -659,7 +655,7 @@ function landThrown2(o, x, y, z) {
     forNear(x, z, zz => { if (!zz.dead && Math.abs(zz.y - y) < 1.5 && Math.hypot(zz.x - x, zz.z - z) < S.R) { zz.stunT = Math.max(zz.stunT || 0, S.stun); zz.flash = 0.1; } }, S.R + 1);
     for (const q of players) if (!q.down && Math.hypot(q.x - x, q.z - z) < S.R && Math.abs(q.y - y) < 1.5) { q.slowT = Math.max(q.slowT || 0, 1.5); toast(q, 'Ослеплён!', '#fff'); }
   } else if (o.id === 'smoke') {
-    SFX.throwIt(); SMOKES.push({ x, y, z, R: S.R, t: 0, dur: S.dur });
+    SFX.throwIt(); SMOKES.push({ x, y, z, R: S.R, t: 0, dur: S.dur, lure: S.lure || 12 });
   }
 }
 /* ---- Дым: облако; зомби внутри бродят без цели, игроков внутри не видят издалека; автоприцел сквозь дым не берёт ---- */
@@ -680,21 +676,24 @@ const CLAYS = [];
 function placeClaymore(p, x, y, z, S) {
   const g = meshOf([[0x4e5a30, 0, 0.12, 0, 0.26, 0.16, 0.06], [0x3a4424, -0.09, 0.03, 0.02, 0.02, 0.08, 0.02], [0x3a4424, 0.09, 0.03, 0.02, 0.02, 0.08, 0.02], [0xc83030, 0.1, 0.22, 0, 0.03, 0.03, 0.03]]);
   g.position.set(x, y, z); g.rotation.y = p.yaw;
-  CLAYS.push({ x, y, z, yaw: p.yaw, arm: 1, owner: p, dmg: S.dmg * p.st.dmg, R: S.range, g }); SFX.crate();
+  const half = Math.PI / 3, fan = new THREE.Mesh(new THREE.CircleGeometry(S.range, 20, -Math.PI / 2 - half, half * 2).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff3020, transparent: true, opacity: 0.1, depthWrite: false }));
+  fan.position.y = 0.03; g.add(fan);                                                   // v0.52: бледный конус поражения на земле
+  CLAYS.push({ x, y, z, yaw: p.yaw, arm: 1, owner: p, dmg: S.dmg * p.st.dmg, R: S.range, g, wait: 0 }); SFX.crate();
 }
-const inCone = (c, x, z, R) => { const dx = x - c.x, dz = z - c.z, d = Math.hypot(dx, dz); return d < R && d > 0.05 && (dx * Math.sin(c.yaw) + dz * Math.cos(c.yaw)) / d > 0.64; };
+const inCone = (c, x, z, R) => { const dx = x - c.x, dz = z - c.z, d = Math.hypot(dx, dz); return d < R && d > 0.05 && (dx * Math.sin(c.yaw) + dz * Math.cos(c.yaw)) / d > 0.5; };   // ±60°
 function updateClays(dt) {
   for (let i = CLAYS.length - 1; i >= 0; i--) {
     const c = CLAYS[i];
     if (c.arm > 0) { c.arm -= dt; continue; }
     if (Math.random() < dt * 1.5) spawnP({ x: c.x + Math.sin(c.yaw) * 0.04 + Math.cos(c.yaw) * 0.1, y: c.y + 0.22, z: c.z + Math.cos(c.yaw) * 0.04 - Math.sin(c.yaw) * 0.1, s: 0.04, col: 0xff3020, glow: true, life: 0.15 });   // мигает
-    let hit = false; forNear(c.x, c.z, z => { if (!hit && !z.dead && Math.abs(z.y - c.y) < 1 && inCone(c, z.x, z.z, c.R * 0.8)) hit = true; }, c.R);
-    if (!hit) continue;
+    let n = 0, close = false; forNear(c.x, c.z, z => { if (!z.dead && Math.abs(z.y - c.y) < 1 && inCone(c, z.x, z.z, c.R * 0.85)) { n++; if (Math.hypot(z.x - c.x, z.z - c.z) < 1.6) close = true; } }, c.R);
+    if (!n) { c.wait = 0; continue; }
+    c.wait += dt; if (n < 3 && !close && c.wait < 0.6) continue;                       // v0.52: ждёт, пока подтянется толпа (3+ в конусе, вплотную или 0,6 с)
     CLAYS.splice(i, 1); scene.remove(c.g);
     SFX.boom(1.2, c.x, c.z); shake = Math.max(shake, 0.25); scorch(c.x + Math.sin(c.yaw) * 0.6, c.z + Math.cos(c.yaw) * 0.6, 0.7);
-    for (let k = 0; k < 40; k++) { const a = c.yaw + rnd(-0.85, 0.85), v = rnd(5, 12); spawnP({ x: c.x, y: c.y + 0.2, z: c.z, vx: Math.sin(a) * v, vy: rnd(0, 1.5), vz: Math.cos(a) * v, s: 0.06, s1: 0.01, col: 0xffd080, col1: 0x904020, glow: true, life: 0.25 }); }
+    for (let k = 0; k < 70; k++) { const a = c.yaw + rnd(-1.05, 1.05), v = rnd(6, 15); spawnP({ x: c.x, y: c.y + 0.2, z: c.z, vx: Math.sin(a) * v, vy: rnd(0, 1.5), vz: Math.cos(a) * v, s: 0.06, s1: 0.01, col: 0xffd080, col1: 0x904020, glow: true, life: 0.25 }); }
     dust(c.x, c.y + 0.2, c.z, 0x7a6a52, 10);
-    forNear(c.x, c.z, z => { if (!z.dead && Math.abs(z.y - c.y) < 1.2 && inCone(c, z.x, z.z, c.R)) { const d = Math.hypot(z.x - c.x, z.z - c.z); dzBy(c.owner, z, c.dmg * (1 - d / c.R * 0.5), (z.x - c.x) / d, (z.z - c.z) / d, 6); } }, c.R + 1);
+    forNear(c.x, c.z, z => { if (!z.dead && Math.abs(z.y - c.y) < 1.2 && inCone(c, z.x, z.z, c.R)) { const d = Math.hypot(z.x - c.x, z.z - c.z); dzBy(c.owner, z, c.dmg * (1 - d / c.R * 0.3), (z.x - c.x) / d, (z.z - c.z) / d, 9); } }, c.R + 1);
     for (const q of players) if (!q.down && q.inv <= 0 && Math.abs(q.y - c.y) < 1.2 && inCone(c, q.x, q.z, c.R) && !L(q, 'fireproof') && G.state === 'play') hurtPlayer(q);
   }
 }
@@ -817,7 +816,7 @@ function itemLvText2(id, lv) {
   if (id === 'claymore') return `Урон ${f(a.dmg)} → ${f(b.dmg)}, дальность ${f(a.range)} → ${f(b.range)}`;
   if (id === 'trap') return `Урон ${f(a.dmg)} → ${f(b.dmg)}, держит ${f(a.hold)} → ${f(b.hold)} с, срабатываний ${a.uses} → ${b.uses}`;
   if (id === 'sandbags') return `Длина ${f(a.len)} → ${f(b.len)}, прочность ${f(a.hp)} → ${f(b.hp)}`;
-  if (id === 'smoke') return `Радиус ${f(a.R)} → ${f(b.R)}, держится ${f(a.dur)} → ${f(b.dur)} с`;
+  if (id === 'smoke') return `Радиус ${f(a.R)} → ${f(b.R)}, держится ${f(a.dur)} → ${f(b.dur)} с, приманивает с ${f(a.lure)} → ${f(b.lure)} м`;
   if (id === 'canister') return `Бензина ${f(a.fuel)} → ${f(b.fuel)} с, огонь ${f(a.dps)} → ${f(b.dps)} в секунду`;
   if (id === 'medkit') return `Лечит сердец: ${a.heal} → ${b.heal}`;
   return `Синих сердец: ${a.blue} → ${b.blue}`;
@@ -853,9 +852,9 @@ function updateDrone(p, dt) {
   if (z) { const want = Math.atan2(z.x - d.x, z.z - d.z); let a = want - d.yaw; a = Math.atan2(Math.sin(a), Math.cos(a)); d.yaw += a * Math.min(1, dt * 10); }
   d.g.rotation.y = d.yaw;
   if (lv >= 2) {                                                                // прожектор
-    if (!d.light) { d.light = new THREE.SpotLight(0xfff2d0, 1.6, 9, 0.5, 0.5, 1.5); scene.add(d.light); scene.add(d.light.target); }
+    if (!d.light) d.light = dynSpot(0xfff2d0, 9, 0.5, 0.5, 1.5);
     d.light.position.set(d.x, d.y, d.z); const fx = z ? z.x : d.x + Math.sin(d.yaw) * 3, fz = z ? z.z : d.z + Math.cos(d.yaw) * 3;
-    d.light.target.position.set(fx, 0, fz); d.light.intensity = 0.6 + G.night * 2.4; d.light.visible = !p.down;
+    d.light.target.position.set(fx, 0, fz); d.light.intensity = p.down ? 0 : 0.6 + G.night * 2.4;
   }
   if (lv >= 3) for (const g of gems) if (!g.pull && Math.hypot(g.x - p.x, g.z - p.z) < 6 && Math.abs(g.y - p.y) < 2) g.pull = true;   // собирает опыт
   if (p.down || (d.cool -= dt) > 0 || !z) return;
@@ -1011,7 +1010,7 @@ function updateDevices(dt) {
 }
 function clearDevices() {
   clearAttach();
-  for (const d of DRONES.values()) { scene.remove(d.g); if (d.light) { scene.remove(d.light); scene.remove(d.light.target); } }
+  for (const d of DRONES.values()) { scene.remove(d.g); freeSpot(d.light); }
   for (const d of DOGS.values()) scene.remove(d.g);
   DRONES.clear(); DOGS.clear();
 }
@@ -1032,8 +1031,16 @@ function updateAttach(dt) {
     if (p.att.laser) {                                                    // луч до первой цели или стены
       if (!v.beam) { v.beam = new THREE.Mesh(boxGeo, laserMat); scene.add(v.beam); }
       v.beam.visible = show;
-      if (show) {
-        const dx = Math.sin(p.yaw) * Math.cos(p.pitch || 0), dy = -Math.sin(p.pitch || 0), dz = Math.cos(p.yaw) * Math.cos(p.pitch || 0);
+      let lmz = mz, dx = 0, dy = 0, dz = 0;
+      if (show) {                                                        // v0.53: луч идёт из настоящего дула по направлению ствола (опущен — смотрит вниз)
+        const HD = gunHold(p, p.gunReady === undefined ? 1 : p.gunReady, p.gunPitchVis === undefined ? (p.pitch || 0) : p.gunPitchVis, 0, 0);
+        if (HD) { const src = HD.twin && (p.twinSide || 1) < 0 ? HD.twin.muz : HD.muz, c0 = Math.cos(p.yaw), s0 = Math.sin(p.yaw), [ly, lz] = rotX(HD.th, 0, 1);
+          lmz = { x: p.x + src[0] * c0 + src[2] * s0, y: p.y + src[1], z: p.z - src[0] * s0 + src[2] * c0 }; dx = lz * s0; dy = ly; dz = lz * c0; }
+        else { dx = Math.sin(p.yaw) * Math.cos(p.pitch || 0); dy = -Math.sin(p.pitch || 0); dz = Math.cos(p.yaw) * Math.cos(p.pitch || 0); }
+        const dl = Math.hypot(dx, dy, dz) || 1; dx /= dl; dy /= dl; dz /= dl;
+      }
+      const mz2 = lmz;
+      if (show) { const mz = mz2;
         let len = 9;
         for (let s = 0.3; s < 9; s += 0.25) { const x = mz.x + dx * s, y = mz.y + dy * s, z = mz.z + dz * s; if (y < 0.02 || pointSolid(x, y, z)) { len = s; break; } let hit = false; forNear(x, z, q => { if (!hit && !q.dead && Math.hypot(q.x - x, q.z - z) < q.r && y > q.y && y < q.y + zHeight(q)) hit = true; }, 1); if (hit) { len = s; break; } }
         v.beam.scale.set(0.018, 0.018, len); v.beam.position.set(mz.x + dx * len / 2, mz.y + dy * len / 2, mz.z + dz * len / 2);
@@ -1042,11 +1049,21 @@ function updateAttach(dt) {
       }
     }
     if (p.att.light) {                                                    // фонарь: свет + зомби в луче медленнее
-      if (!v.light) { v.light = new THREE.SpotLight(0xfff4d8, 2, 13, 0.42, 0.4, 1); scene.add(v.light); scene.add(v.light.target); }
-      v.light.visible = show;
+      if (!v.light) v.light = dynSpot(0xfff4d8, 13, 0.42, 0.4, 1);
+      if (!show) v.light.intensity = 0;
       if (show) { v.light.position.set(mz.x, mz.y, mz.z); v.light.target.position.set(mz.x + Math.sin(p.yaw) * 6, p.y, mz.z + Math.cos(p.yaw) * 6); v.light.intensity = 1 + G.night * 7;
         forNear(p.x, p.z, z => { if (!z.dead && inBeam(p, z)) { z.slowT = Math.max(z.slowT, 0.2); z.slowMul = Math.min(z.slowMul || 1, 0.85); } }, 8); }
     }
   }
 }
-function clearAttach() { for (const v of ATTV.values()) { if (v.beam) scene.remove(v.beam); if (v.light) { scene.remove(v.light); scene.remove(v.light.target); } } ATTV.clear(); }
+// v0.78: пул прожекторов (фонарь на стволе, дрон). Свет никогда не удаляем и не прячем через visible — только intensity = 0:
+// в three.js смена числа источников заставляет перекомпилировать ВСЕ шейдеры сцены — это и были фризы на секунду-две.
+const DYN_SPOTS = [];
+function dynSpot(col, dist, ang, pen, dec) {
+  let l = DYN_SPOTS.find(q => !q.userData.busy);
+  if (!l) { l = new THREE.SpotLight(0xffffff, 0, 10, 0.5, 0.5, 1); scene.add(l); scene.add(l.target); DYN_SPOTS.push(l); }
+  l.color.setHex(col); l.distance = dist; l.angle = ang; l.penumbra = pen; l.decay = dec; l.intensity = 0; l.userData.busy = true; return l;
+}
+function freeSpot(l) { if (l) { l.intensity = 0; l.userData.busy = false; } }
+for (let i = 0; i < 2; i++) freeSpot(dynSpot(0xffffff, 10, 0.5, 0.5, 1));   // два заранее: попадут в общую прекомпиляцию на старте
+function clearAttach() { for (const v of ATTV.values()) { if (v.beam) scene.remove(v.beam); freeSpot(v.light); } ATTV.clear(); }
