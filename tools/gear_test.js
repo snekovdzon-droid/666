@@ -1,8 +1,8 @@
 // Проверка подствольника (заряды по времени), крюка (перезарядка по уровням) и тесла-ранца (виден на спине, молнии)
-const { chromium } = require('playwright'); const path = require('path');
+const { launchBrowser } = require('./browser'); const path = require('path');
 (async () => {
   const dir = process.env.SHOTDIR || '.';
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
+  const b = await launchBrowser();
   const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
   const errs = []; p.on('pageerror', e => errs.push('pageerror: ' + e.message)); p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   await p.goto('file://' + path.resolve(process.argv[2] || 'index.html')); await p.waitForTimeout(3500);
@@ -38,5 +38,5 @@ const { chromium } = require('playwright'); const path = require('path');
   out.tesla = { maxBolts: seen, shot };
   await p.evaluate(() => { for (const z of zombies) z.x += 40; });
   await p.waitForTimeout(800); await p.screenshot({ path: dir + '/tesla_pack.png' });
-  console.log(JSON.stringify(out)); console.log(errs.join('\n') || 'OK'); await b.close();
-})();
+  console.log(JSON.stringify(out)); console.log(errs.join('\n') || 'OK'); if (errs.length) process.exitCode = 1; await b.close();
+})().catch(e => { console.error(e); process.exitCode = 1; });
