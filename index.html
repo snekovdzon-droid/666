@@ -279,6 +279,82 @@ body.touch #cmH1{display:none}body.touch #coopBtn{display:none}
 #cmMid{flex:0 1 860px;margin:0 auto}
 .cmHero{margin-top:38px}
 .cmHero.empty{background:none!important;border-left-color:transparent!important}
+
+/* MANY DEAD · Arcade Voxel UI v1 — main menu only.
+   CSS-only bevels: no new assets, JS changes or external requests. */
+#main{
+  --vx-ink:#0b1724;--vx-edge:#152b42;--vx-face:#234c69;
+  --vx-light:#5ca9cc;--vx-glow:#79e5ef;--vx-text:#f1fbff;
+  --vx-accent:#ffc84b;
+}
+#main .mmCol{width:min(380px,88vw);position:relative}
+#main .mmSub{color:#a7d9e5;text-shadow:2px 2px 0 #07111c;letter-spacing:2px}
+#main .mmTitle{filter:drop-shadow(3px 5px 0 #091420)}
+#main #mmBtns button,#main #mmPanel button{
+  box-sizing:border-box;min-height:52px;width:100%;margin:11px 0;
+  padding:11px 16px 11px 48px;
+  border:0;border-radius:0;
+  background:linear-gradient(180deg,#386c89 0 16%,#24516f 16% 78%,#1b3d5a 78%);
+  color:var(--vx-text);font-family:'PixMenu',monospace;
+  font-size:clamp(15px,2vw,20px);line-height:1.3;letter-spacing:1px;
+  text-shadow:2px 2px 0 #0a1b2a;
+  box-shadow:
+    inset 4px 4px 0 #77c4d8,
+    inset -4px -4px 0 #102b45,
+    0 0 0 3px #0b1b2b,
+    0 7px 0 #081521,
+    5px 11px 0 rgba(0,0,0,.34);
+  transform:translateY(0);transform-origin:center;
+  transition:transform .1s ease,filter .1s ease,box-shadow .1s ease;
+  touch-action:manipulation;
+}
+#main #mmBtns button::after,#main #mmPanel button::after{
+  content:'';position:absolute;right:12px;top:11px;width:8px;height:8px;
+  background:#84c9d9;box-shadow:0 12px 0 #163c56, -12px 0 0 #3a7995;
+  pointer-events:none;
+}
+#main #mmBtns button.sel,#main #mmBtns button:hover:not(:disabled),
+#main #mmPanel button:hover:not(:disabled),
+#main #mmBtns button:focus-visible,#main #mmPanel button:focus-visible{
+  background:linear-gradient(180deg,#ffe38b 0 16%,#ffc54c 16% 78%,#d78b27 78%);
+  color:#192c39;text-shadow:1px 1px 0 #fff1b2;
+  box-shadow:inset 4px 4px 0 #fff3b8,inset -4px -4px 0 #93521d,
+    0 0 0 3px #182b39,0 7px 0 #75461d,5px 11px 0 rgba(0,0,0,.3);
+  filter:saturate(1.08);
+}
+#main #mmBtns button.sel::before,#main #mmBtns button:hover:not(:disabled)::before,
+#main #mmBtns button:focus-visible::before,#main #mmPanel button:hover:not(:disabled)::before,
+#main #mmPanel button:focus-visible::before{
+  content:'▶';position:absolute;left:17px;top:50%;transform:translateY(-50%);
+  color:#173247;font-size:15px;text-shadow:none;
+}
+#main #mmBtns button:active:not(:disabled),#main #mmPanel button:active:not(:disabled){
+  transform:translateY(5px);
+  box-shadow:inset 4px 4px 0 #fff3b8,inset -4px -4px 0 #93521d,
+    0 0 0 3px #182b39,0 2px 0 #75461d,3px 5px 0 rgba(0,0,0,.3);
+}
+#main #mmBtns button:disabled{opacity:.45;filter:grayscale(.5);cursor:not-allowed}
+#main #mmBtns small{color:#d3f4ff}
+#main #mmPanel{padding:4px 9px 12px 4px;max-height:min(62vh,560px);scrollbar-color:#4e93ad #142b3d}
+#main #mmPanel h3{color:#ffd572;text-shadow:2px 2px 0 #101d2b}
+#main #mmPanel p{color:#d1e3e9}
+#main #mmPanel button{font-size:clamp(13px,1.8vw,17px);min-height:44px;padding:8px 13px 8px 36px}
+#main #mmPanel button::after{right:10px}
+#main #mmPanel button:hover:not(:disabled)::before,#main #mmPanel button:focus-visible::before{left:12px}
+@media(hover:none){
+  #main #mmBtns button:not(.sel):hover{background:linear-gradient(180deg,#386c89 0 16%,#24516f 16% 78%,#1b3d5a 78%);color:var(--vx-text)}
+  #main #mmPanel button:hover:not(:focus-visible){background:linear-gradient(180deg,#386c89 0 16%,#24516f 16% 78%,#1b3d5a 78%);color:var(--vx-text)}
+}
+@media(max-height:540px){
+  #main .mmCol{width:min(370px,87vw)}
+  #main #mmBtns button{min-height:40px;margin:7px 0;padding:6px 12px 6px 38px;font-size:15px}
+  #main #mmBtns button.sel::before{left:11px}
+  #main #mmPanel{max-height:62vh}
+}
+@media(prefers-reduced-motion:reduce){
+  #main #mmBtns button,#main #mmPanel button{animation:none;transition:none}
+}
+
 </style></head><body>
 <div id="hurt"></div>
 <div id="huds"></div>
